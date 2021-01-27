@@ -89,7 +89,7 @@ if not os.path.exists(os.environ['PIPELINEDIR']): os.makedirs(os.environ['PIPELI
 # In[8]:
 
 
-outputdir = os.path.join(os.environ['PIPELINEDIR'], '3_compute_gradient', 'out')
+outputdir = os.path.join(os.environ['PIPELINEDIR'], '2_compute_gradient', 'out')
 print(outputdir)
 if not os.path.exists(outputdir): os.makedirs(outputdir)
 
@@ -252,7 +252,7 @@ fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
 # In[23]:
 
 
-for g in np.arange(0,4):
+for g in np.arange(0,1):
     f, ax = plt.subplots(1, 4, figsize=(20, 5), subplot_kw={'projection': '3d'})
     plt.subplots_adjust(wspace=0, hspace=0)
 
