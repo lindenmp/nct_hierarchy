@@ -222,3 +222,9 @@ def get_exact_p(x,y):
     
     return pval
 
+
+def node_strength(A):
+    s = np.sum(A, axis = 0)
+
+    return s
+
