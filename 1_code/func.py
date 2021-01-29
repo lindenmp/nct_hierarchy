@@ -20,6 +20,7 @@ plt.rcParams['svg.fonttype'] = 'none'
 
 # Extra
 import math
+from scipy.linalg import svd, schur
 
 
 def set_proj_env():
@@ -230,4 +231,61 @@ def node_strength(A):
     s = np.sum(A, axis = 0)
 
     return s
+
+
+def minimum_energy(A, T, B, x0, xf):
+    #  Computes minimum control energy for state transition.
+    #  A: System adjacency matrix:         N x N
+    #  B: Control input matrix:            N x k
+    #  x0: Initial state:                  N x 1
+    #  xf: Final state:                    N x 1
+    #  T: Control horizon                  1 x 1
+    #  
+    #  Outputs
+    #  x: State Trajectory
+    #  u: Control Input
+
+    # Author: Jennifer Stiso
+
+    # System Size
+    n = A.shape[0] # Number of nodes
+    
+    u, s, vt = svd(A) # singluar value decomposition
+    A = A/(1 + s[0]) # Matrix normalization 
+
+    # Compute Matrix Exponential
+    AT = np.concatenate((np.concatenate((A, -.5*(B.dot(B.T))), axis=1), 
+                         np.concatenate((np.zeros(np.shape(A)), -A.T), axis=1)), axis=0)
+
+    E = sp.linalg.expm(AT*T)
+
+    # Compute Costate Initial Condition
+    E12 = E[0:n,n:]
+    E11 = E[0:n,0:n]
+    p0 = np.linalg.pinv(E12).dot(xf - E11.dot(x0))
+
+    # Compute Costate Initial Condition Error Induced by Inverse
+    n_err = np.linalg.norm(E12.dot(p0) - (xf - E11.dot(x0)))
+
+    # Prepare Simulation
+    nStep=1000
+    t = np.linspace(0,T,nStep+1)
+
+    v0 = np.concatenate((x0, p0), axis=0)   # Initial Condition
+    v = np.zeros((2*n,len(t)))              # Trajectory
+    Et = sp.linalg.expm(AT*T/(len(t)-1))
+    v[:,0] = v0.T
+
+    # Simulate State and Costate Trajectories
+    for i in np.arange(1,len(t)):
+        v[:,i] = Et.dot(v[:,i-1])
+
+    x = v[0:n,:];
+    u = -0.5*B.T.dot(v[np.arange(0,n)+n,:])
+
+    # transpose to be similar to opt_eng_cont
+    u = u.T
+    x = x.T
+
+    return x, u, n_err
 
