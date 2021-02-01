@@ -111,7 +111,7 @@ if not os.path.exists(figdir): os.makedirs(figdir)
 df = pd.read_csv(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out', 'df_gradients.csv'))
 df.set_index(['bblid', 'scanid'], inplace = True)
 # retain discovery sample only
-df = df.loc[df['disc_repl'] == 0,:]
+# df = df.loc[df['disc_repl'] == 0,:]
 print(df.shape)
 
 
@@ -197,15 +197,19 @@ if any(subj_filt):
 # Generate template
 pnc_conn_mat = np.nanmean(fc, axis = 2)
 pnc_conn_mat[np.eye(num_parcels, dtype = bool)] = 0
-# pnc_conn_mat = dominant_set(pnc_conn_mat, 0.10, as_sparse = False)
+pnc_conn_mat = dominant_set(pnc_conn_mat, 0.10, as_sparse = False)
 
-gm_template = GradientMaps(n_components = 10, approach='dm', kernel='normalized_angle', random_state = 0)
+# gm_template = GradientMaps(n_components = 2, approach='dm', kernel='normalized_angle', random_state = 0)
+gm_template = GradientMaps(n_components = 2, random_state = 0)
 gm_template.fit(pnc_conn_mat)
 
-if parc_scale == 200 or parc_scale == 125:
-    gradients = gm_template.gradients_ * -1
+if parc_scale == 200:
+    gm_template.gradients_ = gm_template.gradients_ * -1
+    gradients = np.zeros(gm_template.gradients_.shape)
+    gradients[:,0], gradients[:,1] = gm_template.gradients_[:,1], gm_template.gradients_[:,0]
 elif parc_scale == 400:
-    gradients = gm_template.gradients_
+    gradients = np.zeros(gm_template.gradients_.shape)
+    gradients[:,0], gradients[:,1] = gm_template.gradients_[:,1] * -1, gm_template.gradients_[:,0]
 
 np.savetxt(os.path.join(outputdir,outfile_prefix+'pnc_grads_template.txt'),gradients)
 
@@ -244,7 +248,7 @@ f.savefig(outfile_prefix+'gradient_eigenvals.png', dpi = 300, bbox_inches = 'tig
 from func import roi_to_vtx
 from nilearn import datasets
 from nilearn import plotting
-atlas = datasets.fetch_atlas_schaefer_2018(n_rois=200, yeo_networks=17, resolution_mm=2)
+atlas = datasets.fetch_atlas_schaefer_2018(n_rois=parc_scale, yeo_networks=17, resolution_mm=2)
 parcellation = atlas['maps']
 fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
 
@@ -252,11 +256,11 @@ fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
 # In[23]:
 
 
-for g in np.arange(0,1):
+for g in np.arange(0,2):
     f, ax = plt.subplots(1, 4, figsize=(20, 5), subplot_kw={'projection': '3d'})
     plt.subplots_adjust(wspace=0, hspace=0)
 
-    parc_file = os.path.join('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/lh.Schaefer2018_200Parcels_17Networks_order.annot')
+    parc_file = os.path.join('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/lh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
     labels, ctab, surf_names = nib.freesurfer.read_annot(parc_file)
     vtx_data, plot_min, plot_max = roi_to_vtx(gradients[:,g], parcel_names, parc_file)
     vtx_data = vtx_data.astype(float)
@@ -270,7 +274,7 @@ for g in np.arange(0,1):
                            bg_map=fsaverage['sulc_left'], bg_on_data=False, axes=ax[1],
                            darkness=.5, cmap='viridis');
 
-    parc_file = os.path.join('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/rh.Schaefer2018_200Parcels_17Networks_order.annot')
+    parc_file = os.path.join('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/rh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
     labels, ctab, surf_names = nib.freesurfer.read_annot(parc_file)
     vtx_data, plot_min, plot_max = roi_to_vtx(gradients[:,g], parcel_names, parc_file)
     vtx_data = vtx_data.astype(float)
@@ -286,4 +290,13 @@ for g in np.arange(0,1):
 
     f.suptitle('Gradient '+str(g+1))
     f.savefig(outfile_prefix+'gradient_'+str(g)+'.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0)
+
+
+# In[24]:
+
+
+f, ax = plt.subplots(figsize=(5, 5))
+ax.scatter(gradients[:,1], gradients[:,0])
+ax.set_xlabel('Gradient 2')
+ax.set_ylabel('Gradient 1')
 
