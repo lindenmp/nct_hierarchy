@@ -37,7 +37,6 @@ from func import set_proj_env, my_get_cmap, rank_int
 parc_str = 'schaefer'
 parc_scale = 200
 edge_weight = 'streamlineCount'
-# parcel_names, parcel_loc, drop_parcels, num_parcels, yeo_idx, yeo_labels = set_proj_env(parc_str = parc_str, parc_scale = parc_scale, edge_weight = edge_weight)
 set_proj_env()
 
 
@@ -128,6 +127,10 @@ df = df[df['b0ProtocolValidationStatus'] == 1]
 df = df[df['dti64ProtocolValidationStatus'] == 1]
 df = df[df['dti64Exclude'] == 0]
 print('N after Diffusion exclusion:', df.shape[0])
+
+# 4) Medicated
+df = df[df['psychoactiveMedPsychv2'] == 0]
+print('N after medication exclusion:', df.shape[0])
 
 
 # In[9]:
