@@ -21,7 +21,8 @@ plt.rcParams['svg.fonttype'] = 'none'
 # Extra
 import math
 from scipy.linalg import svd, schur
-
+from statsmodels.stats import multitest
+from scipy.spatial.distance import pdist, squareform
 
 def set_proj_env():
 
@@ -384,3 +385,102 @@ def optimal_energy(A, T, B, x0, xf, rho, S):
     X_opt = xp[:,0:n]
     
     return X_opt, U_opt, n_err
+
+
+def sample_gradient(gradient_2, gradient_1, seed = 'vis', num_step = 5, num_n = 10):
+    
+    num_parcels = len(gradient_2)
+    
+    # transmodal reference region
+    ref_region = [gradient_2[gradient_1.argmax()], gradient_1.max()]
+    
+    if seed == 'vis':
+        seed_region = [gradient_2.min(), gradient_1[gradient_2.argmin()]]
+    elif seed == 'sm':
+        seed_region = [gradient_2.max(), gradient_1[gradient_2.argmax()]]
+        
+    # create sampling space
+    x = np.linspace(seed_region[0], ref_region[0], num_step)
+    y = np.linspace(seed_region[1], ref_region[1], num_step)
+    
+    grad_coords = np.vstack([gradient_2.copy(), gradient_1.copy()]).transpose()
+    gradient_masks = np.zeros((num_parcels,num_step)).astype(bool)
+    
+    for i in np.arange(0,num_step):
+        xy = [x[i], y[i]]
+
+        dist = (grad_coords - xy)**2
+        dist = np.sum(dist, axis=1)
+        dist = np.sqrt(dist)
+
+        nn = np.argsort(dist)[:num_n]
+        gradient_masks[nn,i] = True
+        
+        grad_coords[nn,:] = np.nan
+        
+    grad_coords = np.vstack([gradient_2.copy(), gradient_1.copy()]).transpose()
+    dist_h = get_pdist(grad_coords,gradient_masks)
+    
+    return gradient_masks, dist_h
+
+def get_pdist(coords,gradient_masks):
+    
+    num_step = gradient_masks.shape[1]
+    
+    target_state = coords[gradient_masks[:,-1],:]
+    
+    dist = []
+    for i in np.arange(0,num_step):
+        initial_state = coords[gradient_masks[:,i],:]
+        
+        tmp = []
+        for j in np.arange(target_state.shape[0]):
+            for k in np.arange(initial_state.shape[0]):
+                d = (target_state[j,:] - initial_state[k,:])**2
+                d = np.sum(d)
+                d = np.sqrt(d)
+                tmp.append(d)
+        
+        dist.append(np.mean(tmp))
+
+    # distance to single reference region
+    # ref_region = centroids.iloc[gradient_1.argmax()].values
+    # xy = centroids.iloc[gradient_masks[:,i]].values
+
+    # dist = (ref_region - xy)**2
+    # dist = np.sum(dist, axis = 1)
+    # dist = np.sqrt(dist)  
+
+    # np.mean(dist)
+
+    # distance between single arbirtary pairs
+    # ref_region = centroids.iloc[gradient_masks[:,-1]].values
+    # xy = centroids.iloc[gradient_masks[:,i]].values
+
+    # dist = (ref_region - xy)**2
+    # dist = np.sum(dist, axis = 1)
+    # dist = np.sqrt(dist)  
+
+    # np.mean(dist)
+    
+    return dist
+
+
+def get_equidistant_state(x0, xf, dist_mni, centroids, num_n = 10):
+    
+    dist = squareform(pdist(centroids.values, 'euclidean')) # getting pairwise distance between regions MNI coords
+    tolerance = np.std(dist)/2 # calculate tolerance for sampling (1/2 std of distances)
+    # get lower and upper bounds for distance-based search
+    lower_bound = dist_mni - tolerance
+    upper_bound = dist_mni + tolerance
+    
+    dist = dist[xf.astype(bool),:] # retain only distance to n regions in the target target
+    dist = np.nanmean(dist, axis = 0) # distance over n target state regions. dist is now vector
+    dist[x0.astype(bool)] = np.nan # set distance for target state regions to nan. this prevents them from being sampled
+    dist[xf.astype(bool)] = np.nan # set distance for initial state regions to nan. this prevents them from being sampled
+    
+    mask = (dist > lower_bound) & (dist < upper_bound) # create mask to sample from
+    idx = np.random.choice(np.arange(0,np.sum(mask)), size = num_n, replace = False) # sample n regions from mask
+
+    return np.array(centroids.iloc[mask,:].iloc[idx].index)-1 # return the indices of those regions
+
