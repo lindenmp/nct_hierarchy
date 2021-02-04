@@ -16,3 +16,19 @@
     cd /Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients
     conda env export > environment.yml
 	pip freeze > requirements.txt
+
+
+# Environment build (cubic, home)
+
+    conda create -n pfactor_gradients python=3.7
+    conda activate pfactor_gradients
+
+    # Essentials
+    pip install ipython pandas numpy
+
+    # Statistics
+    pip install scipy statsmodels sklearn
+
+    cd /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/
+    conda env export > environment.yml
+    pip freeze > requirements.txt
