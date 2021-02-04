@@ -34,22 +34,30 @@ from func import set_proj_env, my_get_cmap, rank_int
 # In[3]:
 
 
-parc_str = 'schaefer'
-parc_scale = 200
-edge_weight = 'streamlineCount'
+parc_str = 'schaefer' # 'schaefer' 'lausanne' 'glasser'
+parc_scale = 400 # 200/400 | 125/250 | 360
+edge_weight = 'streamlineCount' # 'streamlineCount' 'volNormStreamline'
 set_proj_env()
+
+
+# In[4]:
+
+
+# output file prefix
+outfile_prefix = parc_str+'_'+str(parc_scale)+'_'+edge_weight+'_'
+outfile_prefix
 
 
 # ### Setup directory variables
 
-# In[4]:
+# In[5]:
 
 
 print(os.environ['PIPELINEDIR'])
 if not os.path.exists(os.environ['PIPELINEDIR']): os.makedirs(os.environ['PIPELINEDIR'])
 
 
-# In[5]:
+# In[6]:
 
 
 outputdir = os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out')
@@ -57,7 +65,7 @@ print(outputdir)
 if not os.path.exists(outputdir): os.makedirs(outputdir)
 
 
-# In[6]:
+# In[7]:
 
 
 figdir = os.path.join(os.environ['OUTPUTDIR'], 'figs')
@@ -65,9 +73,28 @@ print(figdir)
 if not os.path.exists(figdir): os.makedirs(figdir)
 
 
+# In[8]:
+
+
+# Parcellation specifications
+if parc_str == 'schaefer':
+    # Names of parcels
+    parcel_names = np.genfromtxt(os.path.join(os.environ['PROJDIR'], 'figs_support/labels/schaefer' + str(parc_scale) + 'NodeNames.txt'), dtype='str')
+    num_parcels = parcel_names.shape[0]
+    
+    scdir = os.path.join(os.environ['DERIVSDIR'], 'processedData/diffusion/deterministic_20171118')
+    sc_name_tmp = 'bblid/*xscanid/tractography/connectivity/bblid_*xscanid_SchaeferPNC_' + str(parc_scale) + '_dti_' + edge_weight + '_connectivity.mat'
+elif parc_str == 'glasser':
+    parcel_names = np.genfromtxt(os.path.join(os.environ['PROJDIR'], 'figs_support/labels/glasser' + str(parc_scale) + 'NodeNames.txt'), dtype='str')
+    num_parcels = parcel_names.shape[0]
+
+    scdir = os.path.join(os.environ['DERIVSDIR'], 'processedData/diffusion/deterministic_dec2016', edge_weight, 'GlasserPNC')
+    sc_name_tmp = 'scanid_' + edge_weight + '_GlasserPNC.mat'
+
+
 # # Load in demographic and symptom data
 
-# In[7]:
+# In[9]:
 
 
 # LTN and Health Status
@@ -111,7 +138,7 @@ df.set_index(['bblid', 'scanid'], inplace = True)
 
 # # Filter subjects
 
-# In[8]:
+# In[10]:
 
 
 # 1) Primary sample filter
@@ -133,32 +160,32 @@ df = df[df['psychoactiveMedPsychv2'] == 0]
 print('N after medication exclusion:', df.shape[0])
 
 
-# In[9]:
+# In[11]:
 
 
 df['dti64QAManualScore'].unique()
 
 
-# In[10]:
+# In[12]:
 
 
 np.sum(df['averageManualRating'] == 2)
 
 
-# In[11]:
+# In[13]:
 
 
 np.sum(df['dti64QAManualScore'] == 2)
 
 
-# In[12]:
+# In[14]:
 
 
 # Convert age to years
 df['ageAtScan1_Years'] = np.round(df.ageAtScan1/12, decimals=1)
 
 
-# In[13]:
+# In[15]:
 
 
 # find unique ages
@@ -168,7 +195,7 @@ print('There are', age_unique.shape[0], 'unique age points')
 
 # # Define discovery and replication splits
 
-# In[14]:
+# In[16]:
 
 
 df['disc_repl'] = np.zeros(df.shape[0]).astype(int)
@@ -183,7 +210,7 @@ print('Train:', np.sum(df['disc_repl'] == 0), 'Test:', np.sum(df['disc_repl'] ==
 
 # ## Symptom dimensions
 
-# In[15]:
+# In[17]:
 
 
 # phenos = ['Overall_Psychopathology','Psychosis_Positive','F3_Executive_Efficiency','Overall_Speed']
@@ -191,7 +218,9 @@ phenos = ['Overall_Psychopathology','Psychosis_Positive','Psychosis_NegativeDiso
 print(phenos)
 
 
-# In[16]:
+# #### Check for Nans
+
+# In[18]:
 
 
 for pheno in phenos:
@@ -201,10 +230,11 @@ for pheno in phenos:
         df.loc[df.loc[:,pheno].isna(),pheno] = x
 
 
-# In[17]:
+# #### Normalize
+
+# In[19]:
 
 
-# Normalize
 rank_r = np.zeros(len(phenos),)
 
 for i, pheno in enumerate(phenos):
@@ -219,30 +249,217 @@ for i, pheno in enumerate(phenos):
 print(np.sum(rank_r < 1))
 
 
-# In[18]:
+# In[20]:
 
 
 df.loc[:,phenos].var()
 
 
+# ## Load in structural connectivity matrices
+
+# In[21]:
+
+
+# Missing data file for this subject only for schaefer 200
+if parc_scale == 200:
+    df.drop(labels = (112598, 5161), inplace=True)
+
+
+# In[22]:
+
+
+# subject filter
+subj_filt = np.zeros((df.shape[0],)).astype(bool)
+
+
+# In[23]:
+
+
+A = np.zeros((num_parcels, num_parcels, df.shape[0]))
+for (i, (index, row)) in enumerate(df.iterrows()):
+    file_name = sc_name_tmp.replace("scanid", str(index[1]))
+    file_name = file_name.replace("bblid", str(index[0]))
+    full_path = glob.glob(os.path.join(scdir, file_name))
+    if i == 0: print(full_path)
+    if len(full_path) > 0:
+        mat_contents = sio.loadmat(full_path[0])
+        if edge_weight == 'streamlineCount':
+            a = mat_contents['connectivity']
+        elif edge_weight == 'volNormStreamline':
+            a = mat_contents['volNorm_connectivity']
+        if parc_str == 'lausanne' and parc_variant == 'cortex_only':
+            a = a[parcel_loc == 1,:]
+            a = a[:,parcel_loc == 1]
+        A[:,:,i] = a
+    elif len(full_path) == 0:
+        print(file_name + ': NOT FOUND')
+        subj_filt[i] = True
+        A[:,:,i] = np.full((num_parcels, num_parcels), np.nan)
+
+
+# In[24]:
+
+
+np.sum(subj_filt)
+
+
+# In[25]:
+
+
+if any(subj_filt):
+    A = A[:,:,~subj_filt]
+    df = df.loc[~subj_filt]
+
+
+# ### Check if any subjects have disconnected nodes in A matrix
+
+# In[26]:
+
+
+# subject filter
+subj_filt = np.zeros((df.shape[0],)).astype(bool)
+
+
+# In[27]:
+
+
+for i in range(A.shape[2]):
+    if np.any(np.sum(A[:,:,i], axis = 1) == 0):
+        subj_filt[i] = True
+
+
+# In[28]:
+
+
+np.sum(subj_filt)
+
+
+# In[29]:
+
+
+if any(subj_filt):
+    A = A[:,:,~subj_filt]
+    df = df.loc[~subj_filt]
+print(df.shape, A.shape)
+
+
+# In[30]:
+
+
+np.sum(df['averageManualRating'] == 2)
+
+
+# In[31]:
+
+
+np.sum(df['dti64QAManualScore'] == 2)
+
+
+# ### Get streamline count and network density
+
+# In[32]:
+
+
+A_c = np.zeros((A.shape[2],))
+A_d = np.zeros((A.shape[2],))
+for i in range(A.shape[2]):
+    A_c[i] = np.sum(np.triu(A[:,:,i]))
+    A_d[i] = np.count_nonzero(np.triu(A[:,:,i]))/((A[:,:,i].shape[0]**2-A[:,:,i].shape[0])/2)
+df.loc[:,'streamline_count'] = A_c
+df.loc[:,'network_density'] = A_d
+
+
+# In[33]:
+
+
+df.head()
+
+
 # ## Export
 
-# In[19]:
+# In[34]:
 
 
-header = ['disc_repl', 'squeakycleanExclude','ageAtScan1', 'ageAtScan1_Years','sex','race2','handednessv2', 'averageManualRating', 'dti64QAManualScore', 'restProtocolValidationStatus', 'restExclude',
-          'dti64MeanAbsRMS','dti64MeanRelRMS','dti64MaxAbsRMS','dti64MaxRelRMS','mprage_antsCT_vol_TBV', 'averageManualRating',  'goassessSmryMood', 'goassessSmryMan', 'goassessSmryDep',
-          'goassessSmryEat', 'goassessSmryBul', 'goassessSmryAno', 'goassessSmryAnx', 'goassessSmryGad', 'goassessSmrySep', 'goassessSmryPhb', 'goassessSmrySoc', 'goassessSmryPan',
-          'goassessSmryAgr', 'goassessSmryOcd', 'goassessSmryPtd', 'goassessSmryPsy', 'goassessSmryDel', 'goassessSmryHal', 'goassessSmryHalAv', 'goassessSmryHalAs', 'goassessSmryHalVh',
-          'goassessSmryHalOh', 'goassessSmryHalTh', 'goassessSmryBeh', 'goassessSmryAdd', 'goassessSmryOdd', 'goassessSmryCon', 'goassessSmryPrimePos1', 'goassessSmryPrimeTot',
-          'goassessSmryPrimePos2', 'goassessSmryPsychOverallRtg',
-          'goassessDxpmr4'] + phenos
-df.to_csv(os.path.join(outputdir, 'df.csv'), columns = header)
+header = ['disc_repl', 'squeakycleanExclude', 'ageAtScan1', 'ageAtScan1_Years', 'sex', 'race2', 'handednessv2',
+          'averageManualRating', 'dti64QAManualScore', 'restProtocolValidationStatus', 'restExclude', 'dti64MeanAbsRMS','dti64MeanRelRMS','dti64MaxAbsRMS','dti64MaxRelRMS','mprage_antsCT_vol_TBV',
+          'goassessSmryMood', 'goassessSmryMan', 'goassessSmryDep', 'goassessSmryEat', 'goassessSmryBul', 'goassessSmryAno', 'goassessSmryAnx', 'goassessSmryGad', 'goassessSmrySep',
+          'goassessSmryPhb', 'goassessSmrySoc', 'goassessSmryPan', 'goassessSmryAgr', 'goassessSmryOcd', 'goassessSmryPtd', 'goassessSmryPsy', 'goassessSmryDel', 'goassessSmryHal',
+          'goassessSmryHalAv', 'goassessSmryHalAs', 'goassessSmryHalVh', 'goassessSmryHalOh', 'goassessSmryHalTh', 'goassessSmryBeh', 'goassessSmryAdd', 'goassessSmryOdd', 'goassessSmryCon',
+          'goassessSmryPrimePos1', 'goassessSmryPrimeTot', 'goassessSmryPrimePos2', 'goassessSmryPsychOverallRtg', 'goassessDxpmr4',
+          'streamline_count', 'network_density'] + phenos
+df.to_csv(os.path.join(outputdir, outfile_prefix+'df.csv'), columns = header)
+
+
+# ### Export A matrices
+
+# In[35]:
+
+
+for i in tqdm(np.arange(0,df.shape[0])):
+    label = str(df.iloc[i,:].name[0])+'_'+str(df.iloc[i,:].name[1])+'_'
+    np.save(os.path.join(outputdir, outfile_prefix+label+'A'), A[:,:,i])
+
+
+# In[36]:
+
+
+np.save(os.path.join(outputdir, outfile_prefix+'A'), A)
+
+
+# In[37]:
+
+
+A_disc = A[:,:,df['disc_repl'] == 0]
+A_disc_mean = np.mean(A_disc,2)
+print(np.count_nonzero(np.triu(A_disc_mean))/((A_disc_mean.shape[0]**2-A_disc_mean.shape[0])/2))
+
+print(df.loc[df['disc_repl'] == 0,'network_density'].mean())
+thresh = np.percentile(A_disc_mean,100-(df.loc[df['disc_repl'] == 0,'network_density'].mean()*100))
+print(thresh)
+
+A_disc_mean[A_disc_mean < thresh] = 0
+print(np.count_nonzero(np.triu(A_disc_mean))/((A_disc_mean.shape[0]**2-A_disc_mean.shape[0])/2))
+
+np.save(os.path.join(outputdir, outfile_prefix+'disc_mean_A'), A_disc_mean)
+
+
+# In[38]:
+
+
+A_repl = A[:,:,df['disc_repl'] == 1]
+A_repl_mean = np.mean(A_repl,2)
+print(np.count_nonzero(np.triu(A_repl_mean))/((A_repl_mean.shape[0]**2-A_repl_mean.shape[0])/2))
+
+print(df.loc[df['disc_repl'] == 1,'network_density'].mean())
+thresh = np.percentile(A_repl_mean,100-(df.loc[df['disc_repl'] == 1,'network_density'].mean()*100))
+print(thresh)
+
+A_repl_mean[A_repl_mean < thresh] = 0
+print(np.count_nonzero(np.triu(A_repl_mean))/((A_repl_mean.shape[0]**2-A_repl_mean.shape[0])/2))
+
+np.save(os.path.join(outputdir, outfile_prefix+'repl_mean_A'), A_repl_mean)
+
+
+# ### Export sample for FC gradients
+
+# In[39]:
+
+
+# 4) rs-fMRI exclusion
+df_gradients = df[df['restProtocolValidationStatus'] == 1]
+df_gradients = df[df['restExclude'] == 0]
+print('N after rs-fMRI exclusion:', df_gradients.shape[0])
+
+
+# In[40]:
+
+
+df_gradients.to_csv(os.path.join(outputdir, outfile_prefix+'df_gradients.csv'), columns = header)
 
 
 # # Plots
 
-# In[20]:
+# In[41]:
 
 
 if not os.path.exists(figdir): os.makedirs(figdir)
@@ -255,9 +472,17 @@ labels = ['Discovery', 'Replication']
 # phenos_label = ['Overall psychopathology','Psychosis (positive)','Psychosis (negative)','Anxious-misery','Externalizing','Fear']
 
 
+# ### Network density
+
+# In[42]:
+
+
+sns.displot(df.loc[:,'network_density']*100)
+
+
 # ## Age
 
-# In[21]:
+# In[43]:
 
 
 f, axes = plt.subplots(1,2)
@@ -293,7 +518,7 @@ f.savefig('age_distributions.png', dpi = 150, bbox_inches = 'tight', pad_inches 
 
 # ## Symptom dimensions
 
-# In[22]:
+# In[44]:
 
 
 df_rc = pd.melt(df, id_vars = 'disc_repl', value_vars = phenos)
@@ -307,21 +532,4 @@ ax.set_yticklabels(phenos)
 ax.set_ylabel('Psychopathology phenotypes')
 ax.set_xlabel('Phenotype score')
 f.savefig('symptoms_distributions.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0)
-
-
-# ### Export sample for FC gradients
-
-# In[23]:
-
-
-# 4) rs-fMRI exclusion
-df = df[df['restProtocolValidationStatus'] == 1]
-df = df[df['restExclude'] == 0]
-print('N after rs-fMRI exclusion:', df.shape[0])
-
-
-# In[24]:
-
-
-df.to_csv(os.path.join(outputdir, 'df_gradients.csv'), columns = header)
 
