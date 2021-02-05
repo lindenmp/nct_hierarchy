@@ -13,7 +13,7 @@ from sklearn.cluster import KMeans
 parser = argparse.ArgumentParser()
 parser.add_argument("-subjid", help="label for participant", dest="subjid", default=None, type=str)
 parser.add_argument("-A_file", help="path and file to adjacency matrix", dest="A_file", default=None, type=str)
-parser.add_argument("-T", help="", dest="T", default=None, type=float)
+parser.add_argument("-T", help="", dest="T", default=None, type=int)
 parser.add_argument("-rho", help="", dest="rho", default=None, type=float)
 parser.add_argument("-control", help="", dest="control", default=None, type=int)
 parser.add_argument("-gradients_file", help="", dest="gradients_file", default=None, type=str)
