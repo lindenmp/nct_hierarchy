@@ -15,7 +15,7 @@ parser.add_argument("-subjid", help="label for participant", dest="subjid", defa
 parser.add_argument("-A_file", help="path and file to adjacency matrix", dest="A_file", default=None, type=str)
 parser.add_argument("-T", help="", dest="T", default=None, type=int)
 parser.add_argument("-rho", help="", dest="rho", default=None, type=float)
-parser.add_argument("-control", help="", dest="control", default=None, type=int)
+parser.add_argument("-control", help="", dest="control", default=None, type=str)
 parser.add_argument("-gradients_file", help="", dest="gradients_file", default=None, type=str)
 parser.add_argument("-n_clusters", help="", dest="n_clusters", default=None, type=int)
 parser.add_argument("-outputdir", help="output directory", dest="outputdir", default=None, type=str)
@@ -33,6 +33,48 @@ outputdir = args.outputdir
 
 # --------------------------------------------------------------------------------------------------------------------
 # functions
+def get_B_matrix(x0, xf, control = 'wb'):
+    num_parcels = x0.shape[0]
+    
+    if control == 'wb':
+        B = np.eye(num_parcels)
+    elif control == 'x0xf':
+        B = np.zeros((num_parcels,num_parcels))
+        B[x0,x0] = 1
+        B[xf,xf] = 1
+    elif control == 'x0':
+        B = np.zeros((num_parcels,num_parcels))
+        B[x0,x0] = 1
+    elif control == 'xf':
+        B = np.zeros((num_parcels,num_parcels))
+        B[xf,xf] = 1
+    elif control == 'x0xfwb':
+        B = np.zeros((num_parcels,num_parcels))
+        B[np.eye(num_parcels) == 1] = 5*10e-5
+        B[x0,x0] = 1
+        B[xf,xf] = 1
+    elif control == 'x0wb':
+        B = np.zeros((num_parcels,num_parcels))
+        B[np.eye(num_parcels) == 1] = 5*10e-5
+        B[x0,x0] = 1
+    elif control == 'xfwb':
+        B = np.zeros((num_parcels,num_parcels))
+        B[np.eye(num_parcels) == 1] = 5*10e-5
+        B[xf,xf] = 1
+
+    return B
+
+
+def subsample_state(x,subsample_size):
+    x_tmp = np.zeros(x.size).astype(bool)
+    
+    sample = np.random.choice(np.where(x == True)[0], size = subsample_size, replace = False)
+    
+    x_tmp[sample] = True
+
+    return x_tmp
+
+
 def optimal_energy(A, T, B, x0, xf, rho, S, c = 1):
     # This is a python adaptation of matlab code originally written by Tomaso Menara and Jason Kim
     #% compute optimal inputs/trajectories
@@ -74,7 +116,17 @@ def optimal_energy(A, T, B, x0, xf, rho, S, c = 1):
 
     u, s, vt = svd(A) # singluar value decomposition
     A = A/(c + s[0]) - np.eye(A.shape[0]) # Matrix normalization 
-    
+
+    if type(x0[0]) == numpy.bool_:
+        x0 = x0.astype(float)
+    if x0.ndim == 1:
+        x0 = x0.reshape(-1,1)
+
+    if type(xf[0]) == numpy.bool_:
+        xf = xf.astype(float)
+    if xf.ndim == 1:
+        xf = xf.reshape(-1,1)
+
     Sbar = np.eye(n) - S
     np.shape(np.dot(-B,B.T)/(2*rho))
 
@@ -141,87 +193,40 @@ S = np.eye(num_parcels)
 gradients = np.loadtxt(gradients_file)
 kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(gradients)
 
+unique, counts = np.unique(kmeans.labels_, return_counts = True)
+subsample_size = np.min(counts)
+print(subsample_size)
+
 # --------------------------------------------------------------------------------------------------------------------
-if control == 1:
-    # Single region control
-    E = np.zeros((n_clusters,n_clusters))
-    n_err = np.zeros((n_clusters,n_clusters))
+E = np.zeros((n_clusters, n_clusters))
+n_err = np.zeros((n_clusters, n_clusters))
 
-    for i in np.arange(n_clusters):
-        for j in np.arange(n_clusters):
-            B = np.zeros((num_parcels,num_parcels))
+num_subsamples = 50
 
-            x0 = kmeans.labels_ == i
-            B[x0,x0] = 1
+for i in np.arange(n_clusters):
+    for j in np.arange(n_clusters):
+        
+        x0 = kmeans.labels_ == i
+        xf = kmeans.labels_ == j
 
-            xf = kmeans.labels_ == j
-            B[xf,xf] = 1
+        E_tmp = np.zeros(num_subsamples)
+        n_err_tmp = np.zeros(num_subsamples)
+        
+        np.random.seed(0)
+        for k in np.arange(num_subsamples):
+            x0_tmp = subsample_state(x0, subsample_size)
+            xf_tmp = subsample_state(xf, subsample_size)
 
-            x0 = x0.astype(float)
-            x0 = x0.reshape(-1,1)
-
-            xf = xf.astype(float)
-            xf = xf.reshape(-1,1)
-
-            x, u, n_err[i,j] = optimal_energy(A,T,B,x0,xf,rho,S) # get optimal control energy
+            B = get_B_matrix(x0_tmp, xf_tmp, control = control)
+            
+            x, u, n_err_tmp[k] = optimal_energy(A,T,B,x0_tmp,xf_tmp,rho,S) # get optimal control energy
             u = np.multiply(np.matlib.repmat(B[np.eye(num_parcels) == 1],u.shape[0],1),u) # scale energy
-            E[i,j] = np.sum(np.square(u)) # integrate
+            E_tmp[k] = np.sum(np.square(u))
 
-    np.save(os.path.join(outputdir,subjid+'_control-grad'+str(n_clusters)+'_B-x0xf_T-'+str(T)+'_rho-'+str(rho)+'_E'), E)
-    np.save(os.path.join(outputdir,subjid+'_control-grad'+str(n_clusters)+'_B-x0xf_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
-elif control == 2:
-    # Single region control, non-zero small values outside control set
-    E = np.zeros((n_clusters,n_clusters))
-    n_err = np.zeros((n_clusters,n_clusters))
+        n_err[i,j] = np.nanmean(n_err_tmp)
+        E[i,j] = np.nanmean(E_tmp)
 
-    for i in np.arange(n_clusters):
-        for j in np.arange(n_clusters):
-            B = np.zeros((num_parcels,num_parcels))
-            B[np.eye(num_parcels) == 1] = 5*10e-5
-
-            x0 = kmeans.labels_ == i
-            B[x0,x0] = 1
-
-            xf = kmeans.labels_ == j
-            B[xf,xf] = 1
-
-            x0 = x0.astype(float)
-            x0 = x0.reshape(-1,1)
-
-            xf = xf.astype(float)
-            xf = xf.reshape(-1,1)
-
-            x, u, n_err[i,j] = optimal_energy(A,T,B,x0,xf,rho,S) # get optimal control energy
-            u = np.multiply(np.matlib.repmat(B[np.eye(num_parcels) == 1],u.shape[0],1),u) # scale energy
-            E[i,j] = np.sum(np.square(u)) # integrate
-
-    np.save(os.path.join(outputdir,subjid+'_control-grad'+str(n_clusters)+'_B-x0xfwb_T-'+str(T)+'_rho-'+str(rho)+'_E'), E)
-    np.save(os.path.join(outputdir,subjid+'_control-grad'+str(n_clusters)+'_B-x0xfwb_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
-elif control == 3:
-    # Whole brain control
-    E = np.zeros((n_clusters,n_clusters))
-    n_err = np.zeros((n_clusters,n_clusters))
-    B = np.eye(num_parcels)
-
-    for i in np.arange(n_clusters):
-        for j in np.arange(n_clusters):
-            x0 = kmeans.labels_ == i
-            B[x0,x0] = 1
-
-            xf = kmeans.labels_ == j
-            B[xf,xf] = 1
-
-            x0 = x0.astype(float)
-            x0 = x0.reshape(-1,1)
-
-            xf = xf.astype(float)
-            xf = xf.reshape(-1,1)
-     
-            x, u, n_err[i,j] = optimal_energy(A,T,B,x0,xf,rho,S) # get optimal control energy
-            E[i,j] = np.sum(np.square(u)) # integrate
-
-    np.save(os.path.join(outputdir,subjid+'_control-grad'+str(n_clusters)+'_B-wb_T-'+str(T)+'_rho-'+str(rho)+'_E'), E)
-    np.save(os.path.join(outputdir,subjid+'_control-grad'+str(n_clusters)+'_B-wb_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
-# --------------------------------------------------------------------------------------------------------------------
+np.save(os.path.join(outputdir,subjid+'_control-grad'+str(n_clusters)+'_B-'+control+'_T-'+str(T)+'_rho-'+str(rho)+'_E'), E)
+np.save(os.path.join(outputdir,subjid+'_control-grad'+str(n_clusters)+'_B-'+control+'_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
 
 print('Finished!')
