@@ -27,6 +27,38 @@ outputdir = args.outputdir
 
 # --------------------------------------------------------------------------------------------------------------------
 # functions
+def get_B_matrix(x0, xf, control = 'wb'):
+    num_parcels = x0.shape[0]
+    
+    if control == 'wb':
+        B = np.eye(num_parcels)
+    elif control == 'x0xf':
+        B = np.zeros((num_parcels,num_parcels))
+        B[x0,x0] = 1
+        B[xf,xf] = 1
+    elif control == 'x0':
+        B = np.zeros((num_parcels,num_parcels))
+        B[x0,x0] = 1
+    elif control == 'xf':
+        B = np.zeros((num_parcels,num_parcels))
+        B[xf,xf] = 1
+    elif control == 'x0xfwb':
+        B = np.zeros((num_parcels,num_parcels))
+        B[np.eye(num_parcels) == 1] = 5*10e-5
+        B[x0,x0] = 1
+        B[xf,xf] = 1
+    elif control == 'x0wb':
+        B = np.zeros((num_parcels,num_parcels))
+        B[np.eye(num_parcels) == 1] = 5*10e-5
+        B[x0,x0] = 1
+    elif control == 'xfwb':
+        B = np.zeros((num_parcels,num_parcels))
+        B[np.eye(num_parcels) == 1] = 5*10e-5
+        B[xf,xf] = 1
+
+    return B
+
+
 def optimal_energy(A, T, B, x0, xf, rho, S, c = 1):
     # This is a python adaptation of matlab code originally written by Tomaso Menara and Jason Kim
     #% compute optimal inputs/trajectories
@@ -68,7 +100,17 @@ def optimal_energy(A, T, B, x0, xf, rho, S, c = 1):
 
     u, s, vt = svd(A) # singluar value decomposition
     A = A/(c + s[0]) - np.eye(A.shape[0]) # Matrix normalization 
-    
+
+    if type(x0[0]) == numpy.bool_:
+        x0 = x0.astype(float)
+    if x0.ndim == 1:
+        x0 = x0.reshape(-1,1)
+
+    if type(xf[0]) == numpy.bool_:
+        xf = xf.astype(float)
+    if xf.ndim == 1:
+        xf = xf.reshape(-1,1)
+
     Sbar = np.eye(n) - S
     np.shape(np.dot(-B,B.T)/(2*rho))
 
@@ -133,81 +175,27 @@ num_parcels = A.shape[0]
 S = np.eye(num_parcels)
 
 # --------------------------------------------------------------------------------------------------------------------
-if control == 1:
-    # Single region control
-    E = np.zeros((num_parcels,num_parcels))
-    n_err = np.zeros((num_parcels,num_parcels))
+# Single region control
+E = np.zeros((num_parcels,num_parcels))
+n_err = np.zeros((num_parcels,num_parcels))
 
-    for i in np.arange(num_parcels):
-        for j in np.arange(num_parcels):
+for i in np.arange(num_parcels):
+    for j in np.arange(num_parcels):
 
-            x0 = np.zeros(num_parcels)
-            x0[i] = 1
-            x0 = x0.reshape(-1,1)
+        x0 = np.zeros(num_parcels).astype(bool)
+        x0[i] = 1
 
-            xf = np.zeros(num_parcels)
-            xf[j] = 1
-            xf = xf.reshape(-1,1)
+        xf = np.zeros(num_parcels).astype(bool)
+        xf[j] = 1
 
-            B = np.zeros((num_parcels,num_parcels))
-            B[i,i] = 1
-            B[j,j] = 1
-     
-            x, u, n_err[i,j] = optimal_energy(A,T,B,x0,xf,rho,S) # get optimal control energy
-            u = np.multiply(np.matlib.repmat(B[np.eye(num_parcels) == 1],u.shape[0],1),u) # scale energy
-            E[i,j] = np.sum(np.square(u)) # integrate
+        B = get_B_matrix(x0, xf, control = control)
+ 
+        x, u, n_err[i,j] = optimal_energy(A,T,B,x0,xf,rho,S) # get optimal control energy
+        u = np.multiply(np.matlib.repmat(B[np.eye(num_parcels) == 1],u.shape[0],1),u) # scale energy
+        E[i,j] = np.sum(np.square(u)) # integrate
 
-    np.save(os.path.join(outputdir,subjid+'_control-sr_B-x0xf_T-'+str(T)+'_rho-'+str(rho)+'_E'), E)
-    np.save(os.path.join(outputdir,subjid+'_control-sr_B-x0xf_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
-elif control == 2:
-    # Single region control, non-zero small values outside control set
-    E = np.zeros((num_parcels,num_parcels))
-    n_err = np.zeros((num_parcels,num_parcels))
+np.save(os.path.join(outputdir,subjid+'_control-sr_B-'+control+'_T-'+str(T)+'_rho-'+str(rho)+'_E'), E)
+np.save(os.path.join(outputdir,subjid+'_control-st_B-'+control+'_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
 
-    for i in np.arange(num_parcels):
-        for j in np.arange(num_parcels):
-
-            x0 = np.zeros(num_parcels)
-            x0[i] = 1
-            x0 = x0.reshape(-1,1)
-
-            xf = np.zeros(num_parcels)
-            xf[j] = 1
-            xf = xf.reshape(-1,1)
-
-            B = np.zeros((num_parcels,num_parcels))
-            B[np.eye(num_parcels) == 1] = 5*10e-5
-            B[i,i] = 1
-            B[j,j] = 1
-     
-            x, u, n_err[i,j] = optimal_energy(A,T,B,x0,xf,rho,S) # get optimal control energy
-            u = np.multiply(np.matlib.repmat(B[np.eye(num_parcels) == 1],u.shape[0],1),u) # scale energy
-            E[i,j] = np.sum(np.square(u)) # integrate
-
-    np.save(os.path.join(outputdir,subjid+'_control-sr_B-x0xfwb_T-'+str(T)+'_rho-'+str(rho)+'_E'), E)
-    np.save(os.path.join(outputdir,subjid+'_control-sr_B-x0xfwb_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
-elif control == 3:
-    # Whole brain control
-    E = np.zeros((num_parcels,num_parcels))
-    n_err = np.zeros((num_parcels,num_parcels))
-    B = np.eye(num_parcels)
-
-    for i in np.arange(num_parcels):
-        for j in np.arange(num_parcels):
-
-            x0 = np.zeros(num_parcels)
-            x0[i] = 1
-            x0 = x0.reshape(-1,1)
-
-            xf = np.zeros(num_parcels)
-            xf[j] = 1
-            xf = xf.reshape(-1,1)
-     
-            x, u, n_err[i,j] = optimal_energy(A,T,B,x0,xf,rho,S) # get optimal control energy
-            E[i,j] = np.sum(np.square(u)) # integrate
-
-    np.save(os.path.join(outputdir,subjid+'_control-sr_B-wb_T-'+str(T)+'_rho-'+str(rho)+'_E'), E)
-    np.save(os.path.join(outputdir,subjid+'_control-sr_B-wb_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
-# --------------------------------------------------------------------------------------------------------------------
 
 print('Finished!')
