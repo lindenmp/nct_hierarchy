@@ -13,7 +13,7 @@ parser.add_argument("-subjid", help="label for participant", dest="subjid", defa
 parser.add_argument("-A_file", help="path and file to adjacency matrix", dest="A_file", default=None, type=str)
 parser.add_argument("-T", help="", dest="T", default=None, type=float)
 parser.add_argument("-rho", help="", dest="rho", default=None, type=float)
-parser.add_argument("-control", help="", dest="control", default=None, type=int)
+parser.add_argument("-control", help="", dest="control", default=None, type=str)
 parser.add_argument("-outputdir", help="output directory", dest="outputdir", default=None, type=str)
 
 args = parser.parse_args()
