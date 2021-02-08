@@ -234,7 +234,7 @@ def node_strength(A):
     return s
 
 
-def minimum_energy(A, T, B, x0, xf):
+def minimum_energy(A, T, B, x0, xf, c = 1):
     #  Computes minimum control energy for state transition.
     #  A: System adjacency matrix:         N x N
     #  B: Control input matrix:            N x k
@@ -252,7 +252,7 @@ def minimum_energy(A, T, B, x0, xf):
     n = A.shape[0] # Number of nodes
     
     u, s, vt = svd(A) # singluar value decomposition
-    A = A/(1 + s[0]) # Matrix normalization 
+    A = A/(c + s[0]) - np.eye(A.shape[0]) # Matrix normalization 
 
     # Compute Matrix Exponential
     AT = np.concatenate((np.concatenate((A, -.5*(B.dot(B.T))), axis=1), 
@@ -291,7 +291,7 @@ def minimum_energy(A, T, B, x0, xf):
     return x, u, n_err
 
 
-def optimal_energy(A, T, B, x0, xf, rho, S):
+def optimal_energy(A, T, B, x0, xf, rho, S, c = 1):
     # This is a python adaptation of matlab code originally written by Tomaso Menara and Jason Kim
     #% compute optimal inputs/trajectories
     #% Fabio, Tommy September 2017
@@ -331,8 +331,7 @@ def optimal_energy(A, T, B, x0, xf, rho, S):
     n = A.shape[0] # Number of nodes
 
     u, s, vt = svd(A) # singluar value decomposition
-    A = A/(1 + s[0]) # Matrix normalization 
-    
+    A = A/(c + s[0]) - np.eye(A.shape[0]) # Matrix normalization 
     Sbar = np.eye(n) - S
     np.shape(np.dot(-B,B.T)/(2*rho))
 
