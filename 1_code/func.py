@@ -423,45 +423,30 @@ def sample_gradient(gradient_2, gradient_1, seed = 'vis', num_step = 5, num_n = 
     
     return gradient_masks, dist_h
 
-def get_pdist(coords,gradient_masks):
+
+def get_pdist(coords,labels):
+    unique, counts = np.unique(labels, return_counts = True)
+    n_clusters = len(unique)
     
-    num_step = gradient_masks.shape[1]
+    dist = np.zeros((n_clusters,n_clusters))
     
-    target_state = coords[gradient_masks[:,-1],:]
-    
-    dist = []
-    for i in np.arange(0,num_step):
-        initial_state = coords[gradient_masks[:,i],:]
+    for i in np.arange(n_clusters):
+        for j in np.arange(n_clusters):
+            x0 = labels == i
+            xf = labels == j
         
-        tmp = []
-        for j in np.arange(target_state.shape[0]):
-            for k in np.arange(initial_state.shape[0]):
-                d = (target_state[j,:] - initial_state[k,:])**2
-                d = np.sum(d)
-                d = np.sqrt(d)
-                tmp.append(d)
-        
-        dist.append(np.mean(tmp))
-
-    # distance to single reference region
-    # ref_region = centroids.iloc[gradient_1.argmax()].values
-    # xy = centroids.iloc[gradient_masks[:,i]].values
-
-    # dist = (ref_region - xy)**2
-    # dist = np.sum(dist, axis = 1)
-    # dist = np.sqrt(dist)  
-
-    # np.mean(dist)
-
-    # distance between single arbirtary pairs
-    # ref_region = centroids.iloc[gradient_masks[:,-1]].values
-    # xy = centroids.iloc[gradient_masks[:,i]].values
-
-    # dist = (ref_region - xy)**2
-    # dist = np.sum(dist, axis = 1)
-    # dist = np.sqrt(dist)  
-
-    # np.mean(dist)
+            x0_coords = coords[x0,:]
+            xf_coords = coords[xf,:]
+            
+            tmp = []
+            for r1 in np.arange(x0_coords.shape[0]):
+                for r2 in np.arange(xf_coords.shape[0]):
+                    d = (x0_coords[r1,:] - xf_coords[r2,:])**2
+                    d = np.sum(d)
+                    d = np.sqrt(d)
+                    tmp.append(d)
+            
+            dist[i,j] = np.mean(tmp)
     
     return dist
 
