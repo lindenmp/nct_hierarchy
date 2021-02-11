@@ -11,7 +11,7 @@ import numpy.matlib
 parser = argparse.ArgumentParser()
 parser.add_argument("-subjid", help="label for participant", dest="subjid", default=None, type=str)
 parser.add_argument("-A_file", help="path and file to adjacency matrix", dest="A_file", default=None, type=str)
-parser.add_argument("-T", help="", dest="T", default=None, type=float)
+parser.add_argument("-T", help="", dest="T", default=None, type=int)
 parser.add_argument("-rho", help="", dest="rho", default=None, type=float)
 parser.add_argument("-control", help="", dest="control", default=None, type=str)
 parser.add_argument("-outputdir", help="output directory", dest="outputdir", default=None, type=str)
@@ -195,7 +195,7 @@ for i in np.arange(num_parcels):
         E[i,j] = np.sum(np.square(u)) # integrate
 
 np.save(os.path.join(outputdir,subjid+'_control-sr_B-'+control+'_T-'+str(T)+'_rho-'+str(rho)+'_E'), E)
-np.save(os.path.join(outputdir,subjid+'_control-st_B-'+control+'_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
+np.save(os.path.join(outputdir,subjid+'_control-sr_B-'+control+'_T-'+str(T)+'_rho-'+str(rho)+'_n_err'), n_err)
 
 
 print('Finished!')
