@@ -332,6 +332,17 @@ def optimal_energy(A, T, B, x0, xf, rho, S, c = 1):
 
     u, s, vt = svd(A) # singluar value decomposition
     A = A/(c + s[0]) - np.eye(A.shape[0]) # Matrix normalization 
+
+    if type(x0[0]) == np.bool_:
+        x0 = x0.astype(float)
+    if x0.ndim == 1:
+        x0 = x0.reshape(-1,1)
+
+    if type(xf[0]) == np.bool_:
+        xf = xf.astype(float)
+    if xf.ndim == 1:
+        xf = xf.reshape(-1,1)
+
     Sbar = np.eye(n) - S
     np.shape(np.dot(-B,B.T)/(2*rho))
 
