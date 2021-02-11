@@ -434,7 +434,7 @@ def sample_gradient(gradient_2, gradient_1, seed = 'vis', num_step = 5, num_n = 
     return gradient_masks, dist_h
 
 
-def get_pdist(coords,labels):
+def get_pdist(coords, labels, method = 'mean'):
     unique, counts = np.unique(labels, return_counts = True)
     n_clusters = len(unique)
     
@@ -456,7 +456,12 @@ def get_pdist(coords,labels):
                     d = np.sqrt(d)
                     tmp.append(d)
             
-            dist[i,j] = np.mean(tmp)
+            if method == 'mean':
+                dist[i,j] = np.mean(tmp)
+            elif method == 'min':
+                dist[i,j] = np.min(tmp)
+            elif method == 'median':
+                dist[i,j] = np.median(tmp)
     
     return dist
 
