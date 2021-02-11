@@ -484,3 +484,34 @@ def get_equidistant_state(x0, xf, dist_mni, centroids, num_n = 10):
 
     return np.array(centroids.iloc[mask,:].iloc[idx].index)-1 # return the indices of those regions
 
+
+def get_B_matrix(x0, xf, control = 'wb'):
+    num_parcels = x0.shape[0]
+    
+    if control == 'wb':
+        B = np.eye(num_parcels)
+    elif control == 'x0xf':
+        B = np.zeros((num_parcels,num_parcels))
+        B[x0,x0] = 1
+        B[xf,xf] = 1
+    elif control == 'x0':
+        B = np.zeros((num_parcels,num_parcels))
+        B[x0,x0] = 1
+    elif control == 'xf':
+        B = np.zeros((num_parcels,num_parcels))
+        B[xf,xf] = 1
+    elif control == 'x0xfwb':
+        B = np.zeros((num_parcels,num_parcels))
+        B[np.eye(num_parcels) == 1] = 5*10e-5
+        B[x0,x0] = 1
+        B[xf,xf] = 1
+    elif control == 'x0wb':
+        B = np.zeros((num_parcels,num_parcels))
+        B[np.eye(num_parcels) == 1] = 5*10e-5
+        B[x0,x0] = 1
+    elif control == 'xfwb':
+        B = np.zeros((num_parcels,num_parcels))
+        B[np.eye(num_parcels) == 1] = 5*10e-5
+        B[xf,xf] = 1
+
+    return B
