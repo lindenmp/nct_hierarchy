@@ -23,6 +23,8 @@ import math
 from scipy.linalg import svd, schur
 from statsmodels.stats import multitest
 from scipy.spatial.distance import pdist, squareform
+from bct.utils import weight_conversion
+from bct.algorithms.distance import distance_wei, distance_wei_floyd, retrieve_shortest_path
 
 def set_proj_env():
 
@@ -515,3 +517,74 @@ def get_B_matrix(x0, xf, control = 'wb'):
         B[xf,xf] = 1
 
     return B
+
+
+def subsample_state(x,subsample_size):
+    x_tmp = np.zeros(x.size).astype(bool)
+    
+    sample = np.random.choice(np.where(x == True)[0], size = subsample_size, replace = False)
+    
+    x_tmp[sample] = True
+
+    return x_tmp
+
+
+def matrix_to_states(x, cluster_labels):
+    
+    unique, counts = np.unique(cluster_labels, return_counts = True)
+    n_clusters = len(unique)
+    
+    x_out = np.zeros((n_clusters,n_clusters))
+    for i in np.arange(n_clusters):
+        for j in np.arange(n_clusters):
+            x_out[i,j] = x[cluster_labels == i,:].mean(axis = 0)[cluster_labels == j].mean()
+            
+    return x_out
+
+
+def get_tm_convergence(shortest_path, gradients, return_abs = False):
+
+    tm_convergence = np.diff(gradients[shortest_path,:], axis = 0)
+
+    if return_abs == True:
+         tm_convergence = np.abs(tm_convergence)
+    
+    return np.mean(tm_convergence, axis = 0), np.var(tm_convergence, axis = 0)
+
+
+def get_adj_stats(A, gradients, cluster_labels, return_abs = False):
+
+    num_parcels = A.shape[0]
+    
+    # convert to distance matrix
+    D, hops, Pmat = distance_wei_floyd(A, transform = 'inv')
+    
+    # downsample distance matrix to cluster-based states
+    D_mean = matrix_to_states(D, cluster_labels)
+    hops_mean = matrix_to_states(hops, cluster_labels)
+    
+    # get transmodal and sensorimotor-visual traversal variance
+    tm_tmp = np.zeros((num_parcels,num_parcels))
+    tm_var_tmp = np.zeros((num_parcels,num_parcels))
+    smv_tmp = np.zeros((num_parcels,num_parcels))
+    smv_var_tmp = np.zeros((num_parcels,num_parcels))
+
+    for i in np.arange(num_parcels):
+        for j in np.arange(num_parcels):
+            shortest_path = retrieve_shortest_path(i,j,hops,Pmat)
+            if len(shortest_path) != 0:
+                shortest_path = shortest_path.flatten()
+                x_mean, x_var = get_tm_convergence(shortest_path, gradients, return_abs = return_abs)
+                tm_tmp[i,j] = x_mean[0]
+                tm_var_tmp[i,j] = x_var[0]
+                smv_tmp[i,j] = x_mean[1]
+                smv_var_tmp[i,j] = x_var[1]
+
+    # downsample transmodal convergence to cluster-based states
+    tm_con = matrix_to_states(tm_tmp, cluster_labels)
+    tm_var = matrix_to_states(tm_var_tmp, cluster_labels)
+    smv_con = matrix_to_states(smv_tmp, cluster_labels)
+    smv_var = matrix_to_states(smv_var_tmp, cluster_labels)
+            
+    return D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var
+
