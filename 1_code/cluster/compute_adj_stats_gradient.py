@@ -44,15 +44,15 @@ def matrix_to_states(x, cluster_labels):
 
 def get_tm_convergence(shortest_path, gradients, return_abs = False):
 
-    tm_convergence = np.diff(gradients[shortest_path,0])
+    tm_convergence = np.diff(gradients[shortest_path,:], axis = 0)
 
-    if return_abs:
+    if return_abs == True:
          tm_convergence = np.abs(tm_convergence)
     
-    return np.mean(tm_convergence), np.var(tm_convergence)
+    return np.mean(tm_convergence, axis = 0), np.var(tm_convergence, axis = 0)
 
 
-def get_adj_stats(A, gradients, cluster_labels):
+def get_adj_stats(A, gradients, cluster_labels, return_abs = False):
 
     num_parcels = A.shape[0]
     
@@ -63,25 +63,30 @@ def get_adj_stats(A, gradients, cluster_labels):
     D_mean = matrix_to_states(D, cluster_labels)
     hops_mean = matrix_to_states(hops, cluster_labels)
     
-    # get transmodal convergence
+    # get transmodal and sensorimotor-visual traversal variance
     tm_tmp = np.zeros((num_parcels,num_parcels))
     tm_var_tmp = np.zeros((num_parcels,num_parcels))
+    smv_tmp = np.zeros((num_parcels,num_parcels))
+    smv_var_tmp = np.zeros((num_parcels,num_parcels))
 
     for i in np.arange(num_parcels):
         for j in np.arange(num_parcels):
-            if j > i:
-                shortest_path = retrieve_shortest_path(i,j,hops,Pmat)
-                if len(shortest_path) != 0:
-                    shortest_path = shortest_path.flatten()
-                    tm_tmp[i,j], tm_var_tmp[i,j] = get_tm_convergence(shortest_path, gradients, return_abs = False)
-    tm_tmp = tm_tmp + tm_tmp.transpose()*-1
-    tm_var_tmp = tm_var_tmp + tm_var_tmp.transpose()
+            shortest_path = retrieve_shortest_path(i,j,hops,Pmat)
+            if len(shortest_path) != 0:
+                shortest_path = shortest_path.flatten()
+                x_mean, x_var = get_tm_convergence(shortest_path, gradients, return_abs = return_abs)
+                tm_tmp[i,j] = x_mean[0]
+                tm_var_tmp[i,j] = x_var[0]
+                smv_tmp[i,j] = x_mean[1]
+                smv_var_tmp[i,j] = x_var[1]
 
     # downsample transmodal convergence to cluster-based states
     tm_con = matrix_to_states(tm_tmp, cluster_labels)
     tm_var = matrix_to_states(tm_var_tmp, cluster_labels)
+    smv_con = matrix_to_states(smv_tmp, cluster_labels)
+    smv_var = matrix_to_states(smv_var_tmp, cluster_labels)
             
-    return D_mean, hops_mean, tm_con, tm_var
+    return D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -95,14 +100,22 @@ gradients = np.loadtxt(gradients_file)
 kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(gradients)
 
 # --------------------------------------------------------------------------------------------------------------------
-D_mean, hops_mean, tm_con, tm_var = get_adj_stats(A, gradients, kmeans.labels_)
-
 adj_stats = {}
+
+D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var = get_adj_stats(A, gradients, kmeans.labels_, return_abs = False)
 adj_stats['D_mean'] = D_mean
 adj_stats['hops_mean'] = hops_mean
 adj_stats['tm_con'] = tm_con
 adj_stats['tm_var'] = tm_var
+adj_stats['smv_con'] = smv_con
+adj_stats['smv_var'] = smv_var
 
-np.save(os.path.join(outputdir,subjid+'_adj_stats'), adj_stats)
+D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var = get_adj_stats(A, gradients, kmeans.labels_, return_abs = True)
+adj_stats['tm_con_abs'] = tm_con
+adj_stats['tm_var_abs'] = tm_var
+adj_stats['smv_con_abs'] = smv_con
+adj_stats['smv_var_abs'] = smv_var
+
+np.save(os.path.join(outputdir,subjid+'_grad'+str(n_clusters)+'_adj_stats'), adj_stats)
 
 print('Finished!')
