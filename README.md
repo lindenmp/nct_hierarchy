@@ -27,7 +27,7 @@
     pip install ipython pandas numpy
 
     # Statistics
-    pip install scipy statsmodels sklearn
+    pip install scipy statsmodels sklearn bctpy
 
     cd /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/
     conda env export > environment.yml
