@@ -44,9 +44,9 @@ from func import set_proj_env
 # In[4]:
 
 
-parc_str = 'schaefer'
-parc_scale = 200
-edge_weight = 'streamlineCount'
+parc_str = 'schaefer' # 'schaefer' 'lausanne' 'glasser'
+parc_scale = 200 # 200/400 | 125/250 | 360
+edge_weight = 'streamlineCount' # 'streamlineCount' 'volNormStreamline'
 set_proj_env()
 
 
@@ -54,7 +54,7 @@ set_proj_env()
 
 
 # output file prefix
-outfile_prefix = parc_str+'_'+str(parc_scale)+'_'
+outfile_prefix = parc_str+'_'+str(parc_scale)+'_'+edge_weight+'_'
 outfile_prefix
 
 
@@ -67,14 +67,17 @@ if parc_str == 'schaefer':
     parcel_names = np.genfromtxt(os.path.join(os.environ['PROJDIR'], 'figs_support/labels/schaefer' + str(parc_scale) + 'NodeNames.txt'), dtype='str')
     num_parcels = parcel_names.shape[0]
     
-    scdir = os.path.join(os.environ['DERIVSDIR'], 'processedData/diffusion/deterministic_20171118'); os.environ['SCDIR'] = scdir
-    sc_name_tmp = 'bblid/*xscanid/tractography/connectivity/bblid_*xscanid_SchaeferPNC_' + str(parc_scale) + '_dti_' + edge_weight + '_connectivity.mat'
-
     rstsdir = os.path.join(os.environ['DERIVSDIR'], 'processedData/restbold/restbold_201607151621')
     if parc_scale == 200:
         rsts_name_tmp = 'bblid/*xscanid/net/Schaefer' + str(parc_scale) + 'PNC/bblid_*xscanid_Schaefer' + str(parc_scale) + 'PNC_ts.1D'
     elif parc_scale == 400:
         rsts_name_tmp = 'bblid/*xscanid/net/SchaeferPNC/bblid_*xscanid_SchaeferPNC_ts.1D'
+elif parc_str == 'glasser':
+    parcel_names = np.genfromtxt(os.path.join(os.environ['PROJDIR'], 'figs_support/labels/glasser' + str(parc_scale) + 'NodeNames.txt'), dtype='str')
+    num_parcels = parcel_names.shape[0]
+
+    rstsdir = os.path.join(os.environ['DERIVSDIR'], 'processedData/restbold/restbold_201607151621')
+    rsts_name_tmp = 'bblid/*xscanid/net/GlasserPNC/bblid_*xscanid_GlasserPNC_ts.1D'
 
 
 # ### Setup directory variables
@@ -89,7 +92,7 @@ if not os.path.exists(os.environ['PIPELINEDIR']): os.makedirs(os.environ['PIPELI
 # In[8]:
 
 
-outputdir = os.path.join(os.environ['PIPELINEDIR'], '2_compute_gradient', 'out')
+outputdir = os.path.join(os.environ['PIPELINEDIR'], '1_compute_gradient', 'out')
 print(outputdir)
 if not os.path.exists(outputdir): os.makedirs(outputdir)
 
@@ -108,7 +111,7 @@ if not os.path.exists(figdir): os.makedirs(figdir)
 
 
 # Load data
-df = pd.read_csv(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out', 'df_gradients.csv'))
+df = pd.read_csv(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out', outfile_prefix+'df_gradients.csv'))
 df.set_index(['bblid', 'scanid'], inplace = True)
 # retain discovery sample only
 # df = df.loc[df['disc_repl'] == 0,:]
@@ -185,7 +188,6 @@ np.sum(subj_filt)
 
 if any(subj_filt):
     df = df.loc[~subj_filt]
-    roi_ts = roi_ts[:,:,~subj_filt]
     fc = fc[:,:,~subj_filt]
 
 
@@ -197,10 +199,13 @@ if any(subj_filt):
 # Generate template
 pnc_conn_mat = np.nanmean(fc, axis = 2)
 pnc_conn_mat[np.eye(num_parcels, dtype = bool)] = 0
-pnc_conn_mat = dominant_set(pnc_conn_mat, 0.10, as_sparse = False)
+# pnc_conn_mat = dominant_set(pnc_conn_mat, 0.10, as_sparse = False)
 
+gm_template = GradientMaps(n_components = 2, approach='dm', kernel=None, random_state = 0)
 # gm_template = GradientMaps(n_components = 2, approach='dm', kernel='normalized_angle', random_state = 0)
-gm_template = GradientMaps(n_components = 2, random_state = 0)
+# gm_template = GradientMaps(n_components = 2, approach='dm', kernel='pearson', random_state = 0)
+# gm_template = GradientMaps(n_components = 2, approach='dm', kernel='cosine', random_state = 0)
+# gm_template = GradientMaps(n_components = 2, approach='dm', kernel='spearman', random_state = 0)
 gm_template.fit(pnc_conn_mat)
 
 if parc_scale == 200:
@@ -210,6 +215,10 @@ if parc_scale == 200:
 elif parc_scale == 400:
     gradients = np.zeros(gm_template.gradients_.shape)
     gradients[:,0], gradients[:,1] = gm_template.gradients_[:,1] * -1, gm_template.gradients_[:,0]
+else:
+    gm_template.gradients_ = gm_template.gradients_ * -1
+    gradients = np.zeros(gm_template.gradients_.shape)
+    gradients[:,0], gradients[:,1] = gm_template.gradients_[:,1], gm_template.gradients_[:,0]
 
 np.savetxt(os.path.join(outputdir,outfile_prefix+'pnc_grads_template.txt'),gradients)
 
@@ -248,9 +257,13 @@ f.savefig(outfile_prefix+'gradient_eigenvals.png', dpi = 300, bbox_inches = 'tig
 from func import roi_to_vtx
 from nilearn import datasets
 from nilearn import plotting
-atlas = datasets.fetch_atlas_schaefer_2018(n_rois=parc_scale, yeo_networks=17, resolution_mm=2)
-parcellation = atlas['maps']
-fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
+# if parc_str == 'schaefer':
+#     atlas = datasets.fetch_atlas_schaefer_2018(n_rois=parc_scale, yeo_networks=17, resolution_mm=2)
+# parcellation = atlas['maps']
+if parc_str == 'schaefer':
+    fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
+elif parc_str == 'glasser':
+    fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage')
 
 
 # In[23]:
@@ -260,7 +273,11 @@ for g in np.arange(0,2):
     f, ax = plt.subplots(1, 4, figsize=(20, 5), subplot_kw={'projection': '3d'})
     plt.subplots_adjust(wspace=0, hspace=0)
 
-    parc_file = os.path.join('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/lh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
+    if parc_str == 'schaefer':
+        parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/lh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
+    elif parc_str == 'glasser':
+        parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage/label/lh.HCP-MMP1.annot')
+    
     labels, ctab, surf_names = nib.freesurfer.read_annot(parc_file)
     vtx_data, plot_min, plot_max = roi_to_vtx(gradients[:,g], parcel_names, parc_file)
     vtx_data = vtx_data.astype(float)
@@ -274,7 +291,11 @@ for g in np.arange(0,2):
                            bg_map=fsaverage['sulc_left'], bg_on_data=False, axes=ax[1],
                            darkness=.5, cmap='viridis');
 
-    parc_file = os.path.join('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/rh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
+    if parc_str == 'schaefer':
+        parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/rh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
+    elif parc_str == 'glasser':
+        parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage/label/rh.HCP-MMP1.annot')
+
     labels, ctab, surf_names = nib.freesurfer.read_annot(parc_file)
     vtx_data, plot_min, plot_max = roi_to_vtx(gradients[:,g], parcel_names, parc_file)
     vtx_data = vtx_data.astype(float)
@@ -292,11 +313,113 @@ for g in np.arange(0,2):
     f.savefig(outfile_prefix+'gradient_'+str(g)+'.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0)
 
 
-# In[24]:
+# # Setup gradient sampling for NCT
 
+# In[30]:
+
+
+from sklearn.cluster import KMeans
+
+n_clusters=int(num_parcels*.05)
+print(n_clusters)
+
+kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(gradients)
+colormask = kmeans.labels_
+
+unique, counts = np.unique(kmeans.labels_, return_counts = True)
+print(counts)
 
 f, ax = plt.subplots(figsize=(5, 5))
-ax.scatter(gradients[:,1], gradients[:,0])
+ax.scatter(gradients[:,1], gradients[:,0], c = colormask, cmap= 'Set3')
+ax.scatter(kmeans.cluster_centers_[:,1], kmeans.cluster_centers_[:,0], marker = 'x', c = 'k', s = 100)
 ax.set_xlabel('Gradient 2')
 ax.set_ylabel('Gradient 1')
+
+
+# In[25]:
+
+
+# from sklearn.neighbors import NearestNeighbors
+
+# nbrs = NearestNeighbors(n_neighbors=5, algorithm='kd_tree').fit(gradients)
+# distances, indices = nbrs.kneighbors(gradients)
+
+# f, ax = plt.subplots(1, 5, figsize=(25, 5))
+# for i in np.arange(5):
+#     colormask = np.zeros(num_parcels)
+#     colormask[indices[i,:]] = 1
+
+#     ax[i].scatter(gradients[:,1], gradients[:,0], c = colormask, cmap= 'Set3')
+#     ax[i].set_xlabel('Gradient 2')
+#     ax[i].set_ylabel('Gradient 1')
+
+
+# In[26]:
+
+
+# gradient_1 = gradients[:,0]
+# gradient_2 = gradients[:,1]
+
+# gradient_1_sorted = np.sort(gradient_1)
+# gradient_2_sorted = np.sort(gradient_2)
+
+
+# In[27]:
+
+
+# bin_perc = .05
+# bin_size = int(num_parcels*bin_perc)
+# print(bin_size)
+# bin_start = np.arange(0,num_parcels,bin_size)
+
+
+# In[28]:
+
+
+# mask = gradient_1 >= gradient_1_sorted[bin_start[-1]]
+# i=0
+# # mask = (gradient_1 >= gradient_1_sorted[bin_start[i]]) & (gradient_1 < gradient_1_sorted[bin_start[i+1]])
+# # mask = gradient_2 >= gradient_2_sorted[bin_start[-1]]
+
+# f, ax = plt.subplots(1, 4, figsize=(20, 5), subplot_kw={'projection': '3d'})
+# plt.subplots_adjust(wspace=0, hspace=0)
+
+# if parc_str == 'schaefer':
+#     parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/lh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
+# elif parc_str == 'glasser':
+#     parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage/label/lh.HCP-MMP1.annot')
+
+# labels, ctab, surf_names = nib.freesurfer.read_annot(parc_file)
+# vtx_data, plot_min, plot_max = roi_to_vtx(mask, parcel_names, parc_file)
+# vtx_data = vtx_data.astype(float)
+# plotting.plot_surf_roi(fsaverage['infl_left'], roi_map=vtx_data,
+#                        hemi='left', view='lateral', vmin=plot_min, vmax=plot_max,
+#                        bg_map=fsaverage['sulc_left'], bg_on_data=False, axes=ax[0],
+#                        darkness=.5, cmap='viridis');
+
+# plotting.plot_surf_roi(fsaverage['infl_left'], roi_map=vtx_data,
+#                        hemi='left', view='medial', vmin=plot_min, vmax=plot_max,
+#                        bg_map=fsaverage['sulc_left'], bg_on_data=False, axes=ax[1],
+#                        darkness=.5, cmap='viridis');
+
+# if parc_str == 'schaefer':
+#     parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/rh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
+# elif parc_str == 'glasser':
+#     parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage/label/rh.HCP-MMP1.annot')
+
+# labels, ctab, surf_names = nib.freesurfer.read_annot(parc_file)
+# vtx_data, plot_min, plot_max = roi_to_vtx(mask, parcel_names, parc_file)
+# vtx_data = vtx_data.astype(float)
+# plotting.plot_surf_roi(fsaverage['infl_right'], roi_map=vtx_data,
+#                        hemi='right', view='lateral', vmin=plot_min, vmax=plot_max,
+#                        bg_map=fsaverage['sulc_right'], bg_on_data=False, axes=ax[2],
+#                        darkness=.5, cmap='viridis');
+
+# plotting.plot_surf_roi(fsaverage['infl_right'], roi_map=vtx_data,
+#                        hemi='right', view='medial', vmin=plot_min, vmax=plot_max,
+#                        bg_map=fsaverage['sulc_right'], bg_on_data=False, axes=ax[3],
+#                        darkness=.5, cmap='viridis');
+
+# # f.suptitle('Gradient '+str(g+1))
+# # f.savefig(outfile_prefix+'gradient_'+str(g)+'.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0)
 
