@@ -256,6 +256,11 @@ def minimum_energy(A, T, B, x0, xf, c = 1):
     u, s, vt = svd(A) # singluar value decomposition
     A = A/(c + s[0]) - np.eye(A.shape[0]) # Matrix normalization 
 
+    if type(x0[0]) == np.bool_:
+        x0 = x0.astype(float)
+    if type(xf[0]) == np.bool_:
+        xf = xf.astype(float)
+
     # Compute Matrix Exponential
     AT = np.concatenate((np.concatenate((A, -.5*(B.dot(B.T))), axis=1), 
                          np.concatenate((np.zeros(np.shape(A)), -A.T), axis=1)), axis=0)
