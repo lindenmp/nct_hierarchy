@@ -298,6 +298,67 @@ def minimum_energy(A, T, B, x0, xf, c = 1):
     return x, u, n_err
 
 
+def minimum_energy_nonh(A, T, B, x0, xf, c = 1):
+    u, s, vt = svd(A) # singluar value decomposition
+    A = A/(c + s[0]) - np.eye(A.shape[0]) # Matrix normalization 
+
+    Phi = np.dot(sp.linalg.expm(A*T), x0) - xf
+
+    Wc = np.zeros(A.shape)
+    nN = 1000
+    for i in np.arange(0,nN):
+        FM = np.matmul(sp.linalg.expm(A*T*(i/nN)),B)
+        Wc += np.matmul(FM,FM.T)*(T/nN)
+
+    E = np.dot(Phi.T,sp.linalg.solve(Wc,Phi))
+    
+    return E
+
+
+def get_time_vec(T, num_taylor):
+    return np.power(T, np.arange(0,num_taylor))
+
+
+def minimum_energy_taylor(A, T, B, x0, xf, c = 1, num_taylor = 10, drop_taylor = 0):
+    num_parcels = A.shape[0] # Number of nodes
+
+    u, s, vt = svd(A) # singluar value decomposition
+    A = A/(c + s[0]) - np.eye(A.shape[0]) # Matrix normalization 
+    
+    # Define Taylor series coefficients
+    tc = np.zeros(num_taylor)
+    for i in np.arange(0,num_taylor):
+        tc[i] = 1/math.factorial(i)
+        
+    if drop_taylor > 0:
+        tc[drop_taylor] = 0
+
+    # Define matrices
+    AM = np.zeros((num_parcels,num_parcels,num_taylor)) # Matrix powers along 3rd dimension
+    AM[:,:,0] = np.eye(num_parcels)
+    for i in np.arange(1,num_taylor):
+        AM[:,:,i] = np.matmul(AM[:,:,i-1], A)
+
+    # Combine matrices and coefficients
+    AM = np.multiply(AM,tc);
+
+    # Define state transition to achieve
+    t_vec = get_time_vec(T, num_taylor)
+    Phi = np.dot(np.sum(np.multiply(AM, t_vec),2), x0) - xf
+
+    # Gramian
+    Wc = np.zeros(A.shape) # Initialize Gramian
+    nN = 1000 # Number of integration steps
+    for i in np.arange(0,nN):
+        t_vec = get_time_vec(T * (i/nN), num_taylor)
+        FM = np.matmul(np.sum(np.multiply(AM, t_vec), 2), B)
+        Wc += np.matmul(FM,FM.T)*(T/nN)
+
+    E = np.dot(Phi.T,sp.linalg.solve(Wc,Phi))
+    
+    return E
+
+
 def optimal_energy(A, T, B, x0, xf, rho, S, c = 1):
     # This is a python adaptation of matlab code originally written by Tomaso Menara and Jason Kim
     #% compute optimal inputs/trajectories
