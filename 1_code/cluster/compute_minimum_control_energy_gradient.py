@@ -137,7 +137,7 @@ def minimum_energy(A, T, B, x0, xf, c = 1):
 
 # --------------------------------------------------------------------------------------------------------------------
 # outputdir
-if not os.path.exists(outputdir): os.makedirs(outputdir)
+# if not os.path.exists(outputdir): os.makedirs(outputdir)
 
 # load data
 A = np.load(A_file)
