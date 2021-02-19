@@ -351,7 +351,8 @@ def minimum_energy_taylor(A, T, B, x0, xf, c = 1, num_taylor = 10, drop_taylor =
     nN = 1000 # Number of integration steps
     for i in np.arange(0,nN):
         t_vec = get_time_vec(T * (i/nN), num_taylor)
-        FM = np.matmul(np.sum(np.multiply(AM, t_vec), 2), B)
+        t_vec = t_vec.reshape(num_taylor,1)
+        FM = np.matmul(np.squeeze(np.dot(AM, t_vec)), B)
         Wc += np.matmul(FM,FM.T)*(T/nN)
 
     E = np.dot(Phi.T,sp.linalg.solve(Wc,Phi))
