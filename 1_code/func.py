@@ -322,40 +322,50 @@ def get_time_vec(T, num_taylor):
 def minimum_energy_taylor(A, T, B, x0, xf, c = 1, num_taylor = 10, drop_taylor = 0):
     num_parcels = A.shape[0] # Number of nodes
 
-    u, s, vt = svd(A) # singluar value decomposition
-    A = A/(c + s[0]) - np.eye(A.shape[0]) # Matrix normalization 
-    
+    # Normalize and eigendecompose
+    u, s, vt = np.linalg.svd(A)                 # singluar value decomposition
+    A = A/(c + s[0]) - np.eye(A.shape[0])       # Matrix normalization
+    w, v = np.linalg.eig(A)                     # Eigenvalue decomposition
+
+    # Define eigenvalue powers (~.25)
+    w = np.reshape(w,(num_parcels,1))
+    p = np.reshape(np.arange(0,num_taylor),(1,num_taylor))
+    W = np.power(w,p)
+
     # Define Taylor series coefficients
     tc = np.zeros(num_taylor)
     for i in np.arange(0,num_taylor):
         tc[i] = 1/math.factorial(i)
-        
     if drop_taylor > 0:
         tc[drop_taylor] = 0
+    tc = np.reshape(tc,(1,num_taylor))
 
-    # Define matrices
-    AM = np.zeros((num_parcels,num_parcels,num_taylor)) # Matrix powers along 3rd dimension
-    AM[:,:,0] = np.eye(num_parcels)
-    for i in np.arange(1,num_taylor):
-        AM[:,:,i] = np.matmul(AM[:,:,i-1], A)
+    # Multiple eigenvalues with coefficients
+    W = np.multiply(W,tc)
 
-    # Combine matrices and coefficients
-    AM = np.multiply(AM,tc);
-
-    # Define state transition to achieve
-    t_vec = get_time_vec(T, num_taylor)
-    Phi = np.dot(np.sum(np.multiply(AM, t_vec),2), x0) - xf
-
-    # Gramian
-    Wc = np.zeros(A.shape) # Initialize Gramian
-    nN = 1000 # Number of integration steps
+    # Define time matrix
+    nN = 1000
+    t_mat = np.zeros((1,num_taylor,nN))
     for i in np.arange(0,nN):
-        t_vec = get_time_vec(T * (i/nN), num_taylor)
-        t_vec = t_vec.reshape(num_taylor,1)
-        FM = np.matmul(np.squeeze(np.dot(AM, t_vec)), B)
-        Wc += np.matmul(FM,FM.T)*(T/nN)
+        t_mat[0,:,i] = get_time_vec((T/nN)*i,num_taylor)
 
-    E = np.dot(Phi.T,sp.linalg.solve(Wc,Phi))
+    # Perform numerical integration (~.25)
+    WT = np.dot(W,t_mat)
+    WT = np.multiply(WT,np.reshape(WT,(1,num_parcels,nN)))
+
+    # Define Gramian
+    P = np.matmul(v.T,B)
+    P = np.matmul(P,P.T)
+    P = np.reshape(P,(num_parcels,num_parcels,1))
+    WcM = np.multiply(WT,P)
+    Wc = np.matmul(np.matmul(v,np.sum(WcM,2)),v.T) * (T/nN)
+
+    # State transition
+    WPr = np.multiply(W, np.reshape(get_time_vec(T,num_taylor),(1,num_taylor)))
+    EV = np.matmul(v,np.matmul(np.diag(np.sum(WPr,1)),v.T))
+    Phi = np.dot(EV, x0) - xf
+        
+    E = np.dot(Phi.T,np.linalg.solve(Wc,Phi))
     
     return E
 
