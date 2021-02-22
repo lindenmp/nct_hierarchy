@@ -421,11 +421,11 @@ def minimum_energy_nonh(A, T, B, x0, xf, c = 1):
     return E
 
 
-def get_time_vec(T, num_taylor):
-    return np.power(T, np.arange(0,num_taylor))
+def get_time_vec(T, n_taylor):
+    return np.power(T, np.arange(0,n_taylor))
 
 
-def minimum_energy_taylor(A, T, B, x0, xf, c = 1, num_taylor = 10, drop_taylor = 0):
+def minimum_energy_taylor(A, T, B, x0, xf, c = 1, n_taylor = 10, drop_taylor = 0):
     num_parcels = A.shape[0] # Number of nodes
 
     # Normalize and eigendecompose
@@ -435,25 +435,25 @@ def minimum_energy_taylor(A, T, B, x0, xf, c = 1, num_taylor = 10, drop_taylor =
 
     # Define eigenvalue powers (~.25)
     w = np.reshape(w,(num_parcels,1))
-    p = np.reshape(np.arange(0,num_taylor),(1,num_taylor))
+    p = np.reshape(np.arange(0,n_taylor),(1,n_taylor))
     W = np.power(w,p)
 
     # Define Taylor series coefficients
-    tc = np.zeros(num_taylor)
-    for i in np.arange(0,num_taylor):
+    tc = np.zeros(n_taylor)
+    for i in np.arange(0,n_taylor):
         tc[i] = 1/math.factorial(i)
     if drop_taylor > 0:
         tc[drop_taylor] = 0
-    tc = np.reshape(tc,(1,num_taylor))
+    tc = np.reshape(tc,(1,n_taylor))
 
     # Multiple eigenvalues with coefficients
     W = np.multiply(W,tc)
 
     # Define time matrix
     nN = 1000
-    t_mat = np.zeros((1,num_taylor,nN))
+    t_mat = np.zeros((1,n_taylor,nN))
     for i in np.arange(0,nN):
-        t_mat[0,:,i] = get_time_vec((T/nN)*i,num_taylor)
+        t_mat[0,:,i] = get_time_vec((T/nN)*i,n_taylor)
 
     # Perform numerical integration (~.25)
     WT = np.dot(W,t_mat)
@@ -467,7 +467,7 @@ def minimum_energy_taylor(A, T, B, x0, xf, c = 1, num_taylor = 10, drop_taylor =
     Wc = np.matmul(np.matmul(v,np.sum(WcM,2)),v.T) * (T/nN)
 
     # State transition
-    WPr = np.multiply(W, np.reshape(get_time_vec(T,num_taylor),(1,num_taylor)))
+    WPr = np.multiply(W, np.reshape(get_time_vec(T,n_taylor),(1,n_taylor)))
     EV = np.matmul(v,np.matmul(np.diag(np.sum(WPr,1)),v.T))
     Phi = np.dot(EV, x0) - xf
         
