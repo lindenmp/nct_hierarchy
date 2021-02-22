@@ -355,14 +355,15 @@ if control == 'minimum_taylor':
     print(n_taylor)
 
 # --------------------------------------------------------------------------------------------------------------------
-if control == 'minimum_taylor':
-    E = np.zeros((n_clusters, n_clusters, n_subsamples, n_taylor))
-else:
-    E = np.zeros((n_clusters, n_clusters, n_subsamples))
-    n_err = np.zeros((n_clusters, n_clusters, n_subsamples))
-
 if i == -1 and j == -1:
     print('looping i,j...')
+
+    if control == 'minimum_taylor':
+        E = np.zeros((n_clusters, n_clusters, n_subsamples, n_taylor))
+    else:
+        E = np.zeros((n_clusters, n_clusters, n_subsamples))
+        n_err = np.zeros((n_clusters, n_clusters, n_subsamples))
+
     for i in np.arange(n_clusters):
         for j in np.arange(n_clusters):
             if i != j:
@@ -402,11 +403,17 @@ if i == -1 and j == -1:
         np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'_rho-'+str(rho)+'-g'+str(n_clusters)+'_n_err'), n_err)
 else:
     print('reading i,j from function inputs...')
-    np.random.seed(0)
+
+    if control == 'minimum_taylor':
+        E = np.zeros((n_subsamples, n_taylor))
+    else:
+        E = np.zeros(n_subsamples)
+        n_err = np.zeros(n_subsamples)
 
     x0 = kmeans.labels_ == i
     xf = kmeans.labels_ == j
     
+    np.random.seed(0)
     for k in np.arange(n_subsamples):
         x0_tmp = subsample_state(x0, subsample_size)
         xf_tmp = subsample_state(xf, subsample_size)
@@ -414,18 +421,18 @@ else:
         B = get_B_matrix(x0_tmp, xf_tmp, version = B_ver)
 
         if control == 'minimum':
-            x, u, n_err[i,j,k] = minimum_energy(A, T, B, x0_tmp, xf_tmp)
+            x, u, n_err[k] = minimum_energy(A, T, B, x0_tmp, xf_tmp)
             u = np.multiply(np.matlib.repmat(B[np.eye(num_parcels) == 1], u.shape[0],1), u) # scale energy
-            E[i,j,k] = np.sum(np.square(u))
+            E[k] = np.sum(np.square(u))
 
         elif control == 'minimum_taylor':
             for t in np.arange(0,n_taylor):
-                E[i,j,k,t] = minimum_energy_taylor(A, T, B, x0_tmp, xf_tmp, n_taylor = n_taylor, drop_taylor = t)
+                E[k,t] = minimum_energy_taylor(A, T, B, x0_tmp, xf_tmp, n_taylor = n_taylor, drop_taylor = t)
 
         elif control == 'optimal':
-            x, u, n_err[i,j,k] = optimal_energy(A, T, B, x0_tmp, xf_tmp, rho, S) # get optimal control energy
+            x, u, n_err[k] = optimal_energy(A, T, B, x0_tmp, xf_tmp, rho, S) # get optimal control energy
             u = np.multiply(np.matlib.repmat(B[np.eye(num_parcels) == 1], u.shape[0],1), u) # scale energy
-            E[i,j,k] = np.sum(np.square(u))
+            E[k] = np.sum(np.square(u))
 
 
     if control == 'minimum':
