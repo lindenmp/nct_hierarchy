@@ -436,13 +436,13 @@ else:
 
 
     if control == 'minimum':
-        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E_'+str(i)+str(j)), E)
-        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_n_err_'+str(i)+str(j)), n_err)
+        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E_i'+str(i)+'j'+str(j)), E)
+        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_n_err_i'+str(i)+'j'+str(j)), n_err)
     elif control == 'minimum_taylor':
-        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E_'+str(i)+str(j)), E)
+        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E_i'+str(i)+'j'+str(j)), E)
     elif control == 'optimal':
-        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'_rho-'+str(rho)+'-g'+str(n_clusters)+'_E_'+str(i)+str(j)), E)
-        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'_rho-'+str(rho)+'-g'+str(n_clusters)+'_n_err_'+str(i)+str(j)), n_err)
+        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'_rho-'+str(rho)+'-g'+str(n_clusters)+'_E_i'+str(i)+'j'+str(j)), E)
+        np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'_rho-'+str(rho)+'-g'+str(n_clusters)+'_n_err_i'+str(i)+'j'+str(j)), n_err)
 
 
 print('Finished!')
