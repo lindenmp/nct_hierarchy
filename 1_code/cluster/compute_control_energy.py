@@ -350,8 +350,7 @@ if control == 'minimum_taylor':
 
     # use hops matrix to determine taylor polynomial order
     # n_taylor = np.max(hops).astype(int)+1
-    # n_taylor = np.floor(np.mean(hops)).astype(int)+1
-    n_taylor = 3
+    n_taylor = np.floor(np.mean(hops)).astype(int)+1
     print(n_taylor)
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -382,6 +381,9 @@ if i == -1 and j == -1:
                         x, u, n_err[i,j,k] = minimum_energy(A, T, B, x0_tmp, xf_tmp)
                         u = np.multiply(np.matlib.repmat(B[np.eye(num_parcels) == 1], u.shape[0],1), u) # scale energy
                         E[i,j,k] = np.sum(np.square(u))
+
+                    elif control == 'minimum_nonh':
+                        E[i,j,k] = minimum_energy_nonh(A, T, B, x0_tmp, xf_tmp)
 
                     elif control == 'minimum_taylor':
                         for t in np.arange(0,n_taylor):
@@ -424,6 +426,9 @@ else:
             x, u, n_err[k] = minimum_energy(A, T, B, x0_tmp, xf_tmp)
             u = np.multiply(np.matlib.repmat(B[np.eye(num_parcels) == 1], u.shape[0],1), u) # scale energy
             E[k] = np.sum(np.square(u))
+
+        elif control == 'minimum_nonh':
+            E[k] = minimum_energy_nonh(A, T, B, x0_tmp, xf_tmp)
 
         elif control == 'minimum_taylor':
             for t in np.arange(0,n_taylor):
