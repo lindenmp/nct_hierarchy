@@ -398,7 +398,7 @@ if i == -1 and j == -1:
     if control == 'minimum':
         np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E'), E)
         np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_n_err'), n_err)
-    elif control == 'minimum_taylor':
+    elif control == 'minimum_taylor' or control == 'minimum_nonh':
         np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E'), E)
     elif control == 'optimal':
         np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'_rho-'+str(rho)+'-g'+str(n_clusters)+'_E'), E)
@@ -443,7 +443,7 @@ else:
     if control == 'minimum':
         np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E_i'+str(i)+'j'+str(j)), E)
         np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_n_err_i'+str(i)+'j'+str(j)), n_err)
-    elif control == 'minimum_taylor':
+    elif control == 'minimum_taylor' or control == 'minimum_nonh':
         np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E_i'+str(i)+'j'+str(j)), E)
     elif control == 'optimal':
         np.save(os.path.join(outputdir,subjid+'_'+control+'_T-'+str(T)+'_B-'+B_ver+'_rho-'+str(rho)+'-g'+str(n_clusters)+'_E_i'+str(i)+'j'+str(j)), E)
