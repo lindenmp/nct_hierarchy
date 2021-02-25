@@ -1,6 +1,6 @@
 import argparse
 
-import os
+import os, sys
 import numpy as np
 from scipy.linalg import svd
 import scipy as sp
@@ -19,7 +19,9 @@ parser.add_argument("-A_file", help="path and file to adjacency matrix", dest="A
 parser.add_argument("-gradients_file", help="", dest="gradients_file", default=None, type=str)
 parser.add_argument("-n_clusters", help="", dest="n_clusters", default=None, type=int)
 parser.add_argument("-outputdir", help="output directory", dest="outputdir", default=None, type=str)
+parser.add_argument("-surr_type", help="", dest="surr_type", default="surr", type=str)
 parser.add_argument("-surr_seed", help="", dest="surr_seed", default=-1, type=int)
+parser.add_argument("-centroids_file", help="", dest="centroids_file", default=None, type=str)
 
 args = parser.parse_args()
 
@@ -28,7 +30,9 @@ A_file = args.A_file
 gradients_file = args.gradients_file
 n_clusters = args.n_clusters
 outputdir = args.outputdir
+surr_type = args.surr_type
 surr_seed = args.surr_seed
+centroids_file = args.centroids_file
 
 # --------------------------------------------------------------------------------------------------------------------
 # functions
@@ -117,7 +121,7 @@ gradients = np.loadtxt(gradients_file)
 kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(gradients)
 
 # --------------------------------------------------------------------------------------------------------------------
-if surr_seed != -1:
+if surr_type == 'surr' and surr_seed != -1:
     num_edge_swaps = int(5*10e4)
 
     num_parcels = A.shape[0]
@@ -127,6 +131,28 @@ if surr_seed != -1:
 
     np.random.seed(surr_seed)
     A, eff = randmio_und(A, itr = num_iter)
+elif 'spatial' in surr_type and surr_seed != -1:
+    import pandas as pd
+    from oct2py import octave
+
+    sys.path.append('/usr/bin/octave') # octave install path
+    octave.addpath('/gpfs/fs001/cbica/home/parkesl/research_projects/pfactor_gradients/1_code/geomsurr') # path to matlab functions
+    
+    centroids = pd.read_csv(centroids_file)
+    centroids.drop('ROI Name', axis = 1, inplace = True)
+    centroids.set_index('ROI Label', inplace=True)
+
+    D = sp.spatial.distance.pdist(centroids, 'euclidean')
+    D = sp.spatial.distance.squareform(D)
+
+    octave.eval("rand('state',%i)" % surr_seed)
+    # Wwp, Wsp, Wssp = octave.geomsurr(A,D,3,2,nout=3)
+    if surr_type == 'spatial_wwp':
+        A, _, _ = octave.geomsurr(A,D,3,2,nout=3)
+    elif surr_type == 'spatial_wsp':
+        _, A, _ = octave.geomsurr(A,D,3,2,nout=3)
+    elif surr_type == 'spatial_wssp':
+        _, _, A = octave.geomsurr(A,D,3,2,nout=3)
 
 adj_stats = {}
 
@@ -147,7 +173,7 @@ adj_stats['smv_var_abs'] = smv_var
 
 if surr_seed != -1:
     # np.save(os.path.join(outputdir,subjid+'_surr'+str(surr_seed)), A)
-    np.save(os.path.join(outputdir,subjid+'_surr'+str(surr_seed)+'_grad'+str(n_clusters)+'_adj_stats'), adj_stats)
+    np.save(os.path.join(outputdir,subjid+'_'+surr_type+str(surr_seed)+'_grad'+str(n_clusters)+'_adj_stats'), adj_stats)
 else:
     np.save(os.path.join(outputdir,subjid+'_grad'+str(n_clusters)+'_adj_stats'), adj_stats)
 
