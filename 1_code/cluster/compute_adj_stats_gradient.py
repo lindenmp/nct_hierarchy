@@ -9,6 +9,7 @@ import numpy.matlib
 from sklearn.cluster import KMeans
 from bct.utils import weight_conversion
 from bct.algorithms.distance import distance_wei, distance_wei_floyd, retrieve_shortest_path
+from bct.algorithms.reference import randmio_und
 
 # --------------------------------------------------------------------------------------------------------------------
 # parse input arguments
@@ -18,6 +19,7 @@ parser.add_argument("-A_file", help="path and file to adjacency matrix", dest="A
 parser.add_argument("-gradients_file", help="", dest="gradients_file", default=None, type=str)
 parser.add_argument("-n_clusters", help="", dest="n_clusters", default=None, type=int)
 parser.add_argument("-outputdir", help="output directory", dest="outputdir", default=None, type=str)
+parser.add_argument("-surr_seed", help="", dest="surr_seed", default=-1, type=int)
 
 args = parser.parse_args()
 
@@ -26,6 +28,7 @@ A_file = args.A_file
 gradients_file = args.gradients_file
 n_clusters = args.n_clusters
 outputdir = args.outputdir
+surr_seed = args.surr_seed
 
 # --------------------------------------------------------------------------------------------------------------------
 # functions
@@ -114,6 +117,17 @@ gradients = np.loadtxt(gradients_file)
 kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(gradients)
 
 # --------------------------------------------------------------------------------------------------------------------
+if surr_seed != -1:
+    num_edge_swaps = int(5*10e4)
+
+    num_parcels = A.shape[0]
+    num_connections = num_parcels*num_parcels-num_parcels
+
+    num_iter = int(num_edge_swaps/num_connections)
+
+    np.random.seed(surr_seed)
+    A, eff = randmio_und(A, itr = num_iter)
+
 adj_stats = {}
 
 D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var, joint_var = get_adj_stats(A, gradients, kmeans.labels_, return_abs = False)
@@ -131,6 +145,11 @@ adj_stats['tm_var_abs'] = tm_var
 adj_stats['smv_con_abs'] = smv_con
 adj_stats['smv_var_abs'] = smv_var
 
-np.save(os.path.join(outputdir,subjid+'_grad'+str(n_clusters)+'_adj_stats'), adj_stats)
+if surr_seed != -1:
+    # np.save(os.path.join(outputdir,subjid+'_surr'+str(surr_seed)), A)
+    np.save(os.path.join(outputdir,subjid+'_surr'+str(surr_seed)+'_grad'+str(n_clusters)+'_adj_stats'), adj_stats)
+else:
+    np.save(os.path.join(outputdir,subjid+'_grad'+str(n_clusters)+'_adj_stats'), adj_stats)
+
 
 print('Finished!')
