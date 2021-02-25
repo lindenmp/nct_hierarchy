@@ -20,7 +20,7 @@ parser.add_argument("-gradients_file", help="", dest="gradients_file", default=N
 parser.add_argument("-n_clusters", help="", dest="n_clusters", default=None, type=int)
 parser.add_argument("-outputdir", help="output directory", dest="outputdir", default=None, type=str)
 parser.add_argument("-surr_type", help="", dest="surr_type", default="surr", type=str)
-parser.add_argument("-surr_seed", help="", dest="surr_seed", default=-1, type=int)
+# parser.add_argument("-surr_seed", help="", dest="surr_seed", default=-1, type=int)
 parser.add_argument("-centroids_file", help="", dest="centroids_file", default=None, type=str)
 
 args = parser.parse_args()
