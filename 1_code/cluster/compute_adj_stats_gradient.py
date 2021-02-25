@@ -32,7 +32,7 @@ n_clusters = args.n_clusters
 outputdir = args.outputdir
 surr_type = args.surr_type
 # surr_seed = args.surr_seed
-surr_seed = int(os.getenv("SGE_TASK_ID"))
+surr_seed = int(os.getenv("SGE_TASK_ID")-1)
 centroids_file = args.centroids_file
 
 # --------------------------------------------------------------------------------------------------------------------
