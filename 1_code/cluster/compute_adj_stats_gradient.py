@@ -31,7 +31,8 @@ gradients_file = args.gradients_file
 n_clusters = args.n_clusters
 outputdir = args.outputdir
 surr_type = args.surr_type
-surr_seed = args.surr_seed
+# surr_seed = args.surr_seed
+surr_seed = int(os.getenv("SGE_TASK_ID"))
 centroids_file = args.centroids_file
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -121,7 +122,7 @@ gradients = np.loadtxt(gradients_file)
 kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(gradients)
 
 # --------------------------------------------------------------------------------------------------------------------
-if surr_type == 'surr' and surr_seed != -1:
+if surr_type == 'standard' and surr_seed != -1:
     num_edge_swaps = int(5*10e4)
 
     num_parcels = A.shape[0]
