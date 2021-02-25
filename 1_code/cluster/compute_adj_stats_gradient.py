@@ -139,20 +139,23 @@ elif 'spatial' in surr_type and surr_seed != -1:
     sys.path.append('/usr/bin/octave') # octave install path
     octave.addpath('/gpfs/fs001/cbica/home/parkesl/research_projects/pfactor_gradients/1_code/geomsurr') # path to matlab functions
     
-    centroids = pd.read_csv(centroids_file)
-    centroids.drop('ROI Name', axis = 1, inplace = True)
-    centroids.set_index('ROI Label', inplace=True)
-
-    D = sp.spatial.distance.pdist(centroids, 'euclidean')
-    D = sp.spatial.distance.squareform(D)
+    if 'grad' in surr_type:
+        D = sp.spatial.distance.pdist(gradients, 'euclidean')
+        D = sp.spatial.distance.squareform(D)
+    else:
+        centroids = pd.read_csv(centroids_file)
+        centroids.drop('ROI Name', axis = 1, inplace = True)
+        centroids.set_index('ROI Label', inplace=True)
+        D = sp.spatial.distance.pdist(centroids, 'euclidean')
+        D = sp.spatial.distance.squareform(D)
 
     octave.eval("rand('state',%i)" % surr_seed)
     # Wwp, Wsp, Wssp = octave.geomsurr(A,D,3,2,nout=3)
-    if surr_type == 'spatial_wwp':
+    if surr_type == 'spatial_wwp' or surr_type == 'spatial_wwp_grad':
         A, _, _ = octave.geomsurr(A,D,3,2,nout=3)
-    elif surr_type == 'spatial_wsp':
+    elif surr_type == 'spatial_wsp' or surr_type == 'spatial_wsp_grad':
         _, A, _ = octave.geomsurr(A,D,3,2,nout=3)
-    elif surr_type == 'spatial_wssp':
+    elif surr_type == 'spatial_wssp' or surr_type == 'spatial_wssp_grad':
         _, _, A = octave.geomsurr(A,D,3,2,nout=3)
 
 adj_stats = {}
