@@ -614,8 +614,9 @@ def matrix_to_states(x, cluster_labels):
     x_out = np.zeros((n_clusters,n_clusters))
     for i in np.arange(n_clusters):
         for j in np.arange(n_clusters):
-            x_out[i,j] = x[cluster_labels == i,:].mean(axis = 0)[cluster_labels == j].mean()
-            
+            # x_out[i,j] = x[cluster_labels == i,:].mean(axis = 0)[cluster_labels == j].mean()
+            x_out[i,j] = np.nanmean(np.nanmean(x[cluster_labels == i,:], axis = 0)[cluster_labels == j])
+
     return x_out
 
 
@@ -648,7 +649,7 @@ def get_gradient_num_flips(shortest_path, gradients):
     return num_flips
 
 
-def get_adj_stats(A, gradients, cluster_labels, return_abs = False):
+def get_adj_stats(A, gradients, cluster_labels, return_abs = False, drop_taylor = 0):
 
     num_parcels = A.shape[0]
     
@@ -660,18 +661,18 @@ def get_adj_stats(A, gradients, cluster_labels, return_abs = False):
     hops_mean = matrix_to_states(hops, cluster_labels)
     
     # get transmodal and sensorimotor-visual traversal variance
-    tm_tmp = np.zeros((num_parcels,num_parcels))
-    tm_var_tmp = np.zeros((num_parcels,num_parcels))
-    smv_tmp = np.zeros((num_parcels,num_parcels))
-    smv_var_tmp = np.zeros((num_parcels,num_parcels))
-    joint_var_tmp = np.zeros((num_parcels,num_parcels))
-    num_tm_flips_tmp = np.zeros((num_parcels,num_parcels))
-    num_smv_flips_tmp = np.zeros((num_parcels,num_parcels))
+    tm_tmp = np.zeros((num_parcels,num_parcels)); tm_tmp[:] = np.nan
+    tm_var_tmp = np.zeros((num_parcels,num_parcels)); tm_var_tmp[:] = np.nan
+    smv_tmp = np.zeros((num_parcels,num_parcels)); smv_tmp[:] = np.nan
+    smv_var_tmp = np.zeros((num_parcels,num_parcels)); smv_var_tmp[:] = np.nan
+    joint_var_tmp = np.zeros((num_parcels,num_parcels)); joint_var_tmp[:] = np.nan
+    num_tm_flips_tmp = np.zeros((num_parcels,num_parcels)); num_tm_flips_tmp[:] = np.nan
+    num_smv_flips_tmp = np.zeros((num_parcels,num_parcels)); num_smv_flips_tmp[:] = np.nan
 
     for i in np.arange(num_parcels):
         for j in np.arange(num_parcels):
             shortest_path = retrieve_shortest_path(i,j,hops,Pmat)
-            if len(shortest_path) != 0:
+            if len(shortest_path) != 0 and len(shortest_path) != drop_taylor:
                 shortest_path = shortest_path.flatten()
                 mean_diff, var_diff, euclidean_var = get_gradient_variance(shortest_path, gradients, return_abs = return_abs)
 
