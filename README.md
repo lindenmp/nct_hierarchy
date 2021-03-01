@@ -29,6 +29,9 @@
     # Statistics
     pip install scipy statsmodels sklearn bctpy
 
+    # Octave support
+    pip install oct2py
+
     cd /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/
     conda env export > environment.yml
     pip freeze > requirements.txt
