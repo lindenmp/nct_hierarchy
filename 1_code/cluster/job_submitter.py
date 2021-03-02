@@ -144,7 +144,7 @@ for surr_type in surr_list:
     for subjid in subjids:
         A_file = indir+connectome_spec+'_'+subjid+'.npy'
 
-        subprocess_str = '{0} {1} -subjid {2} -A_file {3} -gradients_file {4} -n_clusters {5} -outputdir {6} -surr_type {7} -centroids_file {8}'         .format(py_exec, py_script, subjid, A_file, gradients_file, n_clusters, outputdir, surr_type, centroids_file)
+        subprocess_str = '{0} {1} -subjid {2} -A_file {3} -gradients_file {4} -n_clusters {5} -outputdir {6} -surr_type {7} -centroids_file {8}'         .format(py_exec, py_script, subjid, A_file, gradients_file, n_clusters, storedir, surr_type, centroids_file)
 
         name = surr_type
         qsub_call = 'qsub -N {0} -l h_vmem=1G,s_vmem=1G -pe threaded 1 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ -t 1:10000 '.format(name)
