@@ -152,6 +152,37 @@ for surr_type in surr_list:
         os.system(qsub_call + subprocess_str)
 
 
+# ### Assemble outputs
+
+# In[ ]:
+
+
+outputdir = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/4_compute_adj_stats_surrogates/out/'+connectome_spec
+if not os.path.exists(outputdir): os.makedirs(outputdir)
+
+num_surrogates = 1000
+
+for surr_type in surr_list:
+    for subjid in subjids:
+        tm_var_surr = np.zeros((n_clusters, n_clusters, num_surrogates))
+        smv_var_surr = np.zeros((n_clusters, n_clusters, num_surrogates))
+        joint_var_surr = np.zeros((n_clusters, n_clusters, num_surrogates))
+        
+        for surr_seed in np.arange(num_surrogates):
+            file_label = subjid+'_'+surr_type+str(surr_seed)+'_grad'+str(n_clusters)
+            adj_stats = np.load(os.path.join(storedir, file_label+'_adj_stats.npy'), allow_pickle = True)
+            adj_stats = adj_stats.item()
+
+            tm_var_surr[:,:,surr_seed] = adj_stats['tm_var']
+            smv_var_surr[:,:,surr_seed] = adj_stats['smv_var']
+            joint_var_surr[:,:,surr_seed] = adj_stats['joint_var']
+        
+        file_label = subjid+'_'+surr_type+'_grad'+str(n_clusters)
+        np.save(os.path.join(outputdir, file_label+'_tm_var_surr'), tm_var_surr)
+        np.save(os.path.join(outputdir, file_label+'_smv_var_surr'), smv_var_surr)
+        np.save(os.path.join(outputdir, file_label+'_joint_var_surr'), joint_var_surr)
+
+
 # ## individuals
 
 # In[ ]:
