@@ -7,6 +7,7 @@ import scipy as sp
 import numpy.matlib
 
 from sklearn.cluster import KMeans
+from sklearn.linear_model import LinearRegression
 from bct.utils import weight_conversion
 from bct.algorithms.distance import distance_wei, distance_wei_floyd, retrieve_shortest_path
 from bct.algorithms.reference import randmio_und
@@ -111,12 +112,29 @@ def get_adj_stats(A, gradients, cluster_labels, return_abs = False):
     return D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var, joint_var
 
 
+def nuis_regress_matrix(x, c, indices):
+    x_out = np.zeros(x.shape)
+    
+    x = x[indices].reshape(-1,1)
+    c = c[indices].reshape(-1,1)
+    
+    nuis_reg = LinearRegression()
+    nuis_reg.fit(c, x)
+    
+    x_pred = nuis_reg.predict(c)
+    x_out[indices] = x[:,0] - x_pred[:,0]
+
+    return x_out
+
+
 # --------------------------------------------------------------------------------------------------------------------
 # outputdir
 # if not os.path.exists(outputdir): os.makedirs(outputdir)
 
 # load data
 A = np.load(A_file)
+num_parcels = A.shape[0]
+num_connections = num_parcels*num_parcels-num_parcels
 
 gradients = np.loadtxt(gradients_file)
 kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(gradients)
@@ -124,10 +142,6 @@ kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(gradients)
 # --------------------------------------------------------------------------------------------------------------------
 if surr_type == 'standard' and surr_seed != -1:
     num_edge_swaps = int(5*10e4)
-
-    num_parcels = A.shape[0]
-    num_connections = num_parcels*num_parcels-num_parcels
-
     num_iter = int(num_edge_swaps/num_connections)
 
     np.random.seed(surr_seed)
@@ -138,24 +152,53 @@ elif 'spatial' in surr_type and surr_seed != -1:
 
     sys.path.append('/usr/bin/octave') # octave install path
     octave.addpath('/gpfs/fs001/cbica/home/parkesl/research_projects/pfactor_gradients/1_code/geomsurr') # path to matlab functions
-    
-    if 'grad' in surr_type:
-        D = sp.spatial.distance.pdist(gradients, 'euclidean')
-        D = sp.spatial.distance.squareform(D)
-    else:
-        centroids = pd.read_csv(centroids_file)
-        centroids.drop('ROI Name', axis = 1, inplace = True)
-        centroids.set_index('ROI Label', inplace=True)
+
+    centroids = pd.read_csv(centroids_file)
+    centroids.drop('ROI Name', axis = 1, inplace = True)
+    centroids.set_index('ROI Label', inplace=True)
+
+    surr_type_split = surr_type.split('_')
+
+    if len(surr_type_split) == 3 and surr_type_split[2] == 'mni':
         D = sp.spatial.distance.pdist(centroids, 'euclidean')
         D = sp.spatial.distance.squareform(D)
+    elif len(surr_type_split) == 3 and surr_type_split[2] == 'grad':
+        D = sp.spatial.distance.pdist(gradients, 'euclidean')
+        D = sp.spatial.distance.squareform(D)
+    elif len(surr_type_split) == 3 and surr_type_split[2] == 'hybrid':
+        X = np.concatenate((centroids.values, gradients), axis = 1)
+        X = sp.stats.zscore(X, axis = 0)
+
+        mni_weight = 1
+        gradient_weight = 1
+        D = sp.spatial.distance.pdist(X, 'minkowski', p=2, w=[mni_weight,mni_weight,mni_weight,gradient_weight,gradient_weight])
+        D = sp.spatial.distance.squareform(D)
+    elif len(surr_type_split) == 4:
+        if surr_type_split[2] == 'mni' and surr_type_split[3] == 'cgrad':
+            D = sp.spatial.distance.pdist(centroids, 'euclidean')
+            D = sp.spatial.distance.squareform(D)
+
+            D2 = sp.spatial.distance.pdist(gradients, 'euclidean')
+            D2 = sp.spatial.distance.squareform(D2)
+        elif surr_type_split[2] == 'grad' and surr_type_split[3] == 'cmni':
+            D = sp.spatial.distance.pdist(gradients, 'euclidean')
+            D = sp.spatial.distance.squareform(D)
+
+            D2 = sp.spatial.distance.pdist(centroids, 'euclidean')
+            D2 = sp.spatial.distance.squareform(D2)
+
+        Dm = np.mean(D)
+        indices = np.where(~np.eye(num_parcels,dtype=bool))
+        D = nuis_regress_matrix(D, D2, indices)
+        D = D + Dm
 
     octave.eval("rand('state',%i)" % surr_seed)
     # Wwp, Wsp, Wssp = octave.geomsurr(A,D,3,2,nout=3)
-    if surr_type == 'spatial_wwp' or surr_type == 'spatial_wwp_grad':
+    if surr_type_split[1] == 'wwp':
         A, _, _ = octave.geomsurr(A,D,3,2,nout=3)
-    elif surr_type == 'spatial_wsp' or surr_type == 'spatial_wsp_grad':
+    elif surr_type_split[1] == 'wsp':
         _, A, _ = octave.geomsurr(A,D,3,2,nout=3)
-    elif surr_type == 'spatial_wssp' or surr_type == 'spatial_wssp_grad':
+    elif surr_type_split[1] == 'wssp':
         _, _, A = octave.geomsurr(A,D,3,2,nout=3)
 
 adj_stats = {}
