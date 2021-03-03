@@ -51,6 +51,8 @@ control_list = ['minimum','minimum_taylor']; print(control_list)
 split_clusters = False
 
 
+# # 2) Compute energy
+
 # ### Submit
 
 # In[ ]:
@@ -115,7 +117,40 @@ for subjid in subjids:
                 np.save(os.path.join(outputdir,file_label+'_E_ij'), E)
 
 
-# # Compute adjacency matrix statistics
+# # 3) Compute adjacency matrix statistics
+
+# In[ ]:
+
+
+py_script = '/cbica/home/parkesl/research_projects/pfactor_gradients/1_code/cluster/compute_adj_stats.py'
+
+
+# ## individuals
+
+# In[ ]:
+
+
+outputdir = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/3_compute_adj_stats/out/'+connectome_spec
+if not os.path.exists(outputdir): os.makedirs(outputdir)
+
+
+# In[ ]:
+
+
+for i in np.arange(df.shape[0]):
+    subjid = str(df.iloc[i].name[0])+'_'+str(df.iloc[i].name[1])
+    subjid_short = str(df.iloc[i].name[0])
+    A_file = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/0_get_sample/out/'+connectome_spec+'_'+subjid+'_A.npy'
+
+    subprocess_str = '{0} {1} -subjid {2} -A_file {3} -gradients_file {4} -outputdir {5}'.format(py_exec, py_script, subjid, A_file, gradients_file, outputdir)
+
+    name = 's_'+subjid_short
+    qsub_call = 'qsub -N {0} -l h_vmem=1G,s_vmem=1G -pe threaded 1 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ '.format(name)
+
+    os.system(qsub_call + subprocess_str) 
+
+
+# # 4) Compute adjacency matrix statistics surrogates
 
 # In[ ]:
 
@@ -128,13 +163,18 @@ py_script = '/cbica/home/parkesl/research_projects/pfactor_gradients/1_code/clus
 # In[ ]:
 
 
-outputdir = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/4_compute_adj_stats_surrogates/out/'+connectome_spec
-if not os.path.exists(outputdir): os.makedirs(outputdir)
+storedir = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/4_compute_adj_stats_surrogates/store/'+connectome_spec
+if not os.path.exists(storedir): os.makedirs(storedir)
 
 centroids_file = '/cbica/home/parkesl/research_projects/pfactor_gradients/figs_support/labels/schaefer'+str(parc_scale)+'/Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'
     
 subjids = ['disc_mean_A_s6',]
-surr_list = ['standard', 'spatial_wwp', 'spatial_wsp', 'spatial_wssp', 'spatial_wwp_grad', 'spatial_wsp_grad', 'spatial_wssp_grad']
+surr_list = ['spatial_wsp_grad_cmni', 'spatial_wssp_grad_cmni', 'spatial_wwp_grad_cmni',
+             'spatial_wsp_mni_cgrad', 'spatial_wssp_mni_cgrad','spatial_wwp_mni_cgrad',
+             'spatial_wsp_hybrid', 'spatial_wssp_hybrid','spatial_wwp_hybrid']
+# surr_list = ['standard', 'spatial_wwp', 'spatial_wsp', 'spatial_wssp', 'spatial_wwp_grad', 'spatial_wsp_grad', 'spatial_wssp_grad']
+# surr_list = ['spatial_wwp_grad_cmni', 'spatial_wwp_mni_cgrad']
+# surr_list = ['spatial_wsp_grad_cmni', 'spatial_wsp_mni_cgrad', 'spatial_wssp_grad_cmni', 'spatial_wssp_mni_cgrad']
 
 
 # In[ ]:
@@ -160,7 +200,7 @@ for surr_type in surr_list:
 outputdir = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/4_compute_adj_stats_surrogates/out/'+connectome_spec
 if not os.path.exists(outputdir): os.makedirs(outputdir)
 
-num_surrogates = 1000
+num_surrogates = 10000
 
 for surr_type in surr_list:
     for subjid in subjids:
@@ -181,38 +221,4 @@ for surr_type in surr_list:
         np.save(os.path.join(outputdir, file_label+'_tm_var_surr'), tm_var_surr)
         np.save(os.path.join(outputdir, file_label+'_smv_var_surr'), smv_var_surr)
         np.save(os.path.join(outputdir, file_label+'_joint_var_surr'), joint_var_surr)
-
-
-# ## individuals
-
-# In[ ]:
-
-
-# outputdir = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/3_compute_adj_stats/out/'+connectome_spec
-# if not os.path.exists(outputdir): os.makedirs(outputdir)
-# n_clusters_list = [20,]
-
-# # Load df
-# df_file = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/0_get_sample/out/'+connectome_spec+'_df.csv'
-# df = pd.read_csv(df_file)
-# df.set_index(['bblid', 'scanid'], inplace = True)
-# df = df.loc[df['disc_repl'] == 0,:]
-# df.shape
-
-
-# In[ ]:
-
-
-# for i in np.arange(df.shape[0]):
-#     for n_clusters in n_clusters_list:
-#         subjid = str(df.iloc[i].name[0])+'_'+str(df.iloc[i].name[1])
-#         subjid_short = str(df.iloc[i].name[0])
-#         A_file = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/0_get_sample/out/'+connectome_spec+'_'+subjid+'_A.npy'
-
-#         subprocess_str = '{0} {1} -subjid {2} -A_file {3} -gradients_file {4} -n_clusters {5} -outputdir {6}'.format(py_exec, py_script, subjid, A_file, gradients_file, n_clusters, outputdir)
-
-#         name = 's_'+subjid_short
-#         qsub_call = 'qsub -N {0} -l h_vmem=1G,s_vmem=1G -pe threaded 1 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ '.format(name)
-
-#         os.system(qsub_call + subprocess_str) 
 
