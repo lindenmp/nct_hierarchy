@@ -30,13 +30,15 @@ plt.rcParams['svg.fonttype'] = 'none'
 from sklearn.cluster import KMeans
 import numpy.matlib
 import statsmodels.formula.api as smf
+from bct.algorithms.distance import retrieve_shortest_path, distance_wei_floyd
+from bct.algorithms.reference import randmio_und
 
 
 # In[3]:
 
 
 sys.path.append('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pathlength_tuning/1_code/')
-from func import set_proj_env, my_get_cmap, get_fdr_p, get_pdist, get_adj_stats, get_gradient_variance
+from func import set_proj_env, my_get_cmap, get_fdr_p, get_pdist, get_adj_stats, get_gradient_variance, nuis_regress_matrix, my_regplot, my_nullplot
 
 
 # In[4]:
@@ -86,6 +88,7 @@ num_parcels=parc_scale
 n_clusters=int(num_parcels*.05)
 print(n_clusters)
 n_subsamples = 20
+n_taylor = 7
 
 
 # ### Setup plots
@@ -99,29 +102,11 @@ sns.set(style='white', context = 'talk', font_scale = 1)
 cmap = my_get_cmap('pair')
 
 
-# In[10]:
-
-
-def my_regplot(x, y, xlabel, ylabel, ax, c='gray'):
-    sns.kdeplot(x = x, y = y, ax=ax, color='gray', thresh=0.05, alpha=0.25)
-    sns.regplot(x = x, y = y, ax=ax, scatter = False)
-    ax.scatter(x = x, y = y, c=c, s=5, alpha=0.5)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel, labelpad=-1)
-    ax.tick_params(pad = -2.5)
-    pearson_stats = sp.stats.pearsonr(x,y)
-    spearman_stats = sp.stats.spearmanr(x,y)
-    textstr = 'r = {:.2f}, p = {:.2f} \nrho = {:.2f}, p = {:.2f}'.format(pearson_stats[0], pearson_stats[1],
-                                                               spearman_stats[0], spearman_stats[1])
-    ax.text(0.05, 0.975, textstr, transform=ax.transAxes,
-            verticalalignment='top')
-
-
 # # Load data
 
 # ## Load group A matrix (6% sparsity)
 
-# In[11]:
+# In[10]:
 
 
 file_label = 'disc_mean_A_s6_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)
@@ -137,7 +122,7 @@ sns.heatmap(E_Am, ax=ax, square = True)
 
 # ### MNI Centroids
 
-# In[12]:
+# In[11]:
 
 
 centroids = pd.read_csv(os.path.join(os.environ['PROJDIR'],'figs_support','labels','schaefer'+str(parc_scale),'Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'))
@@ -146,9 +131,24 @@ centroids.set_index('ROI Label', inplace=True)
 centroids.head()
 
 
-# ### Cortical gradients
+# In[12]:
+
+
+os.environ['PIPELINEDIR']
+
 
 # In[13]:
+
+
+D = sp.spatial.distance.pdist(centroids, 'euclidean')
+
+D = sp.spatial.distance.squareform(D)
+np.save(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'D'), D)
+
+
+# ## Plot cortical gradients
+
+# In[14]:
 
 
 gradients = np.loadtxt(os.path.join(os.environ['PIPELINEDIR'], '1_compute_gradient', 'out', outfile_prefix+'pnc_grads_template.txt'))
@@ -168,7 +168,7 @@ ax.set_xlabel('Gradient 2')
 ax.set_ylabel('Gradient 1')
 
 
-# In[14]:
+# In[15]:
 
 
 i = 9
@@ -187,91 +187,19 @@ ax.set_ylabel('Gradient 1')
 f.colorbar(im, ax=ax)
 
 
-# In[15]:
-
-
-A = np.load(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out', outfile_prefix+'disc_mean_A_s6.npy'))
-D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var, joint_var, num_tm_flips, num_smv_flips = get_adj_stats(A, gradients, kmeans.labels_, return_abs = False)
-
-
-# ### Compute distances
+# ## Plot paths traversing cortical gradients
 
 # In[16]:
 
 
-dist_mni = get_pdist(centroids.values,kmeans.labels_, method = 'median')
-dist_mni[np.eye(dist_mni.shape[0]) == 1] = np.nan
-
-dist_h = sp.spatial.distance.squareform(sp.spatial.distance.pdist(kmeans.cluster_centers_))
-dist_h[np.eye(dist_h.shape[0]) == 1] = np.nan
-
-
-# #### Get indices of elements
-
-# In[17]:
-
-
-# indices = np.triu_indices(n_clusters, k=1)
-# indices = np.tril_indices(n_clusters, k=-1)
-indices = np.where(~np.eye(n_clusters,dtype=bool))
-len(indices[0])
-
-
-# In[18]:
-
-
-f, ax = plt.subplots(1, 3, figsize=(15, 4))
-sns.heatmap(dist_mni, ax=ax[0], square = True)
-ax[0].set_title('Distance (MNI)');
-sns.heatmap(dist_h, ax=ax[1], square = True)
-ax[1].set_title('Distance (Hierarchy)');
-my_regplot(dist_mni[indices], dist_h[indices], 'Distance (hierarchy)', 'Distance (Hierarchy)', ax[2])
-
-
-# In[19]:
-
-
-from sklearn.linear_model import LinearRegression
-
-def nuis_regress_matrix(x, c, indices):
-    x_out = np.zeros(x.shape)
-    
-    x = x[indices].reshape(-1,1)
-    c = c[indices].reshape(-1,1)
-    
-    nuis_reg = LinearRegression()
-    nuis_reg.fit(c, x)
-    
-    x_pred = nuis_reg.predict(c)
-    x_out[indices] = x[:,0] - x_pred[:,0]
-
-    return x_out
-
-E_Am_res = nuis_regress_matrix(E_Am, dist_mni, indices)
-
-
-# In[20]:
-
-
-f, ax = plt.subplots(1, 3, figsize=(15, 4))
-my_regplot(dist_mni[indices], E_Am[indices], 'Distance (MNI)', 'Energy', ax[0])
-my_regplot(dist_h[indices], E_Am[indices], 'Distance (hierarchy)', 'Energy', ax[1])
-my_regplot(dist_h[indices], E_Am_res[indices], 'Distance (hierarchy)', 'Energy (resid)', ax[2])
-
-f.subplots_adjust(wspace=0.5)
-f.savefig(outfile_prefix+'energy_vs_distance.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
-
-
-# In[21]:
-
-
-from bct.algorithms.distance import retrieve_shortest_path, distance_wei_floyd
+A = np.load(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out', outfile_prefix+'disc_mean_A_s8.npy'))
+D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var, joint_var, num_tm_flips, num_smv_flips = get_adj_stats(A, gradients, kmeans.labels_, return_abs = False)
 
 D, hops, Pmat = distance_wei_floyd(A, transform = 'inv')
 sns.histplot(hops[np.triu_indices(num_parcels, k=1)])
 
 
-# In[22]:
+# In[17]:
 
 
 np.random.seed(0)
@@ -322,25 +250,64 @@ for sbp in np.arange(5):
 f.savefig(outfile_prefix+'random_shortest_paths.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
 
 
-# In[23]:
+# ### Compute distances
+
+# In[18]:
 
 
-E_plot = E_Am_res; ylabel = 'Energy (resid MNI)'
-# E_plot = E_Am; ylabel = 'Energy'
+dist_mni = get_pdist(centroids.values,kmeans.labels_, method = 'median')
+dist_mni[np.eye(dist_mni.shape[0]) == 1] = np.nan
 
-f, ax = plt.subplots(1, 5, figsize=(25, 4))
-my_regplot(D_mean[indices], E_plot[indices], 'Shortest paths (sp)', ylabel, ax[0])
-my_regplot(hops_mean[indices], E_plot[indices], 'Hops (in sp)', ylabel, ax[1])
-my_regplot(tm_var[indices], E_plot[indices], 'Transmodal variance', ylabel, ax[2])
-my_regplot(smv_var[indices], E_plot[indices], 'Unimodal variance', ylabel, ax[3])
-my_regplot(joint_var[indices], E_plot[indices], 'Joint variance (euclid)', ylabel, ax[4])
-# my_regplot(num_tm_flips[indices], E_plot[indices], 'Number flips (transmodal)', ylabel, ax[5])
+dist_h = sp.spatial.distance.squareform(sp.spatial.distance.pdist(kmeans.cluster_centers_))
+dist_h[np.eye(dist_h.shape[0]) == 1] = np.nan
+
+
+# ### Get indices of elements
+
+# In[19]:
+
+
+# indices = np.triu_indices(n_clusters, k=1)
+# indices = np.tril_indices(n_clusters, k=-1)
+indices = np.where(~np.eye(n_clusters,dtype=bool))
+len(indices[0])
+
+
+# ## Plot distances against one another
+
+# In[20]:
+
+
+f, ax = plt.subplots(1, 3, figsize=(15, 4))
+sns.heatmap(dist_mni, ax=ax[0], square = True)
+ax[0].set_title('Distance (MNI)');
+sns.heatmap(dist_h, ax=ax[1], square = True)
+ax[1].set_title('Distance (Hierarchy)');
+my_regplot(dist_mni[indices], dist_h[indices], 'Distance (hierarchy)', 'Distance (Hierarchy)', ax[2])
+f.savefig(outfile_prefix+'disance_vs_distance.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
+
+
+# ## Plot distances against energy
+
+# In[21]:
+
+
+f, ax = plt.subplots(1, 4, figsize=(20, 4))
+my_regplot(dist_mni[indices], E_Am[indices], 'Distance (MNI)', 'Energy', ax[0])
+my_regplot(dist_h[indices], E_Am[indices], 'Distance (hierarchy)', 'Energy', ax[1])
+
+E_Am_res = nuis_regress_matrix(E_Am, dist_h, indices)
+my_regplot(dist_mni[indices], E_Am_res[indices], 'Distance (MNI)', 'Energy (resid hierarchy)', ax[2])
+E_Am_res = nuis_regress_matrix(E_Am, dist_mni, indices)
+my_regplot(dist_h[indices], E_Am_res[indices], 'Distance (hierarchy)', 'Energy (resid MNI)', ax[3])
 
 f.subplots_adjust(wspace=0.5)
-f.savefig(outfile_prefix+'energy_vs_adjstats.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
+f.savefig(outfile_prefix+'energy_vs_distance.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
 
 
-# In[24]:
+# ## Plot adj. stats
+
+# In[22]:
 
 
 plot_var = tm_var[indices]; ylabel = 'Transmodal variance'
@@ -364,4 +331,76 @@ my_regplot(dist_h[indices], plot_var, 'Distance (hierarchy)', ylabel, ax[2,3])
 
 f.subplots_adjust(wspace=0.5)
 f.savefig(outfile_prefix+'variance_vs_adjstats.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
+
+
+# ## Plot adj. stats against energy
+
+# In[23]:
+
+
+E_Am_res = nuis_regress_matrix(E_Am, dist_mni, indices); E_plot = E_Am_res; ylabel = 'Energy (resid MNI)'
+# E_plot = E_Am; ylabel = 'Energy'
+
+f, ax = plt.subplots(1, 5, figsize=(25, 4))
+my_regplot(D_mean[indices], E_plot[indices], 'Shortest paths (sp)', ylabel, ax[0])
+my_regplot(hops_mean[indices], E_plot[indices], 'Hops (in sp)', ylabel, ax[1])
+my_regplot(tm_var[indices], E_plot[indices], 'Transmodal variance', ylabel, ax[2])
+my_regplot(smv_var[indices], E_plot[indices], 'Unimodal variance', ylabel, ax[3])
+my_regplot(joint_var[indices], E_plot[indices], 'Joint variance (euclid)', ylabel, ax[4])
+# my_regplot(num_tm_flips[indices], E_plot[indices], 'Number flips (transmodal)', ylabel, ax[5])
+
+f.subplots_adjust(wspace=0.5)
+f.savefig(outfile_prefix+'energy_vs_adjstats_resid_mni.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
+
+
+# In[24]:
+
+
+E_Am_res = nuis_regress_matrix(E_Am, dist_h, indices); E_plot = E_Am_res; ylabel = 'Energy (resid hierarchy)'
+# E_plot = E_Am; ylabel = 'Energy'
+
+f, ax = plt.subplots(1, 5, figsize=(25, 4))
+my_regplot(D_mean[indices], E_plot[indices], 'Shortest paths (sp)', ylabel, ax[0])
+my_regplot(hops_mean[indices], E_plot[indices], 'Hops (in sp)', ylabel, ax[1])
+my_regplot(tm_var[indices], E_plot[indices], 'Transmodal variance', ylabel, ax[2])
+my_regplot(smv_var[indices], E_plot[indices], 'Unimodal variance', ylabel, ax[3])
+my_regplot(joint_var[indices], E_plot[indices], 'Joint variance (euclid)', ylabel, ax[4])
+# my_regplot(num_tm_flips[indices], E_plot[indices], 'Number flips (transmodal)', ylabel, ax[5])
+
+f.subplots_adjust(wspace=0.5)
+f.savefig(outfile_prefix+'energy_vs_adjstats_resid_h.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
+
+
+# # Null models
+
+# In[25]:
+
+
+num_surrogates = 10000
+surr_type = 'spatial_wssp' # 'standard' 'spatial_wwp' 'spatial_wsp' 'spatial_wssp'
+# surr_type = surr_type+'_hybrid'
+surr_type = surr_type+'_grad_cmni'
+# surr_type = surr_type+'_mni_cgrad'
+
+tm_var_surr = np.load(os.path.join(os.environ['PIPELINEDIR'], '4_compute_adj_stats_surrogates', 'out', outfile_prefix[:-1], 'disc_mean_A_s6_'+surr_type+'_grad'+str(n_clusters)+'_tm_var_surr.npy'))
+smv_var_surr = np.load(os.path.join(os.environ['PIPELINEDIR'], '4_compute_adj_stats_surrogates', 'out', outfile_prefix[:-1], 'disc_mean_A_s6_'+surr_type+'_grad'+str(n_clusters)+'_smv_var_surr.npy'))
+joint_var_surr = np.load(os.path.join(os.environ['PIPELINEDIR'], '4_compute_adj_stats_surrogates', 'out', outfile_prefix[:-1], 'disc_mean_A_s6_'+surr_type+'_grad'+str(n_clusters)+'_joint_var_surr.npy'))
+
+if tm_var_surr.shape[2] > num_surrogates:
+    tm_var_surr = tm_var_surr[:,:,:num_surrogates]
+    smv_var_surr = smv_var_surr[:,:,:num_surrogates]
+    joint_var_surr = joint_var_surr[:,:,:num_surrogates]
+
+# E_Am_res = nuis_regress_matrix(E_Am, dist_h, indices); E_plot = E_Am_res; ylabel = 'Energy (resid hierarchy)'
+E_plot = E_Am; ylabel = 'Energy'
+f, ax = plt.subplots(2, 2, figsize=(8, 8))
+
+my_regplot(tm_var[indices], E_plot[indices], 'Transmodal variance', 'Energy', ax[0,0])
+my_nullplot(tm_var[indices], tm_var_surr[indices], E_plot[indices], 'null', ax=ax[0,1])
+
+my_regplot(smv_var[indices], E_plot[indices], 'Unimodal variance', 'Energy', ax[1,0])
+my_nullplot(smv_var[indices], smv_var_surr[indices], E_plot[indices], 'null', ax=ax[1,1])
+
+f.subplots_adjust(wspace=0.5, hspace=0.5)
+f.savefig(outfile_prefix+'energy_vs_adjstats_null.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)    
 
