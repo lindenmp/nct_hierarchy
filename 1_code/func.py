@@ -747,7 +747,7 @@ def my_nullplot(x, x_null, y, xlabel, ax, c='gray'):
     sns.histplot(y_null, ax=ax)
     
     y_obs = sp.stats.pearsonr(x, y)[0]
-    ax.axvline(x=y_obs, c = 'y')
+    ax.axvline(x=y_obs, c = 'r')
 
     if y_obs < 0: p_val = np.sum(y_null <= y_obs)/num_surrogates
     else: p_val = np.sum(y_null >= y_obs)/num_surrogates
