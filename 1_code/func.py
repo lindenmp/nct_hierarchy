@@ -25,6 +25,7 @@ from statsmodels.stats import multitest
 from scipy.spatial.distance import pdist, squareform
 from bct.utils import weight_conversion
 from bct.algorithms.distance import distance_wei, distance_wei_floyd, retrieve_shortest_path
+from sklearn.linear_model import LinearRegression
 
 def set_proj_env():
 
@@ -702,4 +703,62 @@ def get_adj_stats(A, gradients, cluster_labels, return_abs = False, drop_taylor 
     num_smv_flips = matrix_to_states(num_smv_flips_tmp, cluster_labels)
             
     return D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var, joint_var, num_tm_flips, num_smv_flips
+
+
+def nuis_regress_matrix(x, c, indices):
+    x_out = np.zeros(x.shape)
+    
+    x = x[indices].reshape(-1,1)
+    c = c[indices].reshape(-1,1)
+    
+    nuis_reg = LinearRegression()
+    nuis_reg.fit(c, x)
+    
+    x_pred = nuis_reg.predict(c)
+    x_out[indices] = x[:,0] - x_pred[:,0]
+
+    return x_out
+
+
+def my_regplot(x, y, xlabel, ylabel, ax, c='gray'):
+    try:
+        sns.kdeplot(x = x, y = y, ax=ax, color='gray', thresh=0.05, alpha=0.25)
+    except:
+        pass
+    sns.regplot(x = x, y = y, ax=ax, scatter = False)
+    ax.scatter(x = x, y = y, c=c, s=5, alpha=0.5)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel, labelpad=-1)
+    ax.tick_params(pad = -2.5)
+    pearson_stats = sp.stats.pearsonr(x,y)
+    spearman_stats = sp.stats.spearmanr(x,y)
+    textstr = 'r = {:.2f}, p = {:.2f} \nrho = {:.2f}, p = {:.2f}'.format(pearson_stats[0], pearson_stats[1],
+                                                               spearman_stats[0], spearman_stats[1])
+    ax.text(0.05, 0.975, textstr, transform=ax.transAxes,
+            verticalalignment='top')
+
+
+def my_nullplot(x, x_null, y, xlabel, ax, c='gray'):
+    num_surrogates = x_null.shape[1]
+    
+    y_null = np.zeros(num_surrogates)
+    for i in np.arange(num_surrogates): y_null[i] = sp.stats.pearsonr(x_null[:,i], y)[0]
+        
+    sns.histplot(y_null, ax=ax)
+    
+    y_obs = sp.stats.pearsonr(x, y)[0]
+    ax.axvline(x=y_obs, c = 'y')
+
+    if y_obs < 0: p_val = np.sum(y_null <= y_obs)/num_surrogates
+    else: p_val = np.sum(y_null >= y_obs)/num_surrogates
+    # p_val = np.sum(np.abs(y_null) >= np.abs(y_obs))/num_surrogates
+    # p_val = np.min([np.sum(y_null >= y_obs)/num_surrogates,
+    #                 np.sum(y_null <= y_obs)/num_surrogates])
+    textstr = 'p unc. = {:.2f}'.format(p_val)
+    ax.text(0.01, 0.975, textstr, transform=ax.transAxes,
+            verticalalignment='top', rotation='horizontal', c='r')
+    
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel('')
+    ax.tick_params(pad = -2.5)
 
