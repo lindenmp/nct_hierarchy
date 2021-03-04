@@ -222,3 +222,51 @@ for surr_type in surr_list:
         np.save(os.path.join(outputdir, file_label+'_smv_var_surr'), smv_var_surr)
         np.save(os.path.join(outputdir, file_label+'_joint_var_surr'), joint_var_surr)
 
+
+# # 5) Compute minimum energy taylor optimized for replication dataset
+
+# In[ ]:
+
+
+df_file = indir+connectome_spec+'_df.csv'
+df = pd.read_csv(df_file)
+df.set_index(['bblid', 'scanid'], inplace = True)
+df = df.loc[df['disc_repl'] == 1,:]
+print(df.shape)
+
+n_taylor = 7
+
+
+# In[ ]:
+
+
+py_script = '/cbica/home/parkesl/research_projects/pfactor_gradients/1_code/cluster/compute_control_energy_taylor_optimized.py'
+
+
+# In[ ]:
+
+
+# drop_taylor_file = '/cbica/home/parkesl/research_projects/pfactor_gradients/3_output/results/out/Overall_Psychopathology_r_max_corr_taylor.npy'
+# outputdir = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/5_compute_minimum_energy_taylor_optimized/out/'+connectome_spec+'/Overall_Psychopathology'
+drop_taylor_file = '/cbica/home/parkesl/research_projects/pfactor_gradients/3_output/results/out/Overall_Psychopathology_mprage_antsCT_vol_TBV_dti64MeanRelRMS_r_max_corr_taylor.npy'
+outputdir = '/cbica/home/parkesl/research_projects/pfactor_gradients/2_pipeline/5_compute_minimum_energy_taylor_optimized/out/'+connectome_spec+'/Overall_Psychopathology_mprage_antsCT_vol_TBV_dti64MeanRelRMS'
+if not os.path.exists(outputdir): os.makedirs(outputdir)
+
+
+# In[ ]:
+
+
+for s in np.arange(df.shape[0]):
+    subjid = str(df.iloc[s].name[0])+'_'+str(df.iloc[s].name[1])
+    subjid_short = 's'+str(df.iloc[s].name[0])
+    A_file = indir+connectome_spec+'_'+subjid+'_A.npy'
+
+    for T in T_list:
+        for B_ver in B_list:
+            subprocess_str = '{0} {1} -subjid {2} -A_file {3} -outputdir {4} -T {5} -B_ver {6} -n_subsamples {7} -n_taylor {8} -drop_taylor_file {9} -gradients_file {10}'             .format(py_exec, py_script, subjid, A_file, outputdir, T, B_ver, n_subsamples, n_taylor, drop_taylor_file, gradients_file)
+
+            name = subjid_short+'_'+str(T)+B_ver
+            qsub_call = 'qsub -N {0} -l h_vmem=3G,s_vmem=3G -pe threaded 1 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ '.format(name)
+
+            os.system(qsub_call + subprocess_str)
+
