@@ -68,6 +68,18 @@ if not os.path.exists(os.environ['PIPELINEDIR']): os.makedirs(os.environ['PIPELI
 # In[7]:
 
 
+storedir = os.path.join(os.environ['OUTPUTDIR'], 'results', 'store')
+print(storedir)
+if not os.path.exists(storedir): os.makedirs(storedir)
+    
+outputdir = os.path.join(os.environ['OUTPUTDIR'], 'results', 'out')
+print(outputdir)
+if not os.path.exists(outputdir): os.makedirs(outputdir)
+
+
+# In[8]:
+
+
 figdir = os.path.join(os.environ['OUTPUTDIR'], 'figs')
 print(figdir)
 if not os.path.exists(figdir): os.makedirs(figdir)
@@ -75,7 +87,7 @@ if not os.path.exists(figdir): os.makedirs(figdir)
 
 # ### Parameters
 
-# In[8]:
+# In[9]:
 
 
 control_list = ['minimum','minimum_taylor']; control = control_list[0]
@@ -88,7 +100,18 @@ print(n_clusters)
 n_subsamples = 20
 
 
-# In[9]:
+# #### Get indices of elements
+
+# In[10]:
+
+
+# indices = np.triu_indices(n_clusters, k=1)
+# indices = np.tril_indices(n_clusters, k=-1)
+indices = np.where(~np.eye(n_clusters,dtype=bool))
+len(indices[0])
+
+
+# In[11]:
 
 
 phenos = ['Overall_Psychopathology','Psychosis_Positive','Psychosis_NegativeDisorg','AnxiousMisery','Externalizing','Fear','F1_Exec_Comp_Res_Accuracy','F3_Executive_Efficiency','Overall_Speed']
@@ -101,7 +124,7 @@ print(pheno)
 
 # ### Setup plots
 
-# In[10]:
+# In[12]:
 
 
 if not os.path.exists(figdir): os.makedirs(figdir)
@@ -114,7 +137,7 @@ cmap = my_get_cmap('pair')
 
 # ### Cortical gradients
 
-# In[11]:
+# In[13]:
 
 
 gradients = np.loadtxt(os.path.join(os.environ['PIPELINEDIR'], '1_compute_gradient', 'out', outfile_prefix+'pnc_grads_template.txt'))
@@ -136,7 +159,7 @@ ax.set_ylabel('Gradient 1')
 
 # ### MNI Centroids
 
-# In[12]:
+# In[14]:
 
 
 centroids = pd.read_csv(os.path.join(os.environ['PROJDIR'],'figs_support','labels','schaefer'+str(parc_scale),'Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'))
@@ -147,7 +170,7 @@ centroids.head()
 
 # ### Group A matrix (6% sparsity)
 
-# In[13]:
+# In[15]:
 
 
 A = np.load(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out', outfile_prefix+'disc_mean_A_s6.npy'))
@@ -156,7 +179,7 @@ D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var, joint_var, num_tm_flips, nu
 
 # ### Compute distances
 
-# In[14]:
+# In[16]:
 
 
 dist_mni = get_pdist(centroids.values,kmeans.labels_, method = 'median')
@@ -168,7 +191,7 @@ dist_h[np.eye(dist_h.shape[0]) == 1] = np.nan
 
 # # Load participant data
 
-# In[15]:
+# In[17]:
 
 
 df = pd.read_csv(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out', outfile_prefix+'df.csv'))
@@ -178,7 +201,7 @@ df = df.loc[df['disc_repl'] == 0,:]
 print(df.shape)
 
 
-# In[16]:
+# In[18]:
 
 
 sns.histplot(df[pheno])
@@ -186,14 +209,14 @@ sns.histplot(df[pheno])
 
 # ## Energy
 
-# In[17]:
+# In[19]:
 
 
 # subject filter
 subj_filt = np.zeros((df.shape[0],)).astype(bool)
 
 
-# In[18]:
+# In[20]:
 
 
 E = np.zeros((n_clusters, n_clusters, n_subsamples, df.shape[0]))
@@ -211,13 +234,13 @@ for i in tqdm(np.arange(df.shape[0])):
         subj_filt[i] = True
 
 
-# In[19]:
+# In[21]:
 
 
 np.sum(subj_filt)
 
 
-# In[20]:
+# In[22]:
 
 
 if any(subj_filt):
@@ -225,7 +248,7 @@ if any(subj_filt):
     df = df.loc[~subj_filt]
 
 
-# In[21]:
+# In[23]:
 
 
 # mean over subsamples
@@ -233,19 +256,19 @@ E = np.mean(E, axis = 2)
 E.shape
 
 
-# In[22]:
+# In[24]:
 
 
-# # normalize
-# for i in np.arange(n_clusters):
-#     for j in np.arange(n_clusters):
-#         if i != j:
-#             E[i,j,:] = rank_int(pd.Series(data=E[i,j,:])).values
+# normalize
+for i in np.arange(n_clusters):
+    for j in np.arange(n_clusters):
+        if i != j:
+            E[i,j,:] = rank_int(pd.Series(data=E[i,j,:])).values
 
 
 # ## Individuals' adj stats
 
-# In[23]:
+# In[25]:
 
 
 hops_inds = np.zeros((num_parcels, num_parcels, df.shape[0]))
@@ -264,17 +287,52 @@ for i in tqdm(np.arange(df.shape[0])):
 
 # # Nuisance regression
 
-# In[24]:
+# In[26]:
 
 
 df['sex_adj'] = df['sex'] - 1
 covs = ['sex_adj', 'ageAtScan1_Years', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
-covs = []
-# covs = ['sex_adj', 'ageAtScan1_Years']
-# covs = ['ageAtScan1_Years']
 
 
-# In[25]:
+# In[27]:
+
+
+df.loc[:,'dti64MeanRelRMS'] = rank_int(df.loc[:,'dti64MeanRelRMS'])
+
+
+# In[28]:
+
+
+if len(covs) > 0:
+    f, ax = plt.subplots(2, len(covs), figsize=(len(covs)*5, 10))
+    
+    for c, cov in enumerate(covs):
+        r_cov = np.zeros((n_clusters,n_clusters))
+        
+        for i in np.arange(n_clusters):
+            for j in np.arange(n_clusters):
+                if i != j:
+                    r_cov[i,j] = sp.stats.pearsonr(df.loc[:,cov],E[i,j,:])[0]
+                         
+        ax[0,c].set_title(cov)
+        sns.histplot(df.loc[:,cov], ax=ax[0,c])
+        ax[0,c].set_ylabel('')
+        ax[0,c].set_xlabel('')
+        sns.histplot(r_cov[indices], ax=ax[1,c])
+        ax[1,c].set_xlabel('corr(energy,cov)')
+        ax[1,c].set_ylabel('')
+
+
+# In[29]:
+
+
+# covs = ['sex_adj', 'ageAtScan1_Years', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
+covs = ['mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
+# covs = ['dti64MeanRelRMS',]
+# covs = []
+
+
+# In[30]:
 
 
 if len(covs) > 0:
@@ -282,24 +340,24 @@ if len(covs) > 0:
     df_nuis = df.loc[:,covs]
     df_nuis = sm.add_constant(df_nuis)
 
-    mdl = sm.OLS(df.loc[:,phenos], df_nuis).fit()
-    y_pred = mdl.predict(df_nuis)
-    y_pred.columns = phenos
-    df.loc[:,phenos] = df.loc[:,phenos] - y_pred
+#     mdl = sm.OLS(df.loc[:,phenos], df_nuis).fit()
+#     y_pred = mdl.predict(df_nuis)
+#     y_pred.columns = phenos
+#     df.loc[:,phenos] = df.loc[:,phenos] - y_pred
 
     for i in np.arange(n_clusters):
         for j in np.arange(n_clusters):
-            mdl = sm.OLS(E[i,j,:], df_nuis).fit()
-            y_pred = mdl.predict(df_nuis)
-            y_resid = E[i,j,:] - y_pred
-            E[i,j,:] = y_resid
+            if i != j:
+                mdl = sm.OLS(E[i,j,:], df_nuis).fit()
+                y_pred = mdl.predict(df_nuis)
+                E[i,j,:] = E[i,j,:] - y_pred
 
 
 # # Results
 
 # ## Plot correlations between pheno and energy
 
-# In[26]:
+# In[31]:
 
 
 r = np.zeros((n_clusters, n_clusters))
@@ -326,20 +384,9 @@ if np.sum(pval<.05) != 0:
 f.savefig(outfile_prefix+'correlations.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
 
 
-# #### Get indices of elements
-
-# In[27]:
-
-
-# indices = np.triu_indices(n_clusters, k=1)
-# indices = np.tril_indices(n_clusters, k=-1)
-indices = np.where(~np.eye(n_clusters,dtype=bool))
-len(indices[0])
-
-
 # ## Plot hops against variances
 
-# In[28]:
+# In[32]:
 
 
 f, ax = plt.subplots(1, 2, figsize=(10, 4))
@@ -357,7 +404,7 @@ ax[1].set_title('corr(hops, unimodal)')
 
 # ## Plot null models
 
-# In[29]:
+# In[33]:
 
 
 num_surrogates = 10000
@@ -389,26 +436,26 @@ f.savefig(outfile_prefix+'correlations_vs_adjstats_null.png', dpi = 150, bbox_in
 
 # # Taylor series models
 
-# In[30]:
+# In[34]:
 
 
 control = control_list[1]; print(control)
 
 
-# In[31]:
+# In[35]:
 
 
 n_taylor = 7
 
 
-# In[32]:
+# In[36]:
 
 
 # subject filter
 subj_filt = np.zeros((df.shape[0],)).astype(bool)
 
 
-# In[33]:
+# In[37]:
 
 
 E_taylor = np.zeros((n_clusters, n_clusters, n_subsamples, n_taylor, df.shape[0]))
@@ -426,13 +473,13 @@ for i in np.arange(df.shape[0]):
         subj_filt[i] = True
 
 
-# In[34]:
+# In[38]:
 
 
 np.sum(subj_filt)
 
 
-# In[35]:
+# In[39]:
 
 
 if any(subj_filt):
@@ -440,7 +487,7 @@ if any(subj_filt):
     df = df.loc[~subj_filt]
 
 
-# In[36]:
+# In[40]:
 
 
 # mean over subsamples
@@ -450,7 +497,7 @@ E_taylor.shape
 
 # ### Recompute correlations
 
-# In[37]:
+# In[41]:
 
 
 r_taylor = np.zeros((n_clusters, n_clusters, n_taylor))
@@ -461,26 +508,27 @@ for i in np.arange(n_clusters):
             r_taylor[i,j,t] = sp.stats.pearsonr(df.loc[:,pheno],E_taylor[i,j,t,:])[0]
 
 
-# In[38]:
+# In[42]:
 
 
 r_max_corr = np.zeros((n_clusters, n_clusters))
-r_max_corr_taylor = np.zeros((n_clusters, n_clusters))
+r_max_corr_taylor = np.zeros((n_clusters, n_clusters), dtype=int)
+# r_max_corr_taylor[np.eye(n_clusters).astype(bool)] = np.nan
+
 r_min_corr = np.zeros((n_clusters, n_clusters))
-r_min_corr_taylor = np.zeros((n_clusters, n_clusters))
+r_min_corr_taylor = np.zeros((n_clusters, n_clusters), dtype=int)
+# r_min_corr_taylor[np.eye(n_clusters).astype(bool)] = np.nan
 
 for i in np.arange(n_clusters):
     for j in np.arange(n_clusters):
-        r_max_corr[i,j] = np.max(np.abs(r_taylor[i,j,:]))
-        r_max_corr_taylor[i,j] = np.argmax(np.abs(r_taylor[i,j,:]))
-        r_min_corr[i,j] = np.min(np.abs(r_taylor[i,j,:]))
-        r_min_corr_taylor[i,j] = np.argmin(np.abs(r_taylor[i,j,:]))
-        
-r_max_corr_taylor[np.eye(n_clusters).astype(bool)] = np.nan
-r_min_corr_taylor[np.eye(n_clusters).astype(bool)] = np.nan
+        if i != j:
+            r_max_corr[i,j] = np.max(np.abs(r_taylor[i,j,:]))
+            r_max_corr_taylor[i,j] = np.argmax(np.abs(r_taylor[i,j,:]))
+            r_min_corr[i,j] = np.min(np.abs(r_taylor[i,j,:]))
+            r_min_corr_taylor[i,j] = np.argmin(np.abs(r_taylor[i,j,:]))
 
 
-# In[39]:
+# In[43]:
 
 
 f, ax = plt.subplots(2, 2, figsize=(10, 8))
@@ -509,4 +557,34 @@ ax[1,1].tick_params(pad = -2.5)
 
 f.subplots_adjust(wspace=0.5)
 f.savefig(outfile_prefix+'drop_taylor_max_corr.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
+
+
+# In[44]:
+
+
+f, ax = plt.subplots(2, 3, figsize=(15, 8))
+f.subplots_adjust(wspace=0.3)
+
+sns.heatmap(r_max_corr_taylor, ax=ax[0,0], square = True, cmap=plt.cm.get_cmap('Set3', 6))
+ax[0,0].set_title('Path length (max corr)');
+sns.heatmap(r_max_corr, ax=ax[0,1], square = True)
+ax[0,1].set_title('Max corr');
+sns.heatmap(r_max_corr-np.abs(r), ax=ax[0,2], square = True, center = 0)
+ax[0,2].set_title('Corr delta');
+
+sns.heatmap(r_min_corr_taylor, ax=ax[1,0], square = True, cmap=plt.cm.get_cmap('Set3', 6))
+ax[1,0].set_title('Path length (min corr)');
+sns.heatmap(r_min_corr, ax=ax[1,1], square = True)
+ax[1,1].set_title('Min corr');
+sns.heatmap(r_min_corr-np.abs(r), ax=ax[1,2], square = True, center = 0)
+ax[1,2].set_title('Corr delta');
+
+
+# In[45]:
+
+
+if len(covs) > 0:
+    np.save(os.path.join(outputdir,pheno+'_'+'_'.join(covs)+'_r_max_corr_taylor'),r_max_corr_taylor)
+else:
+    np.save(os.path.join(outputdir,pheno+'_r_max_corr_taylor'),r_max_corr_taylor)
 
