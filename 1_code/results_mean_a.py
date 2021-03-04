@@ -70,6 +70,18 @@ if not os.path.exists(os.environ['PIPELINEDIR']): os.makedirs(os.environ['PIPELI
 # In[7]:
 
 
+storedir = os.path.join(os.environ['OUTPUTDIR'], 'results', 'store')
+print(storedir)
+if not os.path.exists(storedir): os.makedirs(storedir)
+    
+outputdir = os.path.join(os.environ['OUTPUTDIR'], 'results', 'out')
+print(outputdir)
+if not os.path.exists(outputdir): os.makedirs(outputdir)
+
+
+# In[8]:
+
+
 figdir = os.path.join(os.environ['OUTPUTDIR'], 'figs')
 print(figdir)
 if not os.path.exists(figdir): os.makedirs(figdir)
@@ -77,7 +89,7 @@ if not os.path.exists(figdir): os.makedirs(figdir)
 
 # ### Parameters
 
-# In[8]:
+# In[9]:
 
 
 control_list = ['minimum','minimum_taylor']; control = control_list[0]
@@ -93,7 +105,7 @@ n_taylor = 7
 
 # ### Setup plots
 
-# In[9]:
+# In[10]:
 
 
 if not os.path.exists(figdir): os.makedirs(figdir)
@@ -106,7 +118,7 @@ cmap = my_get_cmap('pair')
 
 # ## Load group A matrix (6% sparsity)
 
-# In[10]:
+# In[11]:
 
 
 file_label = 'disc_mean_A_s6_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)
@@ -122,7 +134,7 @@ sns.heatmap(E_Am, ax=ax, square = True)
 
 # ### MNI Centroids
 
-# In[11]:
+# In[12]:
 
 
 centroids = pd.read_csv(os.path.join(os.environ['PROJDIR'],'figs_support','labels','schaefer'+str(parc_scale),'Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'))
@@ -131,13 +143,13 @@ centroids.set_index('ROI Label', inplace=True)
 centroids.head()
 
 
-# In[12]:
+# In[13]:
 
 
 os.environ['PIPELINEDIR']
 
 
-# In[13]:
+# In[14]:
 
 
 D = sp.spatial.distance.pdist(centroids, 'euclidean')
@@ -148,7 +160,7 @@ np.save(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'D'), D)
 
 # ## Plot cortical gradients
 
-# In[14]:
+# In[15]:
 
 
 gradients = np.loadtxt(os.path.join(os.environ['PIPELINEDIR'], '1_compute_gradient', 'out', outfile_prefix+'pnc_grads_template.txt'))
@@ -168,7 +180,7 @@ ax.set_xlabel('Gradient 2')
 ax.set_ylabel('Gradient 1')
 
 
-# In[15]:
+# In[16]:
 
 
 i = 9
@@ -189,7 +201,7 @@ f.colorbar(im, ax=ax)
 
 # ## Plot paths traversing cortical gradients
 
-# In[16]:
+# In[17]:
 
 
 A = np.load(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out', outfile_prefix+'disc_mean_A_s8.npy'))
@@ -199,7 +211,7 @@ D, hops, Pmat = distance_wei_floyd(A, transform = 'inv')
 sns.histplot(hops[np.triu_indices(num_parcels, k=1)])
 
 
-# In[17]:
+# In[18]:
 
 
 np.random.seed(0)
@@ -252,7 +264,7 @@ f.savefig(outfile_prefix+'random_shortest_paths.png', dpi = 150, bbox_inches = '
 
 # ### Compute distances
 
-# In[18]:
+# In[19]:
 
 
 dist_mni = get_pdist(centroids.values,kmeans.labels_, method = 'median')
@@ -264,7 +276,7 @@ dist_h[np.eye(dist_h.shape[0]) == 1] = np.nan
 
 # ### Get indices of elements
 
-# In[19]:
+# In[20]:
 
 
 # indices = np.triu_indices(n_clusters, k=1)
@@ -275,7 +287,7 @@ len(indices[0])
 
 # ## Plot distances against one another
 
-# In[20]:
+# In[21]:
 
 
 f, ax = plt.subplots(1, 3, figsize=(15, 4))
@@ -289,7 +301,7 @@ f.savefig(outfile_prefix+'disance_vs_distance.png', dpi = 150, bbox_inches = 'ti
 
 # ## Plot distances against energy
 
-# In[21]:
+# In[22]:
 
 
 f, ax = plt.subplots(1, 4, figsize=(20, 4))
@@ -307,7 +319,7 @@ f.savefig(outfile_prefix+'energy_vs_distance.png', dpi = 150, bbox_inches = 'tig
 
 # ## Plot adj. stats
 
-# In[22]:
+# In[23]:
 
 
 plot_var = tm_var[indices]; ylabel = 'Transmodal variance'
@@ -335,7 +347,7 @@ f.savefig(outfile_prefix+'variance_vs_adjstats.png', dpi = 150, bbox_inches = 't
 
 # ## Plot adj. stats against energy
 
-# In[23]:
+# In[24]:
 
 
 E_Am_res = nuis_regress_matrix(E_Am, dist_mni, indices); E_plot = E_Am_res; ylabel = 'Energy (resid MNI)'
@@ -353,7 +365,7 @@ f.subplots_adjust(wspace=0.5)
 f.savefig(outfile_prefix+'energy_vs_adjstats_resid_mni.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
 
 
-# In[24]:
+# In[25]:
 
 
 E_Am_res = nuis_regress_matrix(E_Am, dist_h, indices); E_plot = E_Am_res; ylabel = 'Energy (resid hierarchy)'
@@ -373,7 +385,7 @@ f.savefig(outfile_prefix+'energy_vs_adjstats_resid_h.png', dpi = 150, bbox_inche
 
 # # Null models
 
-# In[25]:
+# In[26]:
 
 
 num_surrogates = 10000
