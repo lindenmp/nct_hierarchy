@@ -68,11 +68,11 @@ if not os.path.exists(os.environ['PIPELINEDIR']): os.makedirs(os.environ['PIPELI
 # In[7]:
 
 
-storedir = os.path.join(os.environ['OUTPUTDIR'], 'results', 'store')
+storedir = os.path.join(os.environ['PIPELINEDIR'], '5_compute_minimum_energy_taylor_optimized', 'store')
 print(storedir)
 if not os.path.exists(storedir): os.makedirs(storedir)
     
-outputdir = os.path.join(os.environ['OUTPUTDIR'], 'results', 'out')
+outputdir = os.path.join(os.environ['PIPELINEDIR'], '5_compute_minimum_energy_taylor_optimized', 'out')
 print(outputdir)
 if not os.path.exists(outputdir): os.makedirs(outputdir)
 
@@ -114,10 +114,7 @@ len(indices[0])
 # In[11]:
 
 
-phenos = ['Overall_Psychopathology','Psychosis_Positive','Psychosis_NegativeDisorg','AnxiousMisery','Externalizing','Fear','F1_Exec_Comp_Res_Accuracy','F3_Executive_Efficiency','Overall_Speed']
-# phenos = ['Overall_Psychopathology','Psychosis_Positive','Psychosis_NegativeDisorg','AnxiousMisery','Externalizing','Fear']
-# phenos_label = ['Overall psychopathology','Psychosis (positive)','Psychosis (negative)','Anxious-misery','Externalizing','Fear']
-# phenos_label_short = ['Ov. psych.', 'Psy. (pos.)', 'Psy. (neg.)', 'Anx.-mis.', 'Ext.', 'Fear']
+phenos = ['Overall_Psychopathology','Psychosis_Positive','Psychosis_NegativeDisorg','AnxiousMisery','Externalizing','Fear']
 pheno = phenos[0]
 print(pheno)
 
@@ -201,22 +198,16 @@ df = df.loc[df['disc_repl'] == 0,:]
 print(df.shape)
 
 
-# In[18]:
-
-
-sns.histplot(df[pheno])
-
-
 # ## Energy
 
-# In[19]:
+# In[18]:
 
 
 # subject filter
 subj_filt = np.zeros((df.shape[0],)).astype(bool)
 
 
-# In[20]:
+# In[19]:
 
 
 E = np.zeros((n_clusters, n_clusters, n_subsamples, df.shape[0]))
@@ -234,13 +225,13 @@ for i in tqdm(np.arange(df.shape[0])):
         subj_filt[i] = True
 
 
-# In[21]:
+# In[20]:
 
 
 np.sum(subj_filt)
 
 
-# In[22]:
+# In[21]:
 
 
 if any(subj_filt):
@@ -248,7 +239,7 @@ if any(subj_filt):
     df = df.loc[~subj_filt]
 
 
-# In[23]:
+# In[22]:
 
 
 # mean over subsamples
@@ -256,10 +247,20 @@ E = np.mean(E, axis = 2)
 E.shape
 
 
+# ### Normalize
+
+# In[23]:
+
+
+# pheno
+df.loc[:,pheno] = rank_int(df.loc[:,pheno])
+sns.histplot(df[pheno])
+
+
 # In[24]:
 
 
-# normalize
+# energy
 for i in np.arange(n_clusters):
     for j in np.arange(n_clusters):
         if i != j:
@@ -584,7 +585,7 @@ ax[1,2].set_title('Corr delta');
 
 
 if len(covs) > 0:
-    np.save(os.path.join(outputdir,pheno+'_'+'_'.join(covs)+'_r_max_corr_taylor'),r_max_corr_taylor)
+    np.save(os.path.join(storedir,pheno+'_'+'_'.join(covs)+'_r_max_corr_taylor'),r_max_corr_taylor)
 else:
-    np.save(os.path.join(outputdir,pheno+'_r_max_corr_taylor'),r_max_corr_taylor)
+    np.save(os.path.join(storedir,pheno+'_r_max_corr_taylor'),r_max_corr_taylor)
 
