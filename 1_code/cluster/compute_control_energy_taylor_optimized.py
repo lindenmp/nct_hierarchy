@@ -172,7 +172,10 @@ for i in np.arange(n_clusters):
                 B = get_B_matrix(x0_tmp, xf_tmp, version = B_ver)
 
                 E[i,j,k] = minimum_energy_taylor(A, T, B, x0_tmp, xf_tmp, n_taylor = n_taylor, drop_taylor = 0)
-                Eto[i,j,k] = minimum_energy_taylor(A, T, B, x0_tmp, xf_tmp, n_taylor = n_taylor, drop_taylor = drop_taylor_matrix[i,j])
+                if drop_taylor_matrix[i,j] == 0:
+                    Eto[i,j,k] = E[i,j,k].copy()
+                else:
+                    Eto[i,j,k] = minimum_energy_taylor(A, T, B, x0_tmp, xf_tmp, n_taylor = n_taylor, drop_taylor = drop_taylor_matrix[i,j])
 
 np.save(os.path.join(outputdir,subjid+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E'), E)
 np.save(os.path.join(outputdir,subjid+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_Eto'), Eto)
