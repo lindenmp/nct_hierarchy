@@ -214,7 +214,8 @@ print('Train:', np.sum(df['disc_repl'] == 0), 'Test:', np.sum(df['disc_repl'] ==
 
 
 # phenos = ['Overall_Psychopathology','Psychosis_Positive','F3_Executive_Efficiency','Overall_Speed']
-phenos = ['Overall_Psychopathology','Psychosis_Positive','Psychosis_NegativeDisorg','AnxiousMisery','Externalizing','Fear','F1_Exec_Comp_Res_Accuracy','F3_Executive_Efficiency','Overall_Speed']
+# phenos = ['Overall_Psychopathology','Psychosis_Positive','Psychosis_NegativeDisorg','AnxiousMisery','Externalizing','Fear','F1_Exec_Comp_Res_Accuracy','F3_Executive_Efficiency','Overall_Speed']
+phenos = ['Overall_Psychopathology','Psychosis_Positive','Psychosis_NegativeDisorg','AnxiousMisery','Externalizing','Fear']
 print(phenos)
 
 
@@ -223,11 +224,11 @@ print(phenos)
 # In[18]:
 
 
-for pheno in phenos:
-    if df.loc[:,pheno].isna().any():
-        print('NaN replacement: ', pheno)
-        x = np.nanmedian(df.loc[:,pheno])
-        df.loc[df.loc[:,pheno].isna(),pheno] = x
+# for pheno in phenos:
+#     if df.loc[:,pheno].isna().any():
+#         print('NaN replacement: ', pheno)
+#         x = np.nanmedian(df.loc[:,pheno])
+#         df.loc[df.loc[:,pheno].isna(),pheno] = x
 
 
 # #### Normalize
@@ -235,24 +236,24 @@ for pheno in phenos:
 # In[19]:
 
 
-rank_r = np.zeros(len(phenos),)
+# rank_r = np.zeros(len(phenos),)
 
-for i, pheno in enumerate(phenos):
-    # normalize regional metric
-#     x = sp.stats.yeojohnson(df.loc[:,pheno])[0]
-    x = rank_int(df.loc[:,pheno])
-    # check if rank order is preserved
-    rank_r[i] = sp.stats.spearmanr(df.loc[:,pheno],x)[0]
-    # store normalized version
-    df.loc[:,pheno] = x
+# for i, pheno in enumerate(phenos):
+#     # normalize regional metric
+# #     x = sp.stats.yeojohnson(df.loc[:,pheno])[0]
+#     x = rank_int(df.loc[:,pheno])
+#     # check if rank order is preserved
+#     rank_r[i] = sp.stats.spearmanr(df.loc[:,pheno],x)[0]
+#     # store normalized version
+#     df.loc[:,pheno] = x
 
-print(np.sum(rank_r < 1))
+# print(np.sum(rank_r < 1))
 
 
 # In[20]:
 
 
-df.loc[:,phenos].var()
+# df.loc[:,phenos].var()
 
 
 # ## Load in structural connectivity matrices
