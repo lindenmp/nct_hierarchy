@@ -143,24 +143,9 @@ centroids.set_index('ROI Label', inplace=True)
 centroids.head()
 
 
-# In[13]:
-
-
-os.environ['PIPELINEDIR']
-
-
-# In[14]:
-
-
-D = sp.spatial.distance.pdist(centroids, 'euclidean')
-
-D = sp.spatial.distance.squareform(D)
-np.save(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'D'), D)
-
-
 # ## Plot cortical gradients
 
-# In[15]:
+# In[13]:
 
 
 gradients = np.loadtxt(os.path.join(os.environ['PIPELINEDIR'], '1_compute_gradient', 'out', outfile_prefix+'pnc_grads_template.txt'))
@@ -180,7 +165,7 @@ ax.set_xlabel('Gradient 2')
 ax.set_ylabel('Gradient 1')
 
 
-# In[16]:
+# In[14]:
 
 
 i = 9
@@ -201,7 +186,7 @@ f.colorbar(im, ax=ax)
 
 # ## Plot paths traversing cortical gradients
 
-# In[17]:
+# In[15]:
 
 
 A = np.load(os.path.join(os.environ['PIPELINEDIR'], '0_get_sample', 'out', outfile_prefix+'disc_mean_A_s8.npy'))
@@ -211,7 +196,7 @@ D, hops, Pmat = distance_wei_floyd(A, transform = 'inv')
 sns.histplot(hops[np.triu_indices(num_parcels, k=1)])
 
 
-# In[18]:
+# In[16]:
 
 
 np.random.seed(0)
@@ -264,7 +249,7 @@ f.savefig(outfile_prefix+'random_shortest_paths.png', dpi = 150, bbox_inches = '
 
 # ### Compute distances
 
-# In[19]:
+# In[17]:
 
 
 dist_mni = get_pdist(centroids.values,kmeans.labels_, method = 'median')
@@ -276,7 +261,7 @@ dist_h[np.eye(dist_h.shape[0]) == 1] = np.nan
 
 # ### Get indices of elements
 
-# In[20]:
+# In[18]:
 
 
 # indices = np.triu_indices(n_clusters, k=1)
@@ -287,7 +272,7 @@ len(indices[0])
 
 # ## Plot distances against one another
 
-# In[21]:
+# In[19]:
 
 
 f, ax = plt.subplots(1, 3, figsize=(15, 4))
@@ -301,7 +286,7 @@ f.savefig(outfile_prefix+'disance_vs_distance.png', dpi = 150, bbox_inches = 'ti
 
 # ## Plot distances against energy
 
-# In[22]:
+# In[20]:
 
 
 f, ax = plt.subplots(1, 4, figsize=(20, 4))
@@ -319,7 +304,7 @@ f.savefig(outfile_prefix+'energy_vs_distance.png', dpi = 150, bbox_inches = 'tig
 
 # ## Plot adj. stats
 
-# In[23]:
+# In[21]:
 
 
 plot_var = tm_var[indices]; ylabel = 'Transmodal variance'
@@ -347,7 +332,7 @@ f.savefig(outfile_prefix+'variance_vs_adjstats.png', dpi = 150, bbox_inches = 't
 
 # ## Plot adj. stats against energy
 
-# In[24]:
+# In[22]:
 
 
 E_Am_res = nuis_regress_matrix(E_Am, dist_mni, indices); E_plot = E_Am_res; ylabel = 'Energy (resid MNI)'
@@ -365,7 +350,7 @@ f.subplots_adjust(wspace=0.5)
 f.savefig(outfile_prefix+'energy_vs_adjstats_resid_mni.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0.1)
 
 
-# In[25]:
+# In[23]:
 
 
 E_Am_res = nuis_regress_matrix(E_Am, dist_h, indices); E_plot = E_Am_res; ylabel = 'Energy (resid hierarchy)'
@@ -385,7 +370,7 @@ f.savefig(outfile_prefix+'energy_vs_adjstats_resid_h.png', dpi = 150, bbox_inche
 
 # # Null models
 
-# In[26]:
+# In[24]:
 
 
 num_surrogates = 10000
