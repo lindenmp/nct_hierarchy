@@ -45,7 +45,7 @@ from func import set_proj_env
 
 
 parc_str = 'schaefer' # 'schaefer' 'lausanne' 'glasser'
-parc_scale = 200 # 200/400 | 125/250 | 360
+parc_scale = 400 # 200/400 | 125/250 | 360
 edge_weight = 'streamlineCount' # 'streamlineCount' 'volNormStreamline'
 set_proj_env()
 
@@ -315,7 +315,7 @@ for g in np.arange(0,2):
 
 # # Setup gradient sampling for NCT
 
-# In[30]:
+# In[24]:
 
 
 from sklearn.cluster import KMeans
@@ -334,92 +334,4 @@ ax.scatter(gradients[:,1], gradients[:,0], c = colormask, cmap= 'Set3')
 ax.scatter(kmeans.cluster_centers_[:,1], kmeans.cluster_centers_[:,0], marker = 'x', c = 'k', s = 100)
 ax.set_xlabel('Gradient 2')
 ax.set_ylabel('Gradient 1')
-
-
-# In[25]:
-
-
-# from sklearn.neighbors import NearestNeighbors
-
-# nbrs = NearestNeighbors(n_neighbors=5, algorithm='kd_tree').fit(gradients)
-# distances, indices = nbrs.kneighbors(gradients)
-
-# f, ax = plt.subplots(1, 5, figsize=(25, 5))
-# for i in np.arange(5):
-#     colormask = np.zeros(num_parcels)
-#     colormask[indices[i,:]] = 1
-
-#     ax[i].scatter(gradients[:,1], gradients[:,0], c = colormask, cmap= 'Set3')
-#     ax[i].set_xlabel('Gradient 2')
-#     ax[i].set_ylabel('Gradient 1')
-
-
-# In[26]:
-
-
-# gradient_1 = gradients[:,0]
-# gradient_2 = gradients[:,1]
-
-# gradient_1_sorted = np.sort(gradient_1)
-# gradient_2_sorted = np.sort(gradient_2)
-
-
-# In[27]:
-
-
-# bin_perc = .05
-# bin_size = int(num_parcels*bin_perc)
-# print(bin_size)
-# bin_start = np.arange(0,num_parcels,bin_size)
-
-
-# In[28]:
-
-
-# mask = gradient_1 >= gradient_1_sorted[bin_start[-1]]
-# i=0
-# # mask = (gradient_1 >= gradient_1_sorted[bin_start[i]]) & (gradient_1 < gradient_1_sorted[bin_start[i+1]])
-# # mask = gradient_2 >= gradient_2_sorted[bin_start[-1]]
-
-# f, ax = plt.subplots(1, 4, figsize=(20, 5), subplot_kw={'projection': '3d'})
-# plt.subplots_adjust(wspace=0, hspace=0)
-
-# if parc_str == 'schaefer':
-#     parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/lh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
-# elif parc_str == 'glasser':
-#     parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage/label/lh.HCP-MMP1.annot')
-
-# labels, ctab, surf_names = nib.freesurfer.read_annot(parc_file)
-# vtx_data, plot_min, plot_max = roi_to_vtx(mask, parcel_names, parc_file)
-# vtx_data = vtx_data.astype(float)
-# plotting.plot_surf_roi(fsaverage['infl_left'], roi_map=vtx_data,
-#                        hemi='left', view='lateral', vmin=plot_min, vmax=plot_max,
-#                        bg_map=fsaverage['sulc_left'], bg_on_data=False, axes=ax[0],
-#                        darkness=.5, cmap='viridis');
-
-# plotting.plot_surf_roi(fsaverage['infl_left'], roi_map=vtx_data,
-#                        hemi='left', view='medial', vmin=plot_min, vmax=plot_max,
-#                        bg_map=fsaverage['sulc_left'], bg_on_data=False, axes=ax[1],
-#                        darkness=.5, cmap='viridis');
-
-# if parc_str == 'schaefer':
-#     parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage5/label/rh.Schaefer2018_'+str(parc_scale)+'Parcels_17Networks_order.annot')
-# elif parc_str == 'glasser':
-#     parc_file = os.path.join(os.environ['PROJDIR'],'figs_support/Parcellations/FreeSurfer5.3/fsaverage/label/rh.HCP-MMP1.annot')
-
-# labels, ctab, surf_names = nib.freesurfer.read_annot(parc_file)
-# vtx_data, plot_min, plot_max = roi_to_vtx(mask, parcel_names, parc_file)
-# vtx_data = vtx_data.astype(float)
-# plotting.plot_surf_roi(fsaverage['infl_right'], roi_map=vtx_data,
-#                        hemi='right', view='lateral', vmin=plot_min, vmax=plot_max,
-#                        bg_map=fsaverage['sulc_right'], bg_on_data=False, axes=ax[2],
-#                        darkness=.5, cmap='viridis');
-
-# plotting.plot_surf_roi(fsaverage['infl_right'], roi_map=vtx_data,
-#                        hemi='right', view='medial', vmin=plot_min, vmax=plot_max,
-#                        bg_map=fsaverage['sulc_right'], bg_on_data=False, axes=ax[3],
-#                        darkness=.5, cmap='viridis');
-
-# # f.suptitle('Gradient '+str(g+1))
-# # f.savefig(outfile_prefix+'gradient_'+str(g)+'.png', dpi = 150, bbox_inches = 'tight', pad_inches = 0)
 
