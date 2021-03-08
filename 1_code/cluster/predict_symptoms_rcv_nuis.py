@@ -19,6 +19,8 @@ from sklearn.linear_model import Ridge, Lasso, LinearRegression
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.svm import SVR, LinearSVR
 from sklearn.metrics import make_scorer, r2_score, mean_squared_error, mean_absolute_error
+from sklearn.decomposition import PCA
+import copy
 
 # --------------------------------------------------------------------------------------------------------------------
 # parse input arguments
@@ -28,10 +30,10 @@ parser.add_argument("-y", help="DVs", dest="y_file", default=None)
 parser.add_argument("-c", help="DVs", dest="c_file", default=None)
 parser.add_argument("-metric", help="brain feature (e.g., ac)", dest="metric", default=None)
 parser.add_argument("-pheno", help="psychopathology dimension", dest="pheno", default=None)
-parser.add_argument("-seed", help="seed for shuffle_data", dest="seed", default=1)
 parser.add_argument("-alg", help="estimator", dest="alg", default=None)
 parser.add_argument("-score", help="score set order", dest="score", default=None)
 parser.add_argument("-o", help="output directory", dest="outroot", default=None)
+parser.add_argument("-runpca", help="whether to run PCA or not", dest="runpca", default=0, type=int)
 
 args = parser.parse_args()
 print(args)
@@ -40,12 +42,18 @@ y_file = args.y_file
 c_file = args.c_file
 metric = args.metric
 pheno = args.pheno
-# seed = int(args.seed)
-# seed = int(os.environ['SGE_TASK_ID'])-1
 alg = args.alg
 score = args.score
 outroot = args.outroot
+runpca = args.runpca
+
 # --------------------------------------------------------------------------------------------------------------------
+if runpca == 1:
+    print('Running with PCA 80%')
+elif runpca == 2:
+    print('Running with PCA 1%')
+elif runpca == 3:
+    print('Running PCA with fixed n_components')
 
 # --------------------------------------------------------------------------------------------------------------------
 # prediction functions
@@ -101,10 +109,30 @@ def get_cv(y, n_splits = 10):
     return my_cv
 
 
-def cross_val_score_nuis(X, y, c, my_cv, reg, my_scorer):
+def my_cross_val_score(X, y, c, my_cv, reg, my_scorer, runpca=1):
     
     accuracy = np.zeros(len(my_cv),)
     y_pred_out = np.zeros(y.shape)
+
+    # find number of PCs
+    if runpca == 1:
+        pca = PCA(n_components = X.shape[1], svd_solver = 'full')
+        pca.fit(StandardScaler().fit_transform(X))
+        cum_var = np.cumsum(pca.explained_variance_ratio_)
+        n_components = np.where(cum_var >= 0.8)[0][0]+1
+        print(n_components)
+    elif runpca == 2:
+        pca = PCA(n_components = X.shape[1], svd_solver = 'full')
+        pca.fit(StandardScaler().fit_transform(X))
+        var_idx = pca.explained_variance_ratio_ >= .01
+        n_components = np.sum(var_idx)
+        print(n_components)
+    elif runpca == 3:
+        if X.shape[1] == 400:
+            n_components = 9
+        elif X.shape[1] == 463:
+            n_components = 8
+        print(n_components)
 
     for k in np.arange(len(my_cv)):
         tr = my_cv[k][0]
@@ -131,9 +159,15 @@ def cross_val_score_nuis(X, y, c, my_cv, reg, my_scorer):
         X_pred = nuis_reg.predict(c_train); X_train = X_train - X_pred
         X_pred = nuis_reg.predict(c_test); X_test = X_test - X_pred
 
+        if runpca != 0:
+            pca = PCA(n_components = n_components, svd_solver = 'full')
+            pca.fit(X_train)
+            X_train = pca.transform(X_train)
+            X_test = pca.transform(X_test)
+
         # # regress nuisance (y)
         # nuis_reg = LinearRegression(); nuis_reg.fit(c_train, y_train)
-        # nuis_reg = KernelRidge(kernel='rbf'); nuis_reg.fit(c_train, y_train)
+        # # nuis_reg = KernelRidge(kernel='rbf'); nuis_reg.fit(c_train, y_train)
         # y_pred = nuis_reg.predict(c_train); y_train = y_train - y_pred
         # y_pred = nuis_reg.predict(c_test); y_test = y_test - y_pred
 
@@ -144,13 +178,13 @@ def cross_val_score_nuis(X, y, c, my_cv, reg, my_scorer):
     return accuracy, y_pred_out
 
 
-def run_reg(X, y, c, reg, my_scorer, n_splits = 10, seed = 0):
+def run_reg(X, y, c, reg, my_scorer, n_splits = 10, seed = 0, runpca = 1):
 
     X_shuf, y_shuf, c_shuf = shuffle_data(X = X, y = y, c = c, seed = seed)
 
     my_cv = get_cv(y_shuf, n_splits = n_splits)
 
-    accuracy, y_pred_out = cross_val_score_nuis(X = X_shuf, y = y_shuf, c = c_shuf, my_cv = my_cv, reg = reg, my_scorer = my_scorer)
+    accuracy, y_pred_out = my_cross_val_score(X = X_shuf, y = y_shuf, c = c_shuf, my_cv = my_cv, reg = reg, my_scorer = my_scorer, runpca = runpca)
 
     return accuracy, y_pred_out
 
@@ -195,11 +229,13 @@ num_random_splits = 100
 
 accuracy_mean = np.zeros(num_random_splits)
 accuracy_std = np.zeros(num_random_splits)
+y_pred_out_repeats = np.zeros((y.shape[0],num_random_splits))
 
 for i in np.arange(0,num_random_splits):
-    accuracy, y_pred_out = run_reg(X = X, y = y, c = c, reg = regs[alg], my_scorer = my_scorer, seed = i)
+    accuracy, y_pred_out = run_reg(X = X, y = y, c = c, reg = regs[alg], my_scorer = my_scorer, seed = i, runpca = runpca)
     accuracy_mean[i] = accuracy.mean()
     accuracy_std[i] = accuracy.std()
+    y_pred_out_repeats[:,i] = y_pred_out
 
 # --------------------------------------------------------------------------------------------------------------------
 
@@ -207,5 +243,7 @@ for i in np.arange(0,num_random_splits):
 # outputs
 np.savetxt(os.path.join(outdir,'accuracy_mean.txt'), accuracy_mean)
 np.savetxt(os.path.join(outdir,'accuracy_std.txt'), accuracy_std)
+np.savetxt(os.path.join(outdir,'y_pred_out_repeats.txt'), y_pred_out_repeats)
+# --------------------------------------------------------------------------------------------------------------------
 
 print('Finished!')
