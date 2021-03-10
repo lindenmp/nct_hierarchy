@@ -87,12 +87,11 @@ def get_reg(num_params = 25):
     
     # From the sklearn docs, gamma defaults to 1/n_features.
     alpha_range = [1, -1]
-    gamma_range = alpha_range
+    gamma_range = [-2, -4]
     param_grids = {'rr': {'reg__alpha': np.logspace(alpha_range[0], alpha_range[1], num_params)},
                     'lr': {'reg__alpha': np.logspace(alpha_range[0], alpha_range[1], num_params)},
-                    # 'krr_lin': {'reg__alpha': np.logspace(alpha_range[0], alpha_range[1], num_params)},
+                    'krr_lin': {'reg__alpha': np.logspace(alpha_range[0], alpha_range[1], num_params)},
                     # 'krr_rbf': {'reg__alpha': np.logspace(alpha_range[0], alpha_range[1], num_params)},
-                    'krr_lin': {'reg__alpha': np.logspace(alpha_range[0], alpha_range[1], num_params), 'reg__gamma': np.logspace(gamma_range[0], gamma_range[1], num_params)},
                     'krr_rbf': {'reg__alpha': np.logspace(alpha_range[0], alpha_range[1], num_params), 'reg__gamma': np.logspace(gamma_range[0], gamma_range[1], num_params)},
                     'svr_lin': {'reg__C': np.logspace(0, 4, num_params)},
                     'svr_rbf': {'reg__C': np.logspace(0, 4, num_params), 'reg__gamma': np.logspace(0, -3, num_params)}
