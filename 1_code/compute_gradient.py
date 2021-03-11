@@ -242,9 +242,27 @@ np.save(os.path.join(outputdir, outfile_prefix+'alff'),alff)
 np.save(os.path.join(outputdir, outfile_prefix+'reho'),reho)
 
 
+# In[20]:
+
+
+np.save(os.path.join(outputdir, outfile_prefix+'fc_disc'),fc[:,:,df['disc_repl'] == 0])
+np.save(os.path.join(outputdir, outfile_prefix+'rlfp_disc'),rlfp[df['disc_repl'] == 0,:])
+np.save(os.path.join(outputdir, outfile_prefix+'alff_disc'),alff[df['disc_repl'] == 0,:])
+np.save(os.path.join(outputdir, outfile_prefix+'reho_disc'),reho[df['disc_repl'] == 0,:])
+
+
+# In[21]:
+
+
+np.save(os.path.join(outputdir, outfile_prefix+'fc_repl'),fc[:,:,df['disc_repl'] == 1])
+np.save(os.path.join(outputdir, outfile_prefix+'rlfp_repl'),rlfp[df['disc_repl'] == 1,:])
+np.save(os.path.join(outputdir, outfile_prefix+'alff_repl'),alff[df['disc_repl'] == 1,:])
+np.save(os.path.join(outputdir, outfile_prefix+'reho_repl'),reho[df['disc_repl'] == 1,:])
+
+
 # ### Generate participant gradients
 
-# In[20]:
+# In[22]:
 
 
 # Generate template
@@ -276,7 +294,7 @@ np.savetxt(os.path.join(outputdir,outfile_prefix+'pnc_grads_template.txt'),gradi
 
 # # Plots
 
-# In[21]:
+# In[23]:
 
 
 if not os.path.exists(figdir): os.makedirs(figdir)
@@ -284,7 +302,7 @@ os.chdir(figdir)
 sns.set(style='white', context = 'talk', font_scale = 1)
 
 
-# In[22]:
+# In[24]:
 
 
 f, ax = plt.subplots(3, 3, figsize=(12, 12))
@@ -297,7 +315,7 @@ for i in np.arange(3):
 f.subplots_adjust(wspace=0.5, hspace=0.5)
 
 
-# In[23]:
+# In[25]:
 
 
 f, ax = plt.subplots(1, figsize=(5, 5))
@@ -305,7 +323,7 @@ sns.heatmap(pnc_conn_mat, cmap = 'coolwarm', center = 0, square = True)
 f.savefig(outfile_prefix+'mean_fc.png', dpi = 300, bbox_inches = 'tight')
 
 
-# In[24]:
+# In[26]:
 
 
 f, ax = plt.subplots(1, figsize=(5, 4))
@@ -315,7 +333,7 @@ ax.set_ylabel('Eigenvalue')
 f.savefig(outfile_prefix+'gradient_eigenvals.png', dpi = 300, bbox_inches = 'tight')
 
 
-# In[25]:
+# In[27]:
 
 
 from func import roi_to_vtx
@@ -330,7 +348,7 @@ elif parc_str == 'glasser':
     fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage')
 
 
-# In[26]:
+# In[28]:
 
 
 for g in np.arange(0,2):
@@ -379,7 +397,7 @@ for g in np.arange(0,2):
 
 # # Setup gradient sampling for NCT
 
-# In[27]:
+# In[29]:
 
 
 from sklearn.cluster import KMeans
@@ -400,7 +418,7 @@ ax.set_xlabel('Gradient 2')
 ax.set_ylabel('Gradient 1')
 
 
-# In[28]:
+# In[30]:
 
 
 f, ax = plt.subplots(2, 3, figsize=(12, 8))
