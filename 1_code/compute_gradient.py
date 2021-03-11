@@ -38,7 +38,7 @@ from brainspace.gradient.utils import dominant_set
 
 
 sys.path.append('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/1_code/')
-from func import set_proj_env
+from func import set_proj_env, my_regplot, bandpower, get_rlfp
 
 
 # In[4]:
@@ -70,14 +70,20 @@ if parc_str == 'schaefer':
     rstsdir = os.path.join(os.environ['DERIVSDIR'], 'processedData/restbold/restbold_201607151621')
     if parc_scale == 200:
         rsts_name_tmp = 'bblid/*xscanid/net/Schaefer' + str(parc_scale) + 'PNC/bblid_*xscanid_Schaefer' + str(parc_scale) + 'PNC_ts.1D'
+        alff_name_tmp = 'bblid/*xscanid/alff/roi/Schaefer' + str(parc_scale) + 'PNC/bblid_*xscanid_Schaefer' + str(parc_scale) + 'PNC_val_alff.1D'
+        reho_name_tmp = 'bblid/*xscanid/reho/roi/Schaefer' + str(parc_scale) + 'PNC/bblid_*xscanid_Schaefer' + str(parc_scale) + 'PNC_val_reho.1D'
     elif parc_scale == 400:
         rsts_name_tmp = 'bblid/*xscanid/net/SchaeferPNC/bblid_*xscanid_SchaeferPNC_ts.1D'
+        alff_name_tmp = 'bblid/*xscanid/alff/roi/SchaeferPNC/bblid_*xscanid_SchaeferPNC_val_alff.1D'
+        reho_name_tmp = 'bblid/*xscanid/reho/roi/SchaeferPNC/bblid_*xscanid_SchaeferPNC_val_reho.1D'
 elif parc_str == 'glasser':
     parcel_names = np.genfromtxt(os.path.join(os.environ['PROJDIR'], 'figs_support/labels/glasser' + str(parc_scale) + 'NodeNames.txt'), dtype='str')
     num_parcels = parcel_names.shape[0]
 
     rstsdir = os.path.join(os.environ['DERIVSDIR'], 'processedData/restbold/restbold_201607151621')
     rsts_name_tmp = 'bblid/*xscanid/net/GlasserPNC/bblid_*xscanid_GlasserPNC_ts.1D'
+    alff_name_tmp = 'bblid/*xscanid/alff/roi/GlasserPNC/bblid_*xscanid_GlasserPNC_val_alff.1D'
+    reho_name_tmp = 'bblid/*xscanid/reho/roi/GlasserPNC/bblid_*xscanid_GlasserPNC_val_reho.1D'    
 
 
 # ### Setup directory variables
@@ -153,6 +159,7 @@ subj_filt = np.zeros((df.shape[0],)).astype(bool)
 
 # fc stored as 3d matrix, subjects of 3rd dim
 fc = np.zeros((num_parcels, num_parcels, num_subs))
+rlfp = np.zeros((num_subs, num_parcels))
 
 for (i, (index, row)) in enumerate(df.iterrows()):
     file_name = rsts_name_tmp.replace("bblid", str(index[0]))
@@ -166,6 +173,9 @@ for (i, (index, row)) in enumerate(df.iterrows()):
         # fisher r to z
         fc[:,:,i] = np.arctanh(fc[:,:,i])
         np.fill_diagonal(fc[:,:,i], 1)
+        
+        for j in np.arange(num_parcels):
+            rlfp[i,j] = get_rlfp(roi_ts[:,j], tr = 3, num_bands = 5, band_of_interest = 1)
 
         if np.any(np.isnan(fc[:,:,i])):
             subj_filt[i] = True
@@ -175,25 +185,66 @@ for (i, (index, row)) in enumerate(df.iterrows()):
         subj_filt[i] = True
         roi_ts[:,:,i] = np.full((num_time, num_parcels), np.nan)
         fc[:,:,i] = np.full((num_parcels, num_parcels), np.nan)
+        rlfp[i,:] = np.full(num_parcels, np.nan)
 
+
+# ## Load in bold properties
 
 # In[16]:
 
 
-np.sum(subj_filt)
+alff = np.zeros((num_subs, num_parcels))
+reho = np.zeros((num_subs, num_parcels))
+
+for (i, (index, row)) in enumerate(df.iterrows()):
+    file_name = alff_name_tmp.replace("bblid", str(index[0]))
+    file_name = file_name.replace("scanid", str(index[1]))
+    full_path = glob.glob(os.path.join(rstsdir, file_name))
+    if i == 0: print(full_path)
+    alff[i,:] = np.loadtxt(full_path[0], skiprows = 1, usecols = np.arange(2,num_parcels+2))
+    if np.any(np.isnan(alff[i,:])):
+        subj_filt[i] = True
+            
+    file_name = reho_name_tmp.replace("bblid", str(index[0]))
+    file_name = file_name.replace("scanid", str(index[1]))
+    full_path = glob.glob(os.path.join(rstsdir, file_name))
+    if i == 0: print(full_path)
+    reho[i,:] = np.loadtxt(full_path[0], skiprows = 1, usecols = np.arange(2,num_parcels+2))
+    if np.any(np.isnan(reho[i,:])):
+        subj_filt[i] = True
 
 
 # In[17]:
 
 
+np.sum(subj_filt)
+
+
+# In[18]:
+
+
 if any(subj_filt):
     df = df.loc[~subj_filt]
     fc = fc[:,:,~subj_filt]
+    alff = alff[~subj_filt,:]
+    reho = reho[~subj_filt,:]
+    rlfp = rlfp[~subj_filt,:]
+
+
+# ### Save out FC and bold metrics
+
+# In[19]:
+
+
+np.save(os.path.join(outputdir, outfile_prefix+'fc'),fc)
+np.save(os.path.join(outputdir, outfile_prefix+'rlfp'),rlfp)
+np.save(os.path.join(outputdir, outfile_prefix+'alff'),alff)
+np.save(os.path.join(outputdir, outfile_prefix+'reho'),reho)
 
 
 # ### Generate participant gradients
 
-# In[18]:
+# In[20]:
 
 
 # Generate template
@@ -225,15 +276,28 @@ np.savetxt(os.path.join(outputdir,outfile_prefix+'pnc_grads_template.txt'),gradi
 
 # # Plots
 
-# In[19]:
+# In[21]:
 
 
 if not os.path.exists(figdir): os.makedirs(figdir)
 os.chdir(figdir)
-sns.set(style='white', context = 'paper', font_scale = 1)
+sns.set(style='white', context = 'talk', font_scale = 1)
 
 
-# In[20]:
+# In[22]:
+
+
+f, ax = plt.subplots(3, 3, figsize=(12, 12))
+var_list = [alff, reho, rlfp]
+var_labels = ['alff', 'reho', 'rlfp']
+for i in np.arange(3):
+    for j in np.arange(3):
+        my_regplot(np.mean(var_list[i], axis = 0), np.mean(var_list[j], axis = 0), var_labels[i], var_labels[j], ax[i,j])
+    
+f.subplots_adjust(wspace=0.5, hspace=0.5)
+
+
+# In[23]:
 
 
 f, ax = plt.subplots(1, figsize=(5, 5))
@@ -241,7 +305,7 @@ sns.heatmap(pnc_conn_mat, cmap = 'coolwarm', center = 0, square = True)
 f.savefig(outfile_prefix+'mean_fc.png', dpi = 300, bbox_inches = 'tight')
 
 
-# In[21]:
+# In[24]:
 
 
 f, ax = plt.subplots(1, figsize=(5, 4))
@@ -251,7 +315,7 @@ ax.set_ylabel('Eigenvalue')
 f.savefig(outfile_prefix+'gradient_eigenvals.png', dpi = 300, bbox_inches = 'tight')
 
 
-# In[22]:
+# In[25]:
 
 
 from func import roi_to_vtx
@@ -266,7 +330,7 @@ elif parc_str == 'glasser':
     fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage')
 
 
-# In[23]:
+# In[26]:
 
 
 for g in np.arange(0,2):
@@ -315,7 +379,7 @@ for g in np.arange(0,2):
 
 # # Setup gradient sampling for NCT
 
-# In[24]:
+# In[27]:
 
 
 from sklearn.cluster import KMeans
@@ -334,4 +398,19 @@ ax.scatter(gradients[:,1], gradients[:,0], c = colormask, cmap= 'Set3')
 ax.scatter(kmeans.cluster_centers_[:,1], kmeans.cluster_centers_[:,0], marker = 'x', c = 'k', s = 100)
 ax.set_xlabel('Gradient 2')
 ax.set_ylabel('Gradient 1')
+
+
+# In[28]:
+
+
+f, ax = plt.subplots(2, 3, figsize=(12, 8))
+my_regplot(gradients[:,0], np.mean(alff, axis = 0), 'Gradient 1', 'alff (mean)', ax[0,0])
+my_regplot(gradients[:,0], np.mean(reho, axis = 0), 'Gradient 1', 'reho (mean)', ax[0,1])
+my_regplot(gradients[:,0], np.mean(rlfp, axis = 0), 'Gradient 1', 'rlfp (mean)', ax[0,2])
+
+my_regplot(gradients[:,1], np.mean(alff, axis = 0), 'Gradient 2', 'alff (mean)', ax[1,0])
+my_regplot(gradients[:,1], np.mean(reho, axis = 0), 'Gradient 2', 'reho (mean)', ax[1,1])
+my_regplot(gradients[:,1], np.mean(rlfp, axis = 0), 'Gradient 2', 'rlfp (mean)', ax[1,2])
+
+f.subplots_adjust(wspace=0.5, hspace=0.5)
 
