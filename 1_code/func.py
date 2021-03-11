@@ -477,6 +477,27 @@ def minimum_energy_taylor(A, T, B, x0, xf, c = 1, n_taylor = 10, drop_taylor = 0
     return E
 
 
+def bandpower(y, fs, fmin, fmax):
+    f, Pxx = sp.signal.periodogram(y, fs=fs)
+    ind_min = np.argmax(f > fmin) - 1
+    ind_max = np.argmax(f > fmax) - 1
+    
+    return np.trapz(Pxx[ind_min: ind_max], f[ind_min: ind_max])
+
+
+def get_rlfp(y, tr, num_bands = 5, band_of_interest = 1):
+    num_timepoints = len(y)
+    
+    scan_duration = num_timepoints * tr
+    sample_freq = 1 / tr
+    
+    y = sp.stats.zscore(y)
+    
+    band_intervals = np.linspace(0,sample_freq/2,num_bands+1)
+    band_freq_range = band_intervals[band_of_interest-1:band_of_interest+1]
+    return bandpower(y, sample_freq, band_freq_range[0], band_freq_range[1])
+
+
 def sample_gradient(gradient_2, gradient_1, seed = 'vis', num_step = 5, num_n = 10):
     
     num_parcels = len(gradient_2)
