@@ -413,6 +413,9 @@ np.save(os.path.join(outputdir, outfile_prefix+'A'), A)
 mean_spars = np.round(df.loc[df['disc_repl'] == 0,'network_density'].mean(),2)
 print(mean_spars)
 
+mean_spars = np.round(df.loc[df['disc_repl'] == 1,'network_density'].mean(),2)
+print(mean_spars)
+
 
 # In[38]:
 
@@ -449,6 +452,29 @@ for s in sparity:
 # In[41]:
 
 
+A_repl = A[:,:,df['disc_repl'] == 1]
+A_repl_mean = np.mean(A_repl,2)
+print(np.count_nonzero(np.triu(A_repl_mean))/((A_repl_mean.shape[0]**2-A_repl_mean.shape[0])/2))
+
+
+# In[42]:
+
+
+for s in sparity:
+    A_repl = A[:,:,df['disc_repl'] == 1]
+    A_repl_mean = np.mean(A_repl,2)
+
+    thresh = np.percentile(A_repl_mean,100-(s*100))
+
+    A_repl_mean[A_repl_mean < thresh] = 0
+    print(np.count_nonzero(np.triu(A_repl_mean))/((A_repl_mean.shape[0]**2-A_repl_mean.shape[0])/2))
+
+    np.save(os.path.join(outputdir, outfile_prefix+'repl_mean_A_s'+str(int(s*100))), A_repl_mean)
+
+
+# In[43]:
+
+
 # A_disc = A[:,:,df['disc_repl'] == 0]
 # A_disc_mean = np.mean(A_disc,2)
 # print(np.count_nonzero(np.triu(A_disc_mean))/((A_disc_mean.shape[0]**2-A_disc_mean.shape[0])/2))
@@ -463,7 +489,7 @@ for s in sparity:
 # np.save(os.path.join(outputdir, outfile_prefix+'disc_mean_A'), A_disc_mean)
 
 
-# In[42]:
+# In[44]:
 
 
 # A_repl = A[:,:,df['disc_repl'] == 1]
@@ -482,7 +508,7 @@ for s in sparity:
 
 # ### Export sample for FC gradients
 
-# In[43]:
+# In[45]:
 
 
 # 4) rs-fMRI exclusion
@@ -491,7 +517,7 @@ df_gradients = df[df['restExclude'] == 0]
 print('N after rs-fMRI exclusion:', df_gradients.shape[0])
 
 
-# In[44]:
+# In[46]:
 
 
 df_gradients.to_csv(os.path.join(outputdir, outfile_prefix+'df_gradients.csv'), columns = header)
@@ -499,7 +525,7 @@ df_gradients.to_csv(os.path.join(outputdir, outfile_prefix+'df_gradients.csv'), 
 
 # # Plots
 
-# In[45]:
+# In[47]:
 
 
 if not os.path.exists(figdir): os.makedirs(figdir)
@@ -514,7 +540,7 @@ labels = ['Discovery', 'Replication']
 
 # ### Network density
 
-# In[46]:
+# In[48]:
 
 
 sns.displot(df.loc[:,'network_density']*100)
@@ -522,7 +548,7 @@ sns.displot(df.loc[:,'network_density']*100)
 
 # ## Age
 
-# In[47]:
+# In[49]:
 
 
 f, axes = plt.subplots(1,2)
@@ -558,7 +584,7 @@ f.savefig('age_distributions.png', dpi = 150, bbox_inches = 'tight', pad_inches 
 
 # ## Symptom dimensions
 
-# In[48]:
+# In[50]:
 
 
 df_rc = pd.melt(df, id_vars = 'disc_repl', value_vars = phenos)
