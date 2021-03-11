@@ -671,25 +671,21 @@ def get_gradient_num_flips(shortest_path, gradients):
     return num_flips
 
 
-def get_adj_stats(A, gradients, cluster_labels, return_abs = False, drop_taylor = 0):
+def get_adj_stats(A, gradients, cluster_labels = [], return_abs = False, drop_taylor = 0):
 
     num_parcels = A.shape[0]
     
     # convert to distance matrix
     D, hops, Pmat = distance_wei_floyd(A, transform = 'inv')
     
-    # downsample distance matrix to cluster-based states
-    D_mean = matrix_to_states(D, cluster_labels)
-    hops_mean = matrix_to_states(hops, cluster_labels)
-    
     # get transmodal and sensorimotor-visual traversal variance
-    tm_tmp = np.zeros((num_parcels,num_parcels)); tm_tmp[:] = np.nan
-    tm_var_tmp = np.zeros((num_parcels,num_parcels)); tm_var_tmp[:] = np.nan
-    smv_tmp = np.zeros((num_parcels,num_parcels)); smv_tmp[:] = np.nan
-    smv_var_tmp = np.zeros((num_parcels,num_parcels)); smv_var_tmp[:] = np.nan
-    joint_var_tmp = np.zeros((num_parcels,num_parcels)); joint_var_tmp[:] = np.nan
-    num_tm_flips_tmp = np.zeros((num_parcels,num_parcels)); num_tm_flips_tmp[:] = np.nan
-    num_smv_flips_tmp = np.zeros((num_parcels,num_parcels)); num_smv_flips_tmp[:] = np.nan
+    tm_con = np.zeros((num_parcels,num_parcels)); tm_con[:] = np.nan
+    tm_var = np.zeros((num_parcels,num_parcels)); tm_var[:] = np.nan
+    smv_con = np.zeros((num_parcels,num_parcels)); smv_con[:] = np.nan
+    smv_var = np.zeros((num_parcels,num_parcels)); smv_var[:] = np.nan
+    joint_var = np.zeros((num_parcels,num_parcels)); joint_var[:] = np.nan
+    num_tm_flips = np.zeros((num_parcels,num_parcels)); num_tm_flips[:] = np.nan
+    num_smv_flips = np.zeros((num_parcels,num_parcels)); num_smv_flips[:] = np.nan
 
     for i in np.arange(num_parcels):
         for j in np.arange(num_parcels):
@@ -698,32 +694,34 @@ def get_adj_stats(A, gradients, cluster_labels, return_abs = False, drop_taylor 
                 shortest_path = shortest_path.flatten()
                 mean_diff, var_diff, euclidean_var = get_gradient_variance(shortest_path, gradients, return_abs = return_abs)
 
-                tm_tmp[i,j] = mean_diff[0]
-                tm_var_tmp[i,j] = var_diff[0]
+                tm_con[i,j] = mean_diff[0]
+                tm_var[i,j] = var_diff[0]
+                smv_con[i,j] = mean_diff[1]
+                smv_var[i,j] = var_diff[1]
+                joint_var[i,j] = euclidean_var
 
-                smv_tmp[i,j] = mean_diff[1]
-                smv_var_tmp[i,j] = var_diff[1]
-
-                joint_var_tmp[i,j] = euclidean_var
-                
                 num_flips = get_gradient_num_flips(shortest_path, gradients)
-                
-                num_tm_flips_tmp[i,j] = num_flips[0]
-                num_smv_flips_tmp[i,j] = num_flips[1]
+
+                num_tm_flips[i,j] = num_flips[0]
+                num_smv_flips[i,j] = num_flips[1]
 
     # downsample transmodal convergence to cluster-based states
-    tm_con = matrix_to_states(tm_tmp, cluster_labels)
-    tm_var = matrix_to_states(tm_var_tmp, cluster_labels)
+    if len(cluster_labels) > 0:
+        D = matrix_to_states(D, cluster_labels)
+        hops = matrix_to_states(hops, cluster_labels)
 
-    smv_con = matrix_to_states(smv_tmp, cluster_labels)
-    smv_var = matrix_to_states(smv_var_tmp, cluster_labels)
+        tm_con = matrix_to_states(tm_con, cluster_labels)
+        tm_var = matrix_to_states(tm_var, cluster_labels)
 
-    joint_var = matrix_to_states(joint_var_tmp, cluster_labels)
-    
-    num_tm_flips = matrix_to_states(num_tm_flips_tmp, cluster_labels)
-    num_smv_flips = matrix_to_states(num_smv_flips_tmp, cluster_labels)
-            
-    return D_mean, hops_mean, tm_con, tm_var, smv_con, smv_var, joint_var, num_tm_flips, num_smv_flips
+        smv_con = matrix_to_states(smv_con, cluster_labels)
+        smv_var = matrix_to_states(smv_var, cluster_labels)
+
+        joint_var = matrix_to_states(joint_var, cluster_labels)
+        
+        num_tm_flips = matrix_to_states(num_tm_flips, cluster_labels)
+        num_smv_flips = matrix_to_states(num_smv_flips, cluster_labels)
+
+    return D, hops, tm_con, tm_var, smv_con, smv_var, joint_var, num_tm_flips, num_smv_flips
 
 
 def nuis_regress_matrix(x, c, indices):
