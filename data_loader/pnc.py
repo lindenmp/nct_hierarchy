@@ -3,7 +3,7 @@ import numpy as np
 import scipy.io as sio
 import pandas as pd
 
-from code.utils.imaging_derivs import compute_fc, compute_rlfp
+from utils.imaging_derivs import compute_fc, compute_rlfp
 
 
 class Environment():
