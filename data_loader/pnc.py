@@ -7,34 +7,96 @@ from utils.imaging_derivs import compute_fc, compute_rlfp
 
 
 class Environment():
-    def __init__(self):
-        # directories
-        self.projdir = '/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients'
-        self.datadir = os.path.join(self.projdir, '0_data')
-        self.pipelinedir = os.path.join(self.projdir, '2_pipeline')
-        self.outputdir = os.path.join(self.projdir, '3_output')
-
-        self.derivsdir = '/Volumes/work_ssd/research_data/PNC/'
-        self.scdir = os.path.join(self.derivsdir, 'processedData', 'diffusion', 'deterministic_20171118')
-        self.ctdir = os.path.join(self.derivsdir, 'processedData', 'antsCorticalThickness')
-        self.rstsdir = os.path.join(self.derivsdir, 'processedData', 'restbold', 'restbold_201607151621')
-
-        # imaging parameters
-        self.rsfmri_tr = 3
-
-
-class Subject(Environment):
-    def __init__(self, bblid=0, scanid=0):
-        Environment.__init__(self)
-        self.bblid = bblid
-        self.scanid = scanid
-
-    def get_file_names(self, parc='schaefer', parc_res=400, sc_edge_weight='streamlineCount'):
+    def __init__(self, parc='schaefer', parc_res=400, sc_edge_weight='streamlineCount'):
+        # analysis parameters
         self.parc = parc
         self.parc_res = parc_res
         self.sc_edge_weight = sc_edge_weight
 
-        if parc == 'schaefer':
+        # directories
+        self.projdir = '/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients'
+        self.pipelinedir = os.path.join(self.projdir, 'pipeline', '{0}_{1}_{2}'.format(self.parc, self.parc_res, self.sc_edge_weight))
+        self.outputdir = os.path.join(self.projdir, 'output', '{0}_{1}_{2}'.format(self.parc, self.parc_res, self.sc_edge_weight))
+
+        self.datadir = '/Volumes/work_ssd/research_data/PNC/'
+        self.freezedir = os.path.join(self.datadir, 'pncDataFreeze20170905', 'n1601_dataFreeze')
+        self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
+        self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCorticalThickness')
+        self.rstsdir = os.path.join(self.datadir, 'processedData', 'restbold', 'restbold_201607151621')
+
+        # imaging parameters
+        self.rsfmri_tr = 3
+
+    def make_output_dirs(self):
+        if not os.path.exists(self.pipelinedir): os.makedirs(self.pipelinedir)
+        if not os.path.exists(self.outputdir): os.makedirs(self.outputdir)
+
+    def load_metadata(self, filters = []):
+        """
+        Parameters
+        ----------
+        filters :
+            dictionary of filters to apply to dataframe (see PNC documentation for details)
+
+        Returns
+        -------
+        df : pd.DataFrame (n_subjects,n_variables)
+            dataframe of subject meta data for the PNC
+        """
+
+        # LTN and Health Status
+        health = pd.read_csv(os.path.join(self.freezedir, 'health', 'n1601_health_20170421.csv'))
+        # Protocol
+        prot = pd.read_csv(os.path.join(self.freezedir, 'neuroimaging', 'n1601_pnc_protocol_validation_params_status_20161220.csv'))
+        # T1 QA
+        t1_qa = pd.read_csv(os.path.join(self.freezedir, 'neuroimaging', 't1struct', 'n1601_t1QaData_20170306.csv'))
+        # DTI QA
+        dti_qa = pd.read_csv(os.path.join(self.freezedir, 'neuroimaging', 'dti', 'n1601_dti_qa_20170301.csv'))
+        # Rest QA
+        rest_qa = pd.read_csv(os.path.join(self.freezedir, 'neuroimaging', 'rest', 'n1601_RestQAData_20170714.csv'))
+        # Demographics
+        demog = pd.read_csv(os.path.join(self.freezedir, 'demographics', 'n1601_demographics_go1_20161212.csv'))
+        # Brain volume
+        brain_vol = pd.read_csv(os.path.join(self.freezedir, 'neuroimaging', 't1struct', 'n1601_ctVol20170412.csv'))
+        # Clinical diagnostic
+        clinical = pd.read_csv(os.path.join(self.freezedir, 'clinical', 'n1601_goassess_psych_summary_vars_20131014.csv'))
+        clinical_ps = pd.read_csv(os.path.join(self.freezedir, 'clinical', 'n1601_diagnosis_dxpmr_20170509.csv'))
+        # GOASSESS Bifactor scores
+        goassess = pd.read_csv(os.path.join(self.datadir, 'GO1_clinical_factor_scores_psychosis_split_BIFACTOR.csv'))
+        # Cognition
+        cnb = pd.read_csv(os.path.join(self.freezedir, 'cnb', 'n1601_cnb_factor_scores_tymoore_20151006.csv'))
+
+        # merge
+        df = health
+        df = pd.merge(df, prot, on=['scanid', 'bblid'])  # prot
+        df = pd.merge(df, t1_qa, on=['scanid', 'bblid'])  # t1_qa
+        df = pd.merge(df, dti_qa, on=['scanid', 'bblid'])  # dti_qa
+        df = pd.merge(df, rest_qa, on=['scanid', 'bblid'])  # rest_qa
+        df = pd.merge(df, demog, on=['scanid', 'bblid'])  # demog
+        df = pd.merge(df, brain_vol, on=['scanid', 'bblid'])  # brain_vol
+        df = pd.merge(df, clinical, on=['scanid', 'bblid'])  # clinical
+        df = pd.merge(df, clinical_ps, on=['scanid', 'bblid'])  # clinical
+        df = pd.merge(df, goassess, on=['bblid'])  # goassess
+        df = pd.merge(df, cnb, on=['scanid', 'bblid'])  # goassess
+
+        df.set_index(['bblid', 'scanid'], inplace=True)
+
+        # filter dataframe
+        if len(filters) > 0:
+            for filter in filters:
+                df = df[df[filter] == filters[filter]]
+                print('N after initial {0} exclusion: {1}'.format(filter, df.shape[0]))
+
+        return df
+
+
+class Subject(Environment):
+    def __init__(self, bblid=81287, scanid=2738):
+        Environment.__init__(self)
+        self.bblid = bblid
+        self.scanid = scanid
+
+        if self.parc == 'schaefer':
             sc_filename = os.path.join('{0}'.format(self.bblid),
                                        '*x{0}'.format(self.scanid),
                                        'tractography', 'connectivity',
@@ -47,14 +109,14 @@ class Subject(Environment):
                                        'ct_schaefer{0}_17.txt'.format(self.parc_res))
             ct_filename = glob.glob(os.path.join(self.ctdir, ct_filename))[0]
 
-            if parc_res == 200:
+            if self.parc_res == 200:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
                                              'net', 'Schaefer{0}PNC'.format(self.parc_res),
                                              '{0}_*x{1}_Schaefer{2}PNC_ts.1D' \
                                              .format(self.bblid, self.scanid, self.parc_res))
                 rsts_filename = glob.glob(os.path.join(self.rstsdir, rsts_filename))[0]
-            elif parc_res == 400:
+            elif self.parc_res == 400:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
                                              'net', 'SchaeferPNC',
@@ -90,71 +152,5 @@ class Subject(Environment):
         self.rlfp = rlfp
 
 
-def load_metadata(environment, filters = []):
-    """
-    Parameters
-    ----------
-    environment :
-        an instance of Environment() from above
 
-    Returns
-    -------
-    df : pd.DataFrame (n_subjects,n_variables)
-        dataframe of subject meta data for the PNC
-    """
-    # LTN and Health Status
-    health = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                      'health', 'n1601_health_20170421.csv'))
-    # Protocol
-    prot = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                    'neuroimaging', 'n1601_pnc_protocol_validation_params_status_20161220.csv'))
-    # T1 QA
-    t1_qa = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                     'neuroimaging', 't1struct', 'n1601_t1QaData_20170306.csv'))
-    # DTI QA
-    dti_qa = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                      'neuroimaging', 'dti', 'n1601_dti_qa_20170301.csv'))
-    # Rest QA
-    rest_qa = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                       'neuroimaging', 'rest', 'n1601_RestQAData_20170714.csv'))
-    # Demographics
-    demog = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                     'demographics', 'n1601_demographics_go1_20161212.csv'))
-    # Brain volume
-    brain_vol = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                         'neuroimaging', 't1struct', 'n1601_ctVol20170412.csv'))
-    # Clinical diagnostic
-    clinical = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                        'clinical', 'n1601_goassess_psych_summary_vars_20131014.csv'))
-    clinical_ps = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                           'clinical', 'n1601_diagnosis_dxpmr_20170509.csv'))
-    # GOASSESS Bifactor scores
-    goassess = pd.read_csv(os.path.join(environment.datadir, 'external',
-                                        'GO1_clinical_factor_scores_psychosis_split_BIFACTOR.csv'))
-    # Cognition
-    cnb = pd.read_csv(os.path.join(environment.datadir, 'external', 'pncDataFreeze20170905', 'n1601_dataFreeze',
-                                   'cnb', 'n1601_cnb_factor_scores_tymoore_20151006.csv'))
-
-    # merge
-    df = health
-    df = pd.merge(df, prot, on=['scanid', 'bblid'])  # prot
-    df = pd.merge(df, t1_qa, on=['scanid', 'bblid'])  # t1_qa
-    df = pd.merge(df, dti_qa, on=['scanid', 'bblid'])  # dti_qa
-    df = pd.merge(df, rest_qa, on=['scanid', 'bblid'])  # rest_qa
-    df = pd.merge(df, demog, on=['scanid', 'bblid'])  # demog
-    df = pd.merge(df, brain_vol, on=['scanid', 'bblid'])  # brain_vol
-    df = pd.merge(df, clinical, on=['scanid', 'bblid'])  # clinical
-    df = pd.merge(df, clinical_ps, on=['scanid', 'bblid'])  # clinical
-    df = pd.merge(df, goassess, on=['bblid'])  # goassess
-    df = pd.merge(df, cnb, on=['scanid', 'bblid'])  # goassess
-
-    df.set_index(['bblid', 'scanid'], inplace=True)
-
-    # filter dataframe
-    if len(filters) > 0:
-        for filter in filters:
-            df = df[df[filter] == filters[filter]]
-            print('N after initial {0} exclusion: {1}'.format(filter, df.shape[0]))
-
-    return df
 
