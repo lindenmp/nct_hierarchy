@@ -2,7 +2,7 @@ import os, glob
 import numpy as np
 import scipy.io as sio
 import pandas as pd
-import nilearn
+from nilearn import datasets
 
 from utils.imaging_derivs import DataMatrix, compute_fc, compute_rlfp
 
@@ -95,7 +95,7 @@ class Environment():
         self.parcel_names = np.genfromtxt(os.path.join(self.projdir, 'figs_support', 'labels',
                                                        'schaefer{0}NodeNames.txt'.format(self.n_parcels)), dtype='str')
 
-        self.fsaverage = nilearn.datasets.fetch_surf_fsaverage(mesh='fsaverage5')
+        self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
 
         self.lh_annot_file = os.path.join(self.projdir, 'figs_support', 'Parcellations', 'FreeSurfer5.3',
                                           'fsaverage5', 'label',
@@ -152,7 +152,7 @@ class Subject(Environment):
     def load_sc(self):
         mat_contents = sio.loadmat(self.sc_filename)
 
-        self.sc = DataMatrix(mat_contents['connectivity'])
+        self.sc = DataMatrix(data=mat_contents['connectivity'])
 
     def load_ct(self):
         self.ct = np.loadtxt(self.ct_filename)
@@ -160,7 +160,7 @@ class Subject(Environment):
     def load_rsfc(self):
         rsts = np.loadtxt(self.rsts_filename)
 
-        self.rsfc = compute_fc(rsts)
+        self.rsfc = DataMatrix(data=compute_fc(rsts))
 
     def load_rlfp(self):
         rsts = np.loadtxt(self.rsts_filename)
