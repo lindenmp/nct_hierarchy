@@ -7,16 +7,17 @@ from utils.imaging_derivs import compute_fc, compute_rlfp
 
 
 class Environment():
-    def __init__(self, parc='schaefer', parc_res=400, sc_edge_weight='streamlineCount'):
+    def __init__(self, parc='schaefer', n_parcels=400, sc_edge_weight='streamlineCount'):
         # analysis parameters
         self.parc = parc
-        self.parc_res = parc_res
+        self.n_parcels = n_parcels
         self.sc_edge_weight = sc_edge_weight
 
         # directories
         self.projdir = '/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients'
-        self.pipelinedir = os.path.join(self.projdir, 'pipeline', '{0}_{1}_{2}'.format(self.parc, self.parc_res, self.sc_edge_weight))
-        self.outputdir = os.path.join(self.projdir, 'output', '{0}_{1}_{2}'.format(self.parc, self.parc_res, self.sc_edge_weight))
+        self.pipelinedir = os.path.join(self.projdir, 'pipeline', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
+        self.outputdir = os.path.join(self.projdir, 'output', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
+        self.figdir = os.path.join(self.projdir, 'figures', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
 
         self.datadir = '/Volumes/work_ssd/research_data/PNC/'
         self.freezedir = os.path.join(self.datadir, 'pncDataFreeze20170905', 'n1601_dataFreeze')
@@ -30,6 +31,7 @@ class Environment():
     def make_output_dirs(self):
         if not os.path.exists(self.pipelinedir): os.makedirs(self.pipelinedir)
         if not os.path.exists(self.outputdir): os.makedirs(self.outputdir)
+        if not os.path.exists(self.figdir): os.makedirs(self.figdir)
 
     def load_metadata(self, filters = []):
         """
@@ -101,22 +103,22 @@ class Subject(Environment):
                                        '*x{0}'.format(self.scanid),
                                        'tractography', 'connectivity',
                                        '{0}_*x{1}_SchaeferPNC_{2}_dti_{3}_connectivity.mat' \
-                                       .format(self.bblid, self.scanid, self.parc_res, self.sc_edge_weight))
+                                       .format(self.bblid, self.scanid, self.n_parcels, self.sc_edge_weight))
             sc_filename = glob.glob(os.path.join(self.scdir, sc_filename))[0]
 
             ct_filename = os.path.join('{0}'.format(self.bblid),
                                        '*x{0}'.format(self.scanid),
-                                       'ct_schaefer{0}_17.txt'.format(self.parc_res))
+                                       'ct_schaefer{0}_17.txt'.format(self.n_parcels))
             ct_filename = glob.glob(os.path.join(self.ctdir, ct_filename))[0]
 
-            if self.parc_res == 200:
+            if self.n_parcels == 200:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
-                                             'net', 'Schaefer{0}PNC'.format(self.parc_res),
+                                             'net', 'Schaefer{0}PNC'.format(self.n_parcels),
                                              '{0}_*x{1}_Schaefer{2}PNC_ts.1D' \
-                                             .format(self.bblid, self.scanid, self.parc_res))
+                                             .format(self.bblid, self.scanid, self.n_parcels))
                 rsts_filename = glob.glob(os.path.join(self.rstsdir, rsts_filename))[0]
-            elif self.parc_res == 400:
+            elif self.n_parcels == 400:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
                                              'net', 'SchaeferPNC',
