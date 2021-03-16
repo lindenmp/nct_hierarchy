@@ -2,9 +2,9 @@ import os, glob
 import numpy as np
 import scipy.io as sio
 import pandas as pd
+import nilearn
 
-from utils.imaging_derivs import compute_fc, compute_rlfp
-
+from utils.imaging_derivs import DataMatrix, compute_fc, compute_rlfp
 
 class Environment():
     def __init__(self, parc='schaefer', n_parcels=400, sc_edge_weight='streamlineCount'):
@@ -91,6 +91,24 @@ class Environment():
 
         return df
 
+    def load_parc_data(self):
+        self.parcel_names = np.genfromtxt(os.path.join(self.projdir, 'figs_support', 'labels',
+                                                       'schaefer{0}NodeNames.txt'.format(self.n_parcels)), dtype='str')
+
+        self.fsaverage = nilearn.datasets.fetch_surf_fsaverage(mesh='fsaverage5')
+
+        self.lh_annot_file = os.path.join(self.projdir, 'figs_support', 'Parcellations', 'FreeSurfer5.3',
+                                          'fsaverage5', 'label',
+                                          'lh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
+
+        self.rh_annot_file = os.path.join(self.projdir, 'figs_support', 'Parcellations', 'FreeSurfer5.3',
+                                          'fsaverage5', 'label',
+                                          'rh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
+
+        self.centroids = pd.read_csv(os.path.join(self.projdir, 'figs_support', 'labels', 'schaefer{0}'.format(self.n_parcels),
+                                                  'Schaefer2018_{0}Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'.format(self.n_parcels)))
+        self.centroids.drop('ROI Name', axis=1, inplace=True)
+        self.centroids.set_index('ROI Label', inplace=True)
 
 class Subject(Environment):
     def __init__(self, bblid=81287, scanid=2738):
@@ -98,6 +116,7 @@ class Subject(Environment):
         self.bblid = bblid
         self.scanid = scanid
 
+    def get_file_names(self):
         if self.parc == 'schaefer':
             sc_filename = os.path.join('{0}'.format(self.bblid),
                                        '*x{0}'.format(self.scanid),
@@ -130,10 +149,10 @@ class Subject(Environment):
         self.ct_filename = ct_filename
         self.rsts_filename = rsts_filename
 
-    def load_adj_matrix(self):
+    def load_sc(self):
         mat_contents = sio.loadmat(self.sc_filename)
 
-        self.adj_matrix = mat_contents['connectivity']
+        self.sc = DataMatrix(mat_contents['connectivity'])
 
     def load_ct(self):
         self.ct = np.loadtxt(self.ct_filename)
