@@ -2,6 +2,55 @@ import numpy as np
 import scipy as sp
 from scipy import stats
 from scipy import signal
+from bct.algorithms.distance import distance_wei_floyd
+from sklearn.linear_model import LinearRegression
+
+class DataMatrix():
+    def __init__(self, data=[]):
+        self.data = data
+
+    def compute_distance_matrix(self):
+        self.D, self.hops, self.Pmat = distance_wei_floyd(self.data, transform='inv')
+
+    def regress_nuisance(self, c, indices=[]):
+        if len(indices) == 0:
+            # if no indices are given, assume filtering out of identity
+            indices = np.where(~np.eye(self.data.shape[0], dtype=bool))
+
+        x_out = np.zeros(self.data.shape)
+
+        x = self.data[indices].reshape(-1, 1)
+        c = c[indices].reshape(-1, 1)
+
+        nuis_reg = LinearRegression()
+        nuis_reg.fit(c, x)
+
+        x_pred = nuis_reg.predict(c)
+        x_out[indices] = x[:, 0] - x_pred[:, 0]
+
+        self.data_resid = x_out
+
+    def mean_over_clusters(self, cluster_labels, use_resid_matrix=False):
+        if use_resid_matrix == True:
+            try:
+                x = self.data_resid
+            except AttributeError:
+                print('Warning: self.data_resid does not exist. run self.regress_nuisance() first and rerun '
+                      'self.mean_over_clusters')
+                print('..forcing self.mean_over_clusters(use_resid_matrix=False)')
+                x = self.data
+        elif use_resid_matrix == False:
+            x = self.data
+
+        unique = np.unique(cluster_labels, return_counts=False)
+        n_clusters = len(unique)
+
+        x_out = np.zeros((n_clusters, n_clusters))
+        for i in np.arange(n_clusters):
+            for j in np.arange(n_clusters):
+                x_out[i, j] = np.nanmean(np.nanmean(x[cluster_labels == i, :], axis=0)[cluster_labels == j])
+
+        self.data_clusters = x_out
 
 def compute_fc(ts):
     """
