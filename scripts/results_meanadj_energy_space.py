@@ -9,6 +9,7 @@ from utils.imaging_derivs import DataMatrix
 from utils.utils import get_pdist_clusters
 from utils.plotting import my_regplot
 
+#%% Set general plotting params
 sns.set(style='white', context='talk', font_scale=1)
 import matplotlib.font_manager as font_manager
 fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
@@ -17,7 +18,7 @@ plt.rcParams['font.family'] = prop.get_name()
 plt.rcParams['svg.fonttype'] = 'none'
 
 #%% Setup project environment
-from data_loader.pnc import Environment, Subject
+from data_loader.pnc import Environment
 parc='schaefer'
 n_parcels=400
 sc_edge_weight='streamlineCount'
@@ -55,7 +56,7 @@ B_ver = 'x0xfwb'
 indices = np.where(~np.eye(n_clusters, dtype=bool))
 print(len(indices[0]))
 
-# Load group A matrix (6% sparsity)
+# Load energy (group A matrix; 6% sparsity)
 file_label = 'disc_mean_A_s6_'+control+'_T-'+str(T)+'_B-'+B_ver+'-g'+str(n_clusters)+'_E.npy'
 print(file_label)
 
