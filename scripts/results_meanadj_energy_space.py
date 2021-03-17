@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from utils.imaging_derivs import DataMatrix
 from utils.utils import get_pdist_clusters, get_disc_repl, mean_over_clusters
-from utils.plotting import my_regplot
+from utils.plotting import my_regplot, my_nullplot
 from data_loader.routines import load_sc
 
 #%% Set general plotting params
@@ -156,3 +156,23 @@ for i in range(len(x_to_plot)):
 
 f.subplots_adjust(wspace=0.5)
 f.savefig(os.path.join(environment.figdir, 'variance_vs_distance.png'), dpi=150, bbox_inches='tight', pad_inches=0.1)
+
+#%% 4) Null network models
+surr_type = 'spatial_wssp' # 'standard' 'spatial_wwp' 'spatial_wsp' 'spatial_wssp'
+# surr_type = surr_type+'_hybrid'
+# surr_type = surr_type+'_grad_cmni'
+surr_type = surr_type+'_mni_cgrad'
+
+tm_var_surr = np.load(os.path.join(environment.pipelinedir, 'disc_mean_A_s6_{0}_grad{1}_tm_var_surr.npy'.format(surr_type, n_clusters)))
+smv_var_surr = np.load(os.path.join(environment.pipelinedir, 'disc_mean_A_s6_{0}_grad{1}_smv_var_surr.npy'.format(surr_type, n_clusters)))
+joint_var_surr = np.load(os.path.join(environment.pipelinedir, 'disc_mean_A_s6_{0}_grad{1}_joint_var_surr.npy'.format(surr_type, n_clusters)))
+
+# E_Am.regress_nuisance(c=dist_mni, indices=indices); ylabel = 'Energy (resid MNI)'
+E_Am.regress_nuisance(c=mean_over_clusters(A.hops, kmeans.labels_), indices=indices); ylabel = 'Energy (resid hops)'
+
+f, ax = plt.subplots(1, 2, figsize=(10, 5))
+my_nullplot(mean_over_clusters(A.tm_var, kmeans.labels_)[indices], tm_var_surr[indices], E_Am.data[indices], 'null', ax=ax[0])
+my_nullplot(mean_over_clusters(A.smv_var, kmeans.labels_)[indices], smv_var_surr[indices], E_Am.data[indices], 'null', ax=ax[1])
+
+f.subplots_adjust(wspace=0.5)
+f.savefig(os.path.join(environment.figdir, 'meanadj_energy_vs_adjstats_null.png'), dpi=150, bbox_inches='tight', pad_inches=0.1)
