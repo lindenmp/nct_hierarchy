@@ -6,8 +6,9 @@ import scipy as sp
 import matplotlib.pyplot as plt
 import seaborn as sns
 from utils.imaging_derivs import DataMatrix
-from utils.utils import get_pdist_clusters
+from utils.utils import get_pdist_clusters, get_disc_repl, mean_over_clusters
 from utils.plotting import my_regplot
+from data_loader.routines import load_sc
 
 #%% Set general plotting params
 sns.set(style='white', context='talk', font_scale=1)
@@ -18,20 +19,33 @@ plt.rcParams['font.family'] = prop.get_name()
 plt.rcParams['svg.fonttype'] = 'none'
 
 #%% Setup project environment
-from data_loader.pnc import Environment
-parc='schaefer'
-n_parcels=400
-sc_edge_weight='streamlineCount'
+from data_loader.pnc import Environment, Subject
+parc = 'schaefer'
+n_parcels = 400
+sc_edge_weight = 'streamlineCount'
 environment = Environment(parc=parc, n_parcels=n_parcels, sc_edge_weight=sc_edge_weight)
 environment.make_output_dirs()
 environment.load_parc_data()
 
-#%%  1) mni/gradient distance between hierarchy clusters
+filters = {'healthExcludev2': 0, 't1Exclude': 0,
+           'b0ProtocolValidationStatus': 1, 'dti64ProtocolValidationStatus': 1, 'dti64Exclude': 0,
+           'psychoactiveMedPsychv2': 0}
+df = environment.load_metadata(filters)
+df['disc_repl'] = get_disc_repl(df, frac=0.5)
+
+df = df.loc[df['disc_repl'] == 0, :]
+print(df.shape)
+
+environment.df = df
+environment.Subject = Subject
+
+# Load gradients
 n_clusters=int(n_parcels*.05)
 print(n_clusters)
 gradients = np.loadtxt(os.path.join(environment.outputdir, 'gradients.txt'))
 kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(gradients)
 
+#%%  1) mni/gradient distance between hierarchy clusters
 dist_mni = get_pdist_clusters(environment.centroids.values, kmeans.labels_, method='median')
 dist_mni[np.eye(dist_mni.shape[0]) == 1] = np.nan
 
@@ -83,3 +97,62 @@ my_regplot(dist_h[indices], E_Am.data_resid[indices], 'Distance (hierarchy)', 'E
 
 f.subplots_adjust(wspace=0.5)
 f.savefig(os.path.join(environment.figdir, 'meanadj_energy_vs_distance.png'), dpi=150, bbox_inches='tight', pad_inches=0.1)
+
+#%% 3) Gradient traversal variance
+# Load sc data
+environment = load_sc(environment)
+df, A = environment.df, environment.A
+n_subs = df.shape[0]
+del(environment.df, environment.A)
+
+# Get streamline count and network density
+A_c = np.zeros((n_subs,))
+A_d = np.zeros((n_subs,))
+for i in range(n_subs):
+    A_c[i] = np.sum(np.triu(A[:, :, i]))
+    A_d[i] = np.count_nonzero(np.triu(A[:, :, i]))/((A[:, :, i].shape[0]**2-A[:, :, i].shape[0])/2)
+
+df['streamline_count'] = A_c
+df['network_density'] = A_d
+
+# Get group average adj. matrix
+mean_spars = np.round(df['network_density'].mean(), 2)
+print(mean_spars)
+
+A = np.mean(A, 2)
+thresh = np.percentile(A, 100 - (mean_spars * 100))
+A[A < thresh] = 0
+print(np.count_nonzero(np.triu(A)) / ((A.shape[0] ** 2 - A.shape[0]) / 2))
+A = DataMatrix(data=A)
+A.get_gradient_variance(gradients)
+
+# Plot: gradient traversal vs. energy
+x_to_plot = [A.hops, A.tm_var, A.smv_var, A.joint_var]
+xlabels = ['Hops in sp', 'Transmodal variance', 'Unimodal variance', 'Joint variance (euclid)']
+# E_Am.regress_nuisance(c=dist_mni, indices=indices); ylabel = 'Energy (resid MNI)'
+E_Am.regress_nuisance(c=mean_over_clusters(A.hops, kmeans.labels_), indices=indices); ylabel = 'Energy (resid hops)'
+
+f, ax = plt.subplots(1, len(x_to_plot), figsize=(len(x_to_plot)*5, 4))
+for i in range(len(x_to_plot)):
+    my_regplot(mean_over_clusters(x_to_plot[i], kmeans.labels_)[indices],
+               E_Am.data_resid[indices],
+               xlabels[i], ylabel, ax[i])
+
+f.subplots_adjust(wspace=0.5)
+f.savefig(os.path.join(environment.figdir, 'meanadj_energy_vs_adjstats.png'), dpi=150, bbox_inches='tight', pad_inches=0.1)
+
+# Plot: gradient traversal vs. space
+x_to_plot = [mean_over_clusters(A.hops, kmeans.labels_), dist_mni, dist_h]
+xlabels = ['Hops in sp', 'Distance (MNI)', 'Distance (hierarchy)']
+y_to_plot = [A.tm_var, A.smv_var, A.joint_var]
+ylabels = ['Transmodal variance', 'Unimodal variance', 'Joint variance (euclid)']
+
+f, ax = plt.subplots(len(x_to_plot), len(y_to_plot), figsize=(len(x_to_plot)*5, len(y_to_plot)*5))
+for i in range(len(x_to_plot)):
+    for j in range(len(y_to_plot)):
+        my_regplot(x_to_plot[i][indices],
+                   mean_over_clusters(y_to_plot[j], kmeans.labels_)[indices],
+                   xlabels[i], ylabels[j], ax[i,j])
+
+f.subplots_adjust(wspace=0.5)
+f.savefig(os.path.join(environment.figdir, 'variance_vs_distance.png'), dpi=150, bbox_inches='tight', pad_inches=0.1)
