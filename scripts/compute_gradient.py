@@ -20,9 +20,9 @@ plt.rcParams['svg.fonttype'] = 'none'
 
 #%% Setup project environment
 from data_loader.pnc import Environment, Subject
-parc='schaefer'
-n_parcels=400
-sc_edge_weight='streamlineCount'
+parc = 'schaefer'
+n_parcels = 400
+sc_edge_weight = 'streamlineCount'
 environment = Environment(parc=parc, n_parcels=n_parcels, sc_edge_weight=sc_edge_weight)
 environment.make_output_dirs()
 environment.load_parc_data()
