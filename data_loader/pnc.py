@@ -33,7 +33,7 @@ class Environment():
         if not os.path.exists(self.outputdir): os.makedirs(self.outputdir)
         if not os.path.exists(self.figdir): os.makedirs(self.figdir)
 
-    def load_metadata(self, filters = []):
+    def load_metadata(self, filters=[]):
         """
         Parameters
         ----------
@@ -45,6 +45,8 @@ class Environment():
         df : pd.DataFrame (n_subjects,n_variables)
             dataframe of subject meta data for the PNC
         """
+
+        print("Data loader: loading metadata for PNC...")
 
         # LTN and Health Status
         health = pd.read_csv(os.path.join(self.freezedir, 'health', 'n1601_health_20170421.csv'))
@@ -81,21 +83,28 @@ class Environment():
         df = pd.merge(df, goassess, on=['bblid'])  # goassess
         df = pd.merge(df, cnb, on=['scanid', 'bblid'])  # goassess
 
-        df.set_index(['bblid', 'scanid'], inplace=True)
+        # df.set_index(['bblid', 'scanid'], inplace=True)
+        df['subjid'] = df['bblid'].astype(str) + '_' + df['scanid'].astype(str)
+        df.set_index(['subjid'], inplace=True)
 
         # filter dataframe
         if len(filters) > 0:
             for filter in filters:
                 df = df[df[filter] == filters[filter]]
-                print('N after initial {0} exclusion: {1}'.format(filter, df.shape[0]))
+                print('\tN after initial {0} exclusion: {1}'.format(filter, df.shape[0]))
 
-        return df
+        print('\tFinal sample: {0} subjects with {1} columns'.format(df.shape[0], df.shape[1]))
+
+        self.df = df
 
     def load_parc_data(self):
         self.parcel_names = np.genfromtxt(os.path.join(self.projdir, 'figs_support', 'labels',
                                                        'schaefer{0}NodeNames.txt'.format(self.n_parcels)), dtype='str')
 
-        self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
+        if self.parc == 'schaefer':
+            self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
+        elif self.parc == 'glasser':
+            self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage')
 
         self.lh_annot_file = os.path.join(self.projdir, 'figs_support', 'Parcellations', 'FreeSurfer5.3',
                                           'fsaverage5', 'label',
@@ -111,10 +120,11 @@ class Environment():
         self.centroids.set_index('ROI Label', inplace=True)
 
 class Subject(Environment):
-    def __init__(self, bblid=81287, scanid=2738):
+    def __init__(self, subjid='81287_2738'):
         Environment.__init__(self)
-        self.bblid = bblid
-        self.scanid = scanid
+        self.subjid = subjid
+        self.bblid = subjid.split('_')[0]
+        self.scanid = subjid.split('_')[1]
 
     def get_file_names(self):
         if self.parc == 'schaefer':
@@ -123,12 +133,12 @@ class Subject(Environment):
                                        'tractography', 'connectivity',
                                        '{0}_*x{1}_SchaeferPNC_{2}_dti_{3}_connectivity.mat' \
                                        .format(self.bblid, self.scanid, self.n_parcels, self.sc_edge_weight))
-            sc_filename = glob.glob(os.path.join(self.scdir, sc_filename))[0]
+            sc_filename = glob.glob(os.path.join(self.scdir, sc_filename))
 
             ct_filename = os.path.join('{0}'.format(self.bblid),
                                        '*x{0}'.format(self.scanid),
                                        'ct_schaefer{0}_17.txt'.format(self.n_parcels))
-            ct_filename = glob.glob(os.path.join(self.ctdir, ct_filename))[0]
+            ct_filename = glob.glob(os.path.join(self.ctdir, ct_filename))
 
             if self.n_parcels == 200:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
@@ -136,18 +146,23 @@ class Subject(Environment):
                                              'net', 'Schaefer{0}PNC'.format(self.n_parcels),
                                              '{0}_*x{1}_Schaefer{2}PNC_ts.1D' \
                                              .format(self.bblid, self.scanid, self.n_parcels))
-                rsts_filename = glob.glob(os.path.join(self.rstsdir, rsts_filename))[0]
+                rsts_filename = glob.glob(os.path.join(self.rstsdir, rsts_filename))
             elif self.n_parcels == 400:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
                                              'net', 'SchaeferPNC',
                                              '{0}_*x{1}_SchaeferPNC_ts.1D' \
                                              .format(self.bblid, self.scanid))
-                rsts_filename = glob.glob(os.path.join(self.rstsdir, rsts_filename))[0]
+                rsts_filename = glob.glob(os.path.join(self.rstsdir, rsts_filename))
 
-        self.sc_filename = sc_filename
-        self.ct_filename = ct_filename
-        self.rsts_filename = rsts_filename
+        try: self.sc_filename = sc_filename[0]
+        except IndexError: self.sc_filename = []
+
+        try: self.ct_filename = ct_filename[0]
+        except IndexError: self.ct_filename = []
+
+        try: self.rsts_filename = rsts_filename[0]
+        except IndexError: self.rsts_filename = []
 
     def load_sc(self):
         mat_contents = sio.loadmat(self.sc_filename)
@@ -166,7 +181,7 @@ class Subject(Environment):
         rsts = np.loadtxt(self.rsts_filename)
         n_parcels = rsts.shape[1]
 
-        rlfp = np.zeros(n_parcels)
+        rlfp = np.zeros((n_parcels,))
         for i in np.arange(n_parcels):
             rlfp[i] = compute_rlfp(rsts[:, i], tr=self.rsfmri_tr, num_bands=5, band_of_interest=1)
 
