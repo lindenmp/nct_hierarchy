@@ -3,6 +3,11 @@ import numpy as np
 import nibabel as nib
 import math
 
+import scipy as sp
+from scipy import stats
+
+import seaborn as sns
+
 def roi_to_vtx(roi_data, parcel_names, parc_file):
     """
     Parameters
@@ -69,3 +74,68 @@ def roi_to_vtx(roi_data, parcel_names, parc_file):
     # while vtx_data_min == -1000: vtx_data_min = x[i]; i += 1
 
     return vtx_data, vtx_data_min, vtx_data_max
+
+
+def my_regplot(x, y, xlabel, ylabel, ax, c='gray'):
+    if len(x.shape) > 1 and len(y.shape) > 1:
+        if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
+            mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
+            mask_y = ~np.eye(y.shape[0], dtype=bool) * ~np.isnan(y)
+            mask = mask_x * mask_y
+            indices = np.where(mask)
+
+            x = x[indices]
+            y = y[indices]
+
+    try:
+        sns.kdeplot(x=x, y=y, ax=ax, color='gray', thresh=0.05, alpha=0.25)
+    except:
+        pass
+    sns.regplot(x=x, y=y, ax=ax, scatter=False)
+    ax.scatter(x=x, y=y, c=c, s=5, alpha=0.5)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel, labelpad=-1)
+    ax.tick_params(pad=-2.5)
+    pearson_stats = sp.stats.pearsonr(x, y)
+    spearman_stats = sp.stats.spearmanr(x, y)
+    textstr = 'r = {:.2f}, p = {:.2f} \nrho = {:.2f}, p = {:.2f}'.format(pearson_stats[0], pearson_stats[1],
+                                                                         spearman_stats[0], spearman_stats[1])
+    ax.text(0.05, 0.975, textstr, transform=ax.transAxes,
+            verticalalignment='top')
+
+def my_nullplot(x, x_null, y, xlabel, ax):
+    if len(x.shape) > 1 and len(y.shape) > 1:
+        if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
+            mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
+            mask_y = ~np.eye(y.shape[0], dtype=bool) * ~np.isnan(y)
+            mask = mask_x * mask_y
+            indices = np.where(mask)
+
+            x = x[indices]
+            y = y[indices]
+            x_null = x_null[indices]
+
+    num_surrogates = x_null.shape[1]
+
+    y_null = np.zeros(num_surrogates)
+    for i in np.arange(num_surrogates): y_null[i] = sp.stats.pearsonr(x_null[:, i], y)[0]
+
+    sns.histplot(y_null, ax=ax)
+
+    y_obs = sp.stats.pearsonr(x, y)[0]
+    ax.axvline(x=y_obs, c='r')
+
+    if y_obs < 0:
+        p_val = np.sum(y_null <= y_obs) / num_surrogates
+    else:
+        p_val = np.sum(y_null >= y_obs) / num_surrogates
+    # p_val = np.sum(np.abs(y_null) >= np.abs(y_obs))/num_surrogates
+    # p_val = np.min([np.sum(y_null >= y_obs)/num_surrogates,
+    #                 np.sum(y_null <= y_obs)/num_surrogates])
+    textstr = 'p unc. = {:.2f}'.format(p_val)
+    ax.text(0.01, 0.975, textstr, transform=ax.transAxes,
+            verticalalignment='top', rotation='horizontal', c='r')
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel('')
+    ax.tick_params(pad=-2.5)
