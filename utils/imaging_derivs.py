@@ -2,20 +2,20 @@ import numpy as np
 import scipy as sp
 from scipy import stats
 from scipy import signal
-from bct.algorithms.distance import distance_wei_floyd
+from bct.algorithms.distance import distance_wei_floyd, retrieve_shortest_path
 from sklearn.linear_model import LinearRegression
 
 class DataMatrix():
     def __init__(self, data=[]):
         self.data = data
 
-    def compute_distance_matrix(self):
+    def get_distance_matrix(self):
         self.D, self.hops, self.Pmat = distance_wei_floyd(self.data, transform='inv')
 
     def regress_nuisance(self, c, indices=[]):
         if len(indices) == 0:
-            # if no indices are given, assume filtering out of identity
-            indices = np.where(~np.eye(self.data.shape[0], dtype=bool))
+            # if no indices are given, filter out identity and nans
+            indices = np.where(~np.eye(self.data.shape[0], dtype=bool) * ~np.isnan(self.data))
 
         x_out = np.zeros(self.data.shape)
 
@@ -51,6 +51,83 @@ class DataMatrix():
                 x_out[i, j] = np.nanmean(np.nanmean(x[cluster_labels == i, :], axis=0)[cluster_labels == j])
 
         self.data_clusters = x_out
+
+    def check_disconnected_nodes(self):
+        if np.any(np.sum(self.data, axis=1) == 0):
+            self.disconnected_nodes = True
+        else:
+            self.disconnected_nodes = False
+
+    def get_gradient_variance(self, gradients, return_abs=False):
+        """
+        :param gradients: (n_parcels,2) ndarray.
+            Assumes transmodal gradient is on column 0 and unimodal gradient is on column 1
+        :param return_abs: bool
+            Whether variance along shortest paths is based on absolute differences or not
+
+        :return:
+            self.tm_var:
+                variance of principal gradient traversal of shortest paths linking nodes i and j
+            self.smv_var:
+                variance of sensorimotor gradient traversal of shortest paths linking nodes i and j
+            self.joint_var:
+                variance along both gradients estimated via euclidean distance
+        """
+        try:
+            self.hops
+        except AttributeError:
+            self.get_distance_matrix()
+
+        n_parcels = self.data.shape[0]
+
+        self.tm_var = np.zeros((n_parcels, n_parcels))
+        self.smv_var = np.zeros((n_parcels, n_parcels))
+        self.joint_var = np.zeros((n_parcels, n_parcels))
+
+        for i in np.arange(n_parcels):
+            for j in np.arange(n_parcels):
+                if j > i:
+                    shortest_path = retrieve_shortest_path(i, j, self.hops, self.Pmat)
+                    if len(shortest_path) != 0:
+                        gradient_diff = np.diff(gradients[shortest_path, :], axis=0)
+
+                        if return_abs == True:
+                            gradient_diff = np.abs(gradient_diff)
+
+                        # get the variance of the differences along the shortest path
+                        var_diff = np.var(gradient_diff, axis=0)[0]
+                        self.tm_var[i, j] = var_diff[0]
+                        self.smv_var[i, j] = var_diff[1]
+
+                        # get the variance of the euclidean distance
+                        self.joint_var[i, j] = np.var(np.sqrt(np.sum(np.square(gradient_diff), axis=1)))
+                    else:
+                        self.tm_var[i, j] = np.nan
+                        self.smv_var[i, j] = np.nan
+                        self.joint_var[i, j] = np.nan
+
+        self.tm_var = self.tm_var + self.tm_var.transpose()
+        self.smv_var = self.smv_var + self.smv_var.transpose()
+        self.joint_var = self.joint_var + self.joint_var.transpose()
+
+
+class DataVector():
+    def __init__(self, data=[]):
+        self.data = data
+
+
+    def regress_nuisance(self, c):
+        x = self.data.reshape(-1, 1)
+        c = c.reshape(-1, 1)
+
+        nuis_reg = LinearRegression()
+        nuis_reg.fit(c, x)
+
+        x_pred = nuis_reg.predict(c)
+        x_out = x[:, 0] - x_pred[:, 0]
+
+        self.data_resid = x_out
+
 
 def compute_fc(ts):
     """
