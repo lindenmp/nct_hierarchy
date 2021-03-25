@@ -73,6 +73,7 @@ class DataMatrix():
             self.joint_var:
                 variance along both gradients estimated via euclidean distance
         """
+        print('Getting gradient variance over shortest paths...')
         try:
             self.hops
         except AttributeError:
@@ -89,13 +90,13 @@ class DataMatrix():
                 if j > i:
                     shortest_path = retrieve_shortest_path(i, j, self.hops, self.Pmat)
                     if len(shortest_path) != 0:
-                        gradient_diff = np.diff(gradients[shortest_path, :], axis=0)
+                        gradient_diff = np.diff(gradients[shortest_path[:, 0], :], axis=0)
 
                         if return_abs == True:
                             gradient_diff = np.abs(gradient_diff)
 
                         # get the variance of the differences along the shortest path
-                        var_diff = np.var(gradient_diff, axis=0)[0]
+                        var_diff = np.var(gradient_diff, axis=0)
                         self.tm_var[i, j] = var_diff[0]
                         self.smv_var[i, j] = var_diff[1]
 
@@ -110,6 +111,77 @@ class DataMatrix():
         self.smv_var = self.smv_var + self.smv_var.transpose()
         self.joint_var = self.joint_var + self.joint_var.transpose()
 
+    def get_gene_coexpr_variance(self, gene_expression, return_abs=False):
+        """
+        :param gene_expression:
+        :param return_abs:
+        :return:
+        """
+        print('Getting gene coexpression mean/variance over shortest paths...')
+        try:
+            self.hops
+        except AttributeError:
+            self.get_distance_matrix()
+
+        n_parcels = self.data.shape[0]
+
+        self.gene_coexpr_mean = np.zeros((n_parcels, n_parcels))
+        self.gene_coexpr_var = np.zeros((n_parcels, n_parcels))
+
+        for i in np.arange(n_parcels):
+            for j in np.arange(n_parcels):
+                if j > i:
+                    shortest_path = retrieve_shortest_path(i, j, self.hops, self.Pmat)
+                    if len(shortest_path) != 0:
+                        # get the coexpression for neighboring nodes along shortest_path
+                        gene_coexpr = np.diag(np.corrcoef(gene_expression[shortest_path[:, 0], :], rowvar=True), k=1)
+
+                        if return_abs == True:
+                             gene_coexpr = np.abs(gene_coexpr)
+
+                        # mean the coexpression along the shortest path
+                        self.gene_coexpr_mean[i, j] = np.nanmean(gene_coexpr)
+                        # get the variance of the coexpression along the shortest path
+                        self.gene_coexpr_var[i, j] = np.nanvar(gene_coexpr)
+                    else:
+                        self.gene_coexpr_mean[i, j] = np.nan
+                        self.gene_coexpr_var[i, j] = np.nan
+
+        self.gene_coexpr_mean = self.gene_coexpr_mean + self.gene_coexpr_mean.transpose()
+        self.gene_coexpr_var = self.gene_coexpr_var + self.gene_coexpr_var.transpose()
+
+    def get_gene_delta_variance(self, gene_delta, return_abs=False):
+        """
+        :param gene_delta:
+        :param return_abs:
+        :return:
+        """
+        print('Getting gene delta variance over shortest paths...')
+        try:
+            self.hops
+        except AttributeError:
+            self.get_distance_matrix()
+
+        n_parcels = self.data.shape[0]
+
+        self.gene_delta_var = np.zeros((n_parcels, n_parcels))
+
+        for i in np.arange(n_parcels):
+            for j in np.arange(n_parcels):
+                if j > i:
+                    shortest_path = retrieve_shortest_path(i, j, self.hops, self.Pmat)
+                    if len(shortest_path) != 0:
+                        gene_delta_diff = np.diff(gene_delta[shortest_path[:, 0]], axis=0)
+
+                        if return_abs == True:
+                            gene_delta_diff = np.abs(gene_delta_diff)
+
+                        # get the variance of the differences along the shortest path
+                        self.gene_delta_var[i, j] = np.var(gene_delta_diff)
+                    else:
+                        self.gene_delta_var[i, j] = np.nan
+
+        self.gene_delta_var = self.gene_delta_var + self.gene_delta_var.transpose()
 
 class DataVector():
     def __init__(self, data=[]):
