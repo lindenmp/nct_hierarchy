@@ -83,9 +83,29 @@ def my_regplot(x, y, xlabel, ylabel, ax, c='gray'):
             mask_y = ~np.eye(y.shape[0], dtype=bool) * ~np.isnan(y)
             mask = mask_x * mask_y
             indices = np.where(mask)
+        else:
+            mask_x = ~np.isnan(x)
+            mask_y = ~np.isnan(y)
+            mask = mask_x * mask_y
+            indices = np.where(mask)
+    elif len(x.shape) == 1 and len(y.shape) == 1:
+        mask_x = ~np.isnan(x)
+        mask_y = ~np.isnan(y)
+        mask = mask_x * mask_y
+        indices = np.where(mask)
+    else:
+        print('error: input array dimension mismatch.')
 
-            x = x[indices]
-            y = y[indices]
+    try:
+        x = x[indices]
+        y = y[indices]
+    except:
+        pass
+
+    try:
+        c = c[indices]
+    except:
+        pass
 
     try:
         sns.kdeplot(x=x, y=y, ax=ax, color='gray', thresh=0.05, alpha=0.25)
