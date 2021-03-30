@@ -4,6 +4,7 @@ from scipy import stats
 from scipy import signal
 from bct.algorithms.distance import distance_wei_floyd, retrieve_shortest_path
 from sklearn.linear_model import LinearRegression
+from sklearn.kernel_ridge import KernelRidge
 
 class DataMatrix():
     def __init__(self, data=[]):
@@ -83,6 +84,8 @@ class DataMatrix():
 
         self.tm_var = np.zeros((n_parcels, n_parcels))
         self.smv_var = np.zeros((n_parcels, n_parcels))
+        self.tm_mean = np.zeros((n_parcels, n_parcels))
+        self.smv_mean = np.zeros((n_parcels, n_parcels))
         self.joint_var = np.zeros((n_parcels, n_parcels))
 
         for i in np.arange(n_parcels):
@@ -99,16 +102,23 @@ class DataMatrix():
                         var_diff = np.var(gradient_diff, axis=0)
                         self.tm_var[i, j] = var_diff[0]
                         self.smv_var[i, j] = var_diff[1]
+                        mean_diff = np.mean(gradient_diff, axis=0)
+                        self.tm_mean[i, j] = mean_diff[0]
+                        self.smv_mean[i, j] = mean_diff[1]
 
                         # get the variance of the euclidean distance
                         self.joint_var[i, j] = np.var(np.sqrt(np.sum(np.square(gradient_diff), axis=1)))
                     else:
                         self.tm_var[i, j] = np.nan
                         self.smv_var[i, j] = np.nan
+                        self.tm_mean[i, j] = np.nan
+                        self.smv_mean[i, j] = np.nan
                         self.joint_var[i, j] = np.nan
 
         self.tm_var = self.tm_var + self.tm_var.transpose()
         self.smv_var = self.smv_var + self.smv_var.transpose()
+        self.tm_mean = self.tm_mean + self.tm_mean.transpose()
+        self.smv_mean = self.smv_mean + self.smv_mean.transpose()
         self.joint_var = self.joint_var + self.joint_var.transpose()
 
     def get_gene_coexpr_variance(self, gene_expression, return_abs=False):
