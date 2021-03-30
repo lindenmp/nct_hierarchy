@@ -121,6 +121,61 @@ class DataMatrix():
         self.smv_mean = self.smv_mean + self.smv_mean.transpose()
         self.joint_var = self.joint_var + self.joint_var.transpose()
 
+    def get_gradient_slopes(self, gradients, method='pearson'):
+        """
+        :param gradients:
+        :param method:
+        :return:
+        """
+        print('Getting gradient slope over shortest paths...')
+        try:
+            self.hops
+        except AttributeError:
+            self.get_distance_matrix()
+
+        n_parcels = self.data.shape[0]
+
+        self.tm_slope = np.zeros((n_parcels, n_parcels))
+        self.smv_slope = np.zeros((n_parcels, n_parcels))
+        self.tm_resid = np.zeros((n_parcels, n_parcels))
+        self.smv_resid = np.zeros((n_parcels, n_parcels))
+
+        for i in np.arange(n_parcels):
+            for j in np.arange(n_parcels):
+                if j > i:
+                    shortest_path = retrieve_shortest_path(i, j, self.hops, self.Pmat)
+                    if len(shortest_path) != 0:
+                        x = np.arange(len(shortest_path)).reshape(-1, 1)
+                        y = gradients[shortest_path[:, 0], :]
+
+                        reg = LinearRegression()
+                        # reg = KernelRidge(kernel='rbf')
+                        reg.fit(x, y)
+                        y_pred = reg.predict(x)
+                        resid = y - y_pred
+
+                        mse = np.mean(resid ** 2, axis=0)
+                        rmse = np.sqrt(mse)
+                        self.tm_resid[i, j] = rmse[0]
+                        self.smv_resid[i, j] = rmse[1]
+
+                        if method == 'pearson':
+                            self.tm_slope[i, j] = sp.stats.pearsonr(x.flatten(), y[:, 0])[0]
+                            self.smv_slope[i, j] = sp.stats.pearsonr(x.flatten(), y[:, 1])[0]
+                        elif method == 'spearman':
+                            self.tm_slope[i, j] = sp.stats.spearmanr(x.flatten(), y[:, 0])[0]
+                            self.smv_slope[i, j] = sp.stats.spearmanr(x.flatten(), y[:, 1])[0]
+                    else:
+                        self.tm_slope[i, j] = np.nan
+                        self.smv_slope[i, j] = np.nan
+                        self.tm_resid[i, j] = np.nan
+                        self.smv_resid[i, j] = np.nan
+
+        self.tm_slope = self.tm_slope + (self.tm_slope.transpose() * -1)
+        self.smv_slope = self.smv_slope + (self.smv_slope.transpose() * -1)
+        self.tm_resid = self.tm_resid + self.tm_resid.transpose()
+        self.smv_resid = self.smv_resid + self.smv_resid.transpose()
+
     def get_gene_coexpr_variance(self, gene_expression, return_abs=False):
         """
         :param gene_expression:
