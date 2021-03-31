@@ -123,7 +123,7 @@ class DataMatrix():
         self.smv_mean = self.smv_mean + self.smv_mean.transpose()
         self.joint_var = self.joint_var + self.joint_var.transpose()
 
-    def get_gradient_slopes(self, gradient, x_map=[], method='pearson'):
+    def get_gradient_slopes(self, gradient, x_map=[], method='linear'):
         """
         :param gradient:
         :param x:
@@ -134,6 +134,8 @@ class DataMatrix():
         if len(x_map) > 0:
             print('\tUsing external region map on x')
 
+        self.gradient = gradient
+
         try:
             self.hops
         except AttributeError:
@@ -143,6 +145,7 @@ class DataMatrix():
 
         self.grad_slope = np.zeros((n_parcels, n_parcels))
         self.grad_resid = np.zeros((n_parcels, n_parcels))
+        self.grad_var = np.zeros((n_parcels, n_parcels))
 
         for i in np.arange(n_parcels):
             for j in np.arange(n_parcels):
@@ -156,13 +159,13 @@ class DataMatrix():
 
                         y = gradient[shortest_path[:, 0]].reshape(-1, 1)
 
-                        if method == 'pearson':
+                        if method == 'linear':
                             self.grad_slope[i, j] = sp.stats.pearsonr(x.flatten(), y.flatten())[0]
-                        elif method == 'spearman':
+                            reg = LinearRegression()
+                        elif method == 'nonlinear':
                             self.grad_slope[i, j] = sp.stats.spearmanr(x.flatten(), y.flatten())[0]
+                            reg = KernelRidge(kernel='rbf')
 
-                        reg = LinearRegression()
-                        # reg = KernelRidge(kernel='rbf')
                         reg.fit(x, y)
                         y_pred = reg.predict(x)
                         resid = y - y_pred
@@ -170,12 +173,17 @@ class DataMatrix():
                         mse = np.mean(resid ** 2, axis=0)
                         rmse = np.sqrt(mse)
                         self.grad_resid[i, j] = rmse[0]
+
+                        gradient_diff = np.diff(y, axis=0)
+                        self.grad_var[i, j] = np.var(gradient_diff, axis=0)
                     else:
                         self.grad_slope[i, j] = np.nan
                         self.grad_resid[i, j] = np.nan
+                        self.grad_var[i, j] = np.nan
 
         self.grad_slope = self.grad_slope + (self.grad_slope.transpose() * -1)
         self.grad_resid = self.grad_resid + self.grad_resid.transpose()
+        self.grad_var = self.grad_var + self.grad_var.transpose()
         print('')
 
     def get_gene_coexpr_variance(self, gene_expression, return_abs=False):
