@@ -19,7 +19,8 @@ class Environment():
         self.outputdir = os.path.join(self.projdir, 'output', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         self.figdir = os.path.join(self.projdir, 'figures', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
 
-        self.datadir = '/Volumes/work_ssd/research_data/PNC/'
+        self.external_ssd = '/Volumes/T7/research_data'
+        self.datadir = os.path.join(self.external_ssd, 'PNC')
         self.freezedir = os.path.join(self.datadir, 'pncDataFreeze20170905', 'n1601_dataFreeze')
         self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
         self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCorticalThickness')
