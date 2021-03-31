@@ -128,128 +128,66 @@ sst_pvalb_delta = DataVector(data=sst_pvalb_delta)
 sst_pvalb_delta.regress_nuisance(c=A.hops.mean(axis=0))
 
 # %% Plots
+print('\nGenerating figures')
 gradient = cg.gradients[:, 0]
 
+def my_plot(A, environment, figname='figure.png'):
+    grad_slope = DataMatrix(data=A.grad_slope)
+    grad_slope.regress_nuisance(c=A.hops)
+    grad_resid = DataMatrix(data=A.grad_resid)
+    grad_resid.regress_nuisance(c=A.hops)
+    grad_var = DataMatrix(data=A.grad_var)
+    grad_var.regress_nuisance(c=A.hops)
+
+    indices = np.where(~np.eye(n_parcels, dtype=bool) * ~np.isnan(A.grad_slope))
+    stats = sp.stats.pearsonr(A.grad_slope[indices], A.hops[indices])
+    print('Correlation between slope and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
+    stats = sp.stats.pearsonr(grad_slope.data_resid[indices], A.hops[indices])
+    print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
+
+    indices = np.where(~np.eye(n_parcels, dtype=bool) * ~np.isnan(A.grad_resid))
+    stats = sp.stats.pearsonr(A.grad_resid[indices], A.hops[indices])
+    print('Correlation between error and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
+    stats = sp.stats.pearsonr(grad_resid.data_resid[indices], A.hops[indices])
+    print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
+
+    indices = np.where(~np.eye(n_parcels, dtype=bool) * ~np.isnan(A.grad_var))
+    stats = sp.stats.pearsonr(A.grad_var[indices], A.hops[indices])
+    print('Correlation between variance and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
+    stats = sp.stats.pearsonr(grad_var.data_resid[indices], A.hops[indices])
+    print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
+
+    f, ax = plt.subplots(4, 1, figsize=(5, 5 * 4))
+    my_regplot(A.gradient, np.nanmean(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
+               'Gradient', 'Slope (mean)', ax[0])
+    ax[0].set_ylim([-1, 1])
+    my_regplot(A.gradient, np.nanstd(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
+               'Gradient', 'Slope (std)', ax[1])
+    ax[1].set_ylim([0.2, 0.8])
+    my_regplot(A.gradient, np.nanmean(np.where(grad_resid.data_resid != 0, grad_resid.data_resid, np.nan), axis=1),
+               'Gradient', 'RMSE (mean)', ax[2])
+    ax[2].set_ylim([-0.3, 0.5])
+    my_regplot(A.gradient, np.nanmean(np.where(grad_var.data_resid != 0, grad_var.data_resid, np.nan), axis=1),
+               'Gradient', 'Variance (mean)', ax[3])
+    ax[3].set_ylim([-0.5, 1])
+
+    f.subplots_adjust(wspace=0.5)
+    f.savefig(os.path.join(environment.figdir, figname),
+              dpi=150, bbox_inches='tight', pad_inches=0.1)
+    plt.close()
+
 # %% 1) paths
-A.get_gradient_slopes(gradient)
-indices = np.where(~np.eye(n_parcels, dtype=bool) * ~np.isnan(A.grad_resid))
-
-grad_slope = DataMatrix(data=A.grad_slope)
-grad_slope.regress_nuisance(c=A.hops)
-grad_resid = DataMatrix(data=A.grad_resid)
-grad_resid.regress_nuisance(c=A.hops)
-
-stats = sp.stats.pearsonr(A.grad_slope[indices], A.hops[indices])
-print('Correlation between slope and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-stats = sp.stats.pearsonr(grad_slope.data_resid[indices], A.hops[indices])
-print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-
-stats = sp.stats.pearsonr(A.grad_resid[indices], A.hops[indices])
-print('Correlation between error and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-stats = sp.stats.pearsonr(grad_resid.data_resid[indices], A.hops[indices])
-print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-
-f, ax = plt.subplots(3, 1, figsize=(5, 5*3))
-my_regplot(gradient, np.nanmean(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
-           'Gradient', 'Slope (mean)', ax[0])
-my_regplot(gradient, np.nanstd(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
-           'Gradient', 'Slope (std)', ax[1])
-my_regplot(gradient, np.nanmean(np.where(grad_resid.data_resid != 0, grad_resid.data_resid, np.nan), axis=1),
-           'Gradient', 'RMSE (mean)', ax[2])
-f.subplots_adjust(wspace=0.5)
-f.savefig(os.path.join(environment.figdir, 'path_traversal_gradient.png'),
-          dpi=150, bbox_inches='tight', pad_inches=0.1)
-plt.close()
+A.get_gradient_slopes(gradient, method='linear')
+my_plot(A, environment, figname='path_traversal_gradient.png')
 
 # %% 2) rlfp
-A.get_gradient_slopes(gradient, x_map=rlfp_mean.data_resid)
-indices = np.where(~np.eye(n_parcels, dtype=bool) * ~np.isnan(A.grad_resid))
-
-grad_slope = DataMatrix(data=A.grad_slope)
-grad_slope.regress_nuisance(c=A.hops)
-grad_resid = DataMatrix(data=A.grad_resid)
-grad_resid.regress_nuisance(c=A.hops)
-
-stats = sp.stats.pearsonr(A.grad_slope[indices], A.hops[indices])
-print('Correlation between slope and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-stats = sp.stats.pearsonr(grad_slope.data_resid[indices], A.hops[indices])
-print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-
-stats = sp.stats.pearsonr(A.grad_resid[indices], A.hops[indices])
-print('Correlation between error and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-stats = sp.stats.pearsonr(grad_resid.data_resid[indices], A.hops[indices])
-print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-
-f, ax = plt.subplots(3, 1, figsize=(5, 5*3))
-my_regplot(gradient, np.nanmean(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
-           'Gradient', 'Slope (mean)', ax[0])
-my_regplot(gradient, np.nanstd(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
-           'Gradient', 'Slope (std)', ax[1])
-my_regplot(gradient, np.nanmean(np.where(grad_resid.data_resid != 0, grad_resid.data_resid, np.nan), axis=1),
-           'Gradient', 'RMSE (mean)', ax[2])
-f.subplots_adjust(wspace=0.5)
-f.savefig(os.path.join(environment.figdir, 'path_traversal_rlfp.png'),
-          dpi=150, bbox_inches='tight', pad_inches=0.1)
-plt.close()
+A.get_gradient_slopes(gradient, x_map=rlfp_mean.data_resid, method='linear')
+my_plot(A, environment, figname='path_traversal_rlfp.png')
 
 # %% 3) ct
-A.get_gradient_slopes(gradient, x_map=ct_mean.data_resid)
-indices = np.where(~np.eye(n_parcels, dtype=bool) * ~np.isnan(A.grad_resid))
-
-grad_slope = DataMatrix(data=A.grad_slope)
-grad_slope.regress_nuisance(c=A.hops)
-grad_resid = DataMatrix(data=A.grad_resid)
-grad_resid.regress_nuisance(c=A.hops)
-
-stats = sp.stats.pearsonr(A.grad_slope[indices], A.hops[indices])
-print('Correlation between slope and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-stats = sp.stats.pearsonr(grad_slope.data_resid[indices], A.hops[indices])
-print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-
-stats = sp.stats.pearsonr(A.grad_resid[indices], A.hops[indices])
-print('Correlation between error and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-stats = sp.stats.pearsonr(grad_resid.data_resid[indices], A.hops[indices])
-print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-
-f, ax = plt.subplots(3, 1, figsize=(5, 5*3))
-my_regplot(gradient, np.nanmean(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
-           'Gradient', 'Slope (mean)', ax[0])
-my_regplot(gradient, np.nanstd(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
-           'Gradient', 'Slope (std)', ax[1])
-my_regplot(gradient, np.nanmean(np.where(grad_resid.data_resid != 0, grad_resid.data_resid, np.nan), axis=1),
-           'Gradient', 'RMSE (mean)', ax[2])
-f.subplots_adjust(wspace=0.5)
-f.savefig(os.path.join(environment.figdir, 'path_traversal_ct.png'),
-          dpi=150, bbox_inches='tight', pad_inches=0.1)
-plt.close()
+A.get_gradient_slopes(gradient, x_map=ct_mean.data_resid, method='linear')
+my_plot(A, environment, figname='path_traversal_ct.png')
 
 # %% 4) sst - pvalb
-A.get_gradient_slopes(gradient, x_map=sst_pvalb_delta.data_resid)
-indices = np.where(~np.eye(n_parcels, dtype=bool) * ~np.isnan(A.grad_resid))
-
-grad_slope = DataMatrix(data=A.grad_slope)
-grad_slope.regress_nuisance(c=A.hops)
-grad_resid = DataMatrix(data=A.grad_resid)
-grad_resid.regress_nuisance(c=A.hops)
-
-stats = sp.stats.pearsonr(A.grad_slope[indices], A.hops[indices])
-print('Correlation between slope and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-stats = sp.stats.pearsonr(grad_slope.data_resid[indices], A.hops[indices])
-print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-
-stats = sp.stats.pearsonr(A.grad_resid[indices], A.hops[indices])
-print('Correlation between error and hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-stats = sp.stats.pearsonr(grad_resid.data_resid[indices], A.hops[indices])
-print('\t after regressing out hops: {:.2f}, {:.2f}'.format(stats[0], stats[1]))
-
-f, ax = plt.subplots(3, 1, figsize=(5, 5*3))
-my_regplot(gradient, np.nanmean(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
-           'Gradient', 'Slope (mean)', ax[0])
-my_regplot(gradient, np.nanstd(np.where(grad_slope.data_resid != 0, grad_slope.data_resid, np.nan), axis=1),
-           'Gradient', 'Slope (std)', ax[1])
-my_regplot(gradient, np.nanmean(np.where(grad_resid.data_resid != 0, grad_resid.data_resid, np.nan), axis=1),
-           'Gradient', 'RMSE (mean)', ax[2])
-f.subplots_adjust(wspace=0.5)
-f.savefig(os.path.join(environment.figdir, 'path_traversal_sst-pvalb.png'),
-          dpi=150, bbox_inches='tight', pad_inches=0.1)
-plt.close()
+A.get_gradient_slopes(gradient, x_map=sst_pvalb_delta.data_resid, method='linear')
+my_plot(A, environment, figname='path_traversal_sst-pvalb.png')
