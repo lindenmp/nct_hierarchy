@@ -4,6 +4,8 @@ from sklearn.cluster import KMeans
 from data_loader.routines import LoadFC
 from brainspace.gradient import GradientMaps
 import nibabel as nib
+import abagen
+import pandas as pd
 
 # %% Plotting
 import matplotlib.pyplot as plt
@@ -139,3 +141,37 @@ class ComputeGradients():
         ax.tick_params(pad=-2.5)
         f.savefig(os.path.join(self.environment.figdir, 'gradient_clusters.png'), dpi=150, bbox_inches='tight',
                   pad_inches=0.1)
+
+
+class LoadGeneExpression():
+    def __init__(self, environment):
+        self.environment = environment
+
+    def _output_dir(self):
+        return os.path.join(self.environment.pipelinedir, 'abagen')
+
+    @staticmethod
+    def _output_file():
+        return 'expression.csv'
+
+    def _check_outputs(self):
+        if os.path.exists(self._output_dir()) and os.path.isfile(os.path.join(self._output_dir(), self._output_file())):
+            return True
+        else:
+            return False
+
+    def run(self):
+        print('Pipeline: getting AHBA gene expression')
+        if self._check_outputs():
+            print('\toutput already exists...skipping')
+            self.expression = pd.read_csv(os.path.join(self._output_dir(), self._output_file()))
+            self.expression.set_index('label', inplace=True)
+        else:
+            self.expression = abagen.get_expression_data(os.path.join(self.environment.projdir, 'figs_support', 'labels',
+                                                                      'schaefer{0}'.format(self.environment.n_parcels),
+                                                                      'schaefer{0}MNI.nii.gz'.format(self.environment.n_parcels)),
+                                                         data_dir=os.path.join(self.environment.external_ssd, 'abagen'), verbose=2)
+
+            # save outputs
+            if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
+            self.expression.to_csv(os.path.join(self._output_dir(), self._output_file()))
