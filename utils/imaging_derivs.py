@@ -13,12 +13,14 @@ class DataMatrix():
     def get_distance_matrix(self):
         self.D, self.hops, self.Pmat = distance_wei_floyd(self.data, transform='inv')
 
-    def regress_nuisance(self, c, indices=[]):
-        if len(indices) == 0:
+    def regress_nuisance(self, c, mask=[]):
+        if len(mask) == 0:
             # if no indices are given, filter out identity and nans
-            indices = np.where(~np.eye(self.data.shape[0], dtype=bool) * ~np.isnan(self.data))
+            mask = ~np.eye(self.data.shape[0], dtype=bool) * ~np.isnan(self.data)
+        indices = np.where(mask)
 
         x_out = np.zeros(self.data.shape)
+        x_out[~mask] = np.nan
 
         x = self.data[indices].reshape(-1, 1)
         c = c[indices].reshape(-1, 1)
@@ -121,13 +123,17 @@ class DataMatrix():
         self.smv_mean = self.smv_mean + self.smv_mean.transpose()
         self.joint_var = self.joint_var + self.joint_var.transpose()
 
-    def get_gradient_slopes(self, gradients, method='pearson'):
+    def get_gradient_slopes(self, gradient, x_map=[], method='pearson'):
         """
-        :param gradients:
+        :param gradient:
+        :param x:
         :param method:
         :return:
         """
         print('Getting gradient slope over shortest paths...')
+        if len(x_map) > 0:
+            print('\tUsing external region map on x')
+
         try:
             self.hops
         except AttributeError:
@@ -135,18 +141,25 @@ class DataMatrix():
 
         n_parcels = self.data.shape[0]
 
-        self.tm_slope = np.zeros((n_parcels, n_parcels))
-        self.smv_slope = np.zeros((n_parcels, n_parcels))
-        self.tm_resid = np.zeros((n_parcels, n_parcels))
-        self.smv_resid = np.zeros((n_parcels, n_parcels))
+        self.grad_slope = np.zeros((n_parcels, n_parcels))
+        self.grad_resid = np.zeros((n_parcels, n_parcels))
 
         for i in np.arange(n_parcels):
             for j in np.arange(n_parcels):
                 if j > i:
                     shortest_path = retrieve_shortest_path(i, j, self.hops, self.Pmat)
                     if len(shortest_path) != 0:
-                        x = np.arange(len(shortest_path)).reshape(-1, 1)
-                        y = gradients[shortest_path[:, 0], :]
+                        try:
+                            x = x_map[shortest_path[:, 0]].reshape(-1, 1)
+                        except:
+                            x = np.arange(len(shortest_path)).reshape(-1, 1)
+
+                        y = gradient[shortest_path[:, 0]].reshape(-1, 1)
+
+                        if method == 'pearson':
+                            self.grad_slope[i, j] = sp.stats.pearsonr(x.flatten(), y.flatten())[0]
+                        elif method == 'spearman':
+                            self.grad_slope[i, j] = sp.stats.spearmanr(x.flatten(), y.flatten())[0]
 
                         reg = LinearRegression()
                         # reg = KernelRidge(kernel='rbf')
@@ -156,25 +169,14 @@ class DataMatrix():
 
                         mse = np.mean(resid ** 2, axis=0)
                         rmse = np.sqrt(mse)
-                        self.tm_resid[i, j] = rmse[0]
-                        self.smv_resid[i, j] = rmse[1]
-
-                        if method == 'pearson':
-                            self.tm_slope[i, j] = sp.stats.pearsonr(x.flatten(), y[:, 0])[0]
-                            self.smv_slope[i, j] = sp.stats.pearsonr(x.flatten(), y[:, 1])[0]
-                        elif method == 'spearman':
-                            self.tm_slope[i, j] = sp.stats.spearmanr(x.flatten(), y[:, 0])[0]
-                            self.smv_slope[i, j] = sp.stats.spearmanr(x.flatten(), y[:, 1])[0]
+                        self.grad_resid[i, j] = rmse[0]
                     else:
-                        self.tm_slope[i, j] = np.nan
-                        self.smv_slope[i, j] = np.nan
-                        self.tm_resid[i, j] = np.nan
-                        self.smv_resid[i, j] = np.nan
+                        self.grad_slope[i, j] = np.nan
+                        self.grad_resid[i, j] = np.nan
 
-        self.tm_slope = self.tm_slope + (self.tm_slope.transpose() * -1)
-        self.smv_slope = self.smv_slope + (self.smv_slope.transpose() * -1)
-        self.tm_resid = self.tm_resid + self.tm_resid.transpose()
-        self.smv_resid = self.smv_resid + self.smv_resid.transpose()
+        self.grad_slope = self.grad_slope + (self.grad_slope.transpose() * -1)
+        self.grad_resid = self.grad_resid + self.grad_resid.transpose()
+        print('')
 
     def get_gene_coexpr_variance(self, gene_expression, return_abs=False):
         """
