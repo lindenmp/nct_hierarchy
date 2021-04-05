@@ -146,8 +146,9 @@ class DataMatrix():
         print('')
 
 class DataVector():
-    def __init__(self, data=[]):
+    def __init__(self, data=[], name=''):
         self.data = data
+        self.name = name
 
 
     def regress_nuisance(self, c):
@@ -167,7 +168,7 @@ class DataVector():
         self.data = (self.data - min(self.data)) / (max(self.data) - min(self.data))
 
 
-    def brain_surface_plot(self, environment, figname='brain_map'):
+    def brain_surface_plot(self, environment):
         f, ax = plt.subplots(1, 4, figsize=(20, 5), subplot_kw={'projection': '3d'})
         plt.subplots_adjust(wspace=0, hspace=0)
 
@@ -199,7 +200,7 @@ class DataVector():
                                bg_map=environment.fsaverage['sulc_right'], bg_on_data=False, axes=ax[3],
                                darkness=.5, cmap='viridis')
 
-        f.savefig(os.path.join(environment.figdir, figname), dpi=150, bbox_inches='tight', pad_inches=0)
+        f.savefig(os.path.join(environment.figdir, self.name+'.png'), dpi=150, bbox_inches='tight', pad_inches=0)
 
 def compute_fc(ts):
     """
