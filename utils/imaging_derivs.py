@@ -23,6 +23,7 @@ class DataMatrix():
         x_out[~mask] = np.nan
 
         x = self.data[indices].reshape(-1, 1)
+        x_mean = np.nanmean(x, axis=0)
         c = c[indices].reshape(-1, 1)
 
         nuis_reg = LinearRegression()
@@ -30,6 +31,7 @@ class DataMatrix():
 
         x_pred = nuis_reg.predict(c)
         x_out[indices] = x[:, 0] - x_pred[:, 0]
+        x_out = x_out + x_mean
 
         self.data_resid = x_out
 
@@ -82,6 +84,7 @@ class DataMatrix():
         n_parcels = self.data.shape[0]
 
         self.grad_slope = np.zeros((n_parcels, n_parcels))
+        self.grad_r2 = np.zeros((n_parcels, n_parcels))
         self.grad_resid = np.zeros((n_parcels, n_parcels))
         self.grad_var = np.zeros((n_parcels, n_parcels))
 
@@ -89,7 +92,7 @@ class DataMatrix():
             for j in np.arange(n_parcels):
                 if j > i:
                     shortest_path = retrieve_shortest_path(i, j, self.hops, self.Pmat)
-                    if len(shortest_path) != 0:
+                    if len(shortest_path) > 2:
                         try:
                             x = x_map[shortest_path[:, 0]].reshape(-1, 1)
                         except:
@@ -105,6 +108,8 @@ class DataMatrix():
                             reg = KernelRidge(kernel='rbf')
 
                         reg.fit(x, y)
+                        self.grad_r2[i, j] = reg.score(x, y)
+
                         y_pred = reg.predict(x)
                         resid = y - y_pred
 
@@ -116,10 +121,12 @@ class DataMatrix():
                         self.grad_var[i, j] = np.var(gradient_diff, axis=0)
                     else:
                         self.grad_slope[i, j] = np.nan
+                        self.grad_r2[i, j] = np.nan
                         self.grad_resid[i, j] = np.nan
                         self.grad_var[i, j] = np.nan
 
         self.grad_slope = self.grad_slope + (self.grad_slope.transpose() * -1)
+        self.grad_r2 = self.grad_r2 + self.grad_r2.transpose()
         self.grad_resid = self.grad_resid + self.grad_resid.transpose()
         self.grad_var = self.grad_var + self.grad_var.transpose()
         print('')
