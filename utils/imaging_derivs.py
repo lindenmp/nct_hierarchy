@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import scipy as sp
 from scipy import stats
@@ -5,6 +6,19 @@ from scipy import signal
 from bct.algorithms.distance import distance_wei_floyd, retrieve_shortest_path
 from sklearn.linear_model import LinearRegression
 from sklearn.kernel_ridge import KernelRidge
+
+# %% Plotting
+import matplotlib.pyplot as plt
+import seaborn as sns
+from utils.plotting import roi_to_vtx
+import nibabel as nib
+from nilearn import plotting
+sns.set(style='white', context='talk', font_scale=1)
+import matplotlib.font_manager as font_manager
+fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
+prop = font_manager.FontProperties(fname=fontpath)
+plt.rcParams['font.family'] = prop.get_name()
+plt.rcParams['svg.fonttype'] = 'none'
 
 class DataMatrix():
     def __init__(self, data=[]):
@@ -148,6 +162,44 @@ class DataVector():
 
         self.data_resid = x_out
 
+
+    def rescale_unit_interval(self):
+        self.data = (self.data - min(self.data)) / (max(self.data) - min(self.data))
+
+
+    def brain_surface_plot(self, environment, figname='brain_map'):
+        f, ax = plt.subplots(1, 4, figsize=(20, 5), subplot_kw={'projection': '3d'})
+        plt.subplots_adjust(wspace=0, hspace=0)
+
+        labels, ctab, surf_names = nib.freesurfer.read_annot(environment.lh_annot_file)
+        vtx_data, plot_min, plot_max = roi_to_vtx(self.data, environment.parcel_names,
+                                                  environment.lh_annot_file)
+        vtx_data = vtx_data.astype(float)
+        plotting.plot_surf_roi(environment.fsaverage['infl_left'], roi_map=vtx_data,
+                               hemi='left', view='lateral', vmin=plot_min, vmax=plot_max,
+                               bg_map=environment.fsaverage['sulc_left'], bg_on_data=False, axes=ax[0],
+                               darkness=.5, cmap='viridis')
+
+        plotting.plot_surf_roi(environment.fsaverage['infl_left'], roi_map=vtx_data,
+                               hemi='left', view='medial', vmin=plot_min, vmax=plot_max,
+                               bg_map=environment.fsaverage['sulc_left'], bg_on_data=False, axes=ax[1],
+                               darkness=.5, cmap='viridis')
+
+        labels, ctab, surf_names = nib.freesurfer.read_annot(environment.rh_annot_file)
+        vtx_data, plot_min, plot_max = roi_to_vtx(self.data, environment.parcel_names,
+                                                  environment.rh_annot_file)
+        vtx_data = vtx_data.astype(float)
+        plotting.plot_surf_roi(environment.fsaverage['infl_right'], roi_map=vtx_data,
+                               hemi='right', view='lateral', vmin=plot_min, vmax=plot_max,
+                               bg_map=environment.fsaverage['sulc_right'], bg_on_data=False, axes=ax[2],
+                               darkness=.5, cmap='viridis')
+
+        plotting.plot_surf_roi(environment.fsaverage['infl_right'], roi_map=vtx_data,
+                               hemi='right', view='medial', vmin=plot_min, vmax=plot_max,
+                               bg_map=environment.fsaverage['sulc_right'], bg_on_data=False, axes=ax[3],
+                               darkness=.5, cmap='viridis')
+
+        f.savefig(os.path.join(environment.figdir, figname), dpi=150, bbox_inches='tight', pad_inches=0)
 
 def compute_fc(ts):
     """
