@@ -2,6 +2,7 @@ import os
 import numpy as np
 from sklearn.cluster import KMeans
 from data_loader.routines import LoadFC
+from utils.imaging_derivs import DataVector
 from brainspace.gradient import GradientMaps
 import nibabel as nib
 import abagen
@@ -11,6 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from utils.plotting import roi_to_vtx
+import nibabel as nib
 from nilearn import plotting
 sns.set(style='white', context='talk', font_scale=1)
 import matplotlib.font_manager as font_manager
@@ -90,40 +92,8 @@ class ComputeGradients():
 
             # Plot first two gradients
             for g in np.arange(0, 2):
-                f, ax = plt.subplots(1, 4, figsize=(20, 5), subplot_kw={'projection': '3d'})
-                plt.subplots_adjust(wspace=0, hspace=0)
-
-                labels, ctab, surf_names = nib.freesurfer.read_annot(self.environment.lh_annot_file)
-                vtx_data, plot_min, plot_max = roi_to_vtx(self.gradients[:, g], self.environment.parcel_names,
-                                                          self.environment.lh_annot_file)
-                vtx_data = vtx_data.astype(float)
-                plotting.plot_surf_roi(self.environment.fsaverage['infl_left'], roi_map=vtx_data,
-                                       hemi='left', view='lateral', vmin=plot_min, vmax=plot_max,
-                                       bg_map=self.environment.fsaverage['sulc_left'], bg_on_data=False, axes=ax[0],
-                                       darkness=.5, cmap='viridis')
-
-                plotting.plot_surf_roi(self.environment.fsaverage['infl_left'], roi_map=vtx_data,
-                                       hemi='left', view='medial', vmin=plot_min, vmax=plot_max,
-                                       bg_map=self.environment.fsaverage['sulc_left'], bg_on_data=False, axes=ax[1],
-                                       darkness=.5, cmap='viridis')
-
-                labels, ctab, surf_names = nib.freesurfer.read_annot(self.environment.rh_annot_file)
-                vtx_data, plot_min, plot_max = roi_to_vtx(self.gradients[:, g], self.environment.parcel_names,
-                                                          self.environment.rh_annot_file)
-                vtx_data = vtx_data.astype(float)
-                plotting.plot_surf_roi(self.environment.fsaverage['infl_right'], roi_map=vtx_data,
-                                       hemi='right', view='lateral', vmin=plot_min, vmax=plot_max,
-                                       bg_map=self.environment.fsaverage['sulc_right'], bg_on_data=False, axes=ax[2],
-                                       darkness=.5, cmap='viridis')
-
-                plotting.plot_surf_roi(self.environment.fsaverage['infl_right'], roi_map=vtx_data,
-                                       hemi='right', view='medial', vmin=plot_min, vmax=plot_max,
-                                       bg_map=self.environment.fsaverage['sulc_right'], bg_on_data=False, axes=ax[3],
-                                       darkness=.5, cmap='viridis')
-
-                f.suptitle('Gradient ' + str(g + 1))
-                f.savefig(os.path.join(self.environment.figdir, 'gradient_{0}.png'.format(g)),
-                          dpi=150, bbox_inches='tight', pad_inches=0)
+                gradient = DataVector(data=self.gradients[:, g])
+                gradient.brain_surface_plot(self.environment, figname='gradient_{0}.png'.format(g))
 
         # Cluster gradient
         self.n_clusters = int(self.environment.n_parcels * .05)
