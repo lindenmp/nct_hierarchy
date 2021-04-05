@@ -3,11 +3,33 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - ca-certificates=2020.12.5=h033912b_0
-  - certifi=2020.12.5=py37hf985489_1
+  - appnope=0.1.2=py37hecd8cb5_1001
+  - argon2-cffi=20.1.0=py37h9ed2024_1
+  - async_generator=1.10=py37h28b3542_0
+  - attrs=20.3.0=pyhd3eb1b0_0
+  - backcall=0.2.0=pyhd3eb1b0_0
+  - ca-certificates=2021.1.19=hecd8cb5_1
+  - certifi=2020.12.5=py37hecd8cb5_0
   - control=0.8.4=py37hf985489_0
   - cycler=0.10.0=py_2
+  - dbus=1.13.18=h18a8e69_0
+  - decorator=4.4.2=pyhd3eb1b0_0
+  - expat=2.2.10=hb1e8313_2
   - freetype=2.10.4=h4cff582_1
+  - gettext=0.19.8.1=hb0f4f8b_2
+  - glib=2.67.4=hdf23fa2_1
+  - icu=58.2=h0a44026_3
+  - importlib_metadata=2.0.0=1
+  - ipython_genutils=0.2.0=pyhd3eb1b0_1
+  - ipywidgets=7.6.3=pyhd3eb1b0_1
+  - jpeg=9b=he5867d9_2
+  - jsonschema=3.2.0=py_2
+  - jupyter=1.0.0=py37_7
+  - jupyter_client=6.1.7=py_0
+  - jupyter_console=6.2.0=py_0
+  - jupyter_core=4.7.1=py37hecd8cb5_0
+  - jupyterlab_pygments=0.1.2=py_0
+  - jupyterlab_widgets=1.0.0=pyhd3eb1b0_1
   - libblas=3.9.0=7_openblas
   - libcblas=3.9.0=7_openblas
   - libcxx=10.0.0=1
@@ -15,57 +37,80 @@ dependencies:
   - libffi=3.3=hb1e8313_2
   - libgfortran=4.0.0=7_5_0_h1a10cd1_17
   - libgfortran4=7.5.0=h1a10cd1_17
+  - libiconv=1.16=h1de35cc_0
   - liblapack=3.9.0=7_openblas
   - libopenblas=0.3.12=openmp_h63d9170_1
   - libpng=1.6.37=h7cec526_2
+  - libsodium=1.0.18=h1de35cc_0
   - llvm-openmp=11.0.1=h7c73e74_0
+  - markupsafe=1.1.1=py37h1de35cc_0
   - matplotlib-base=3.2.2=py37hddda452_1
+  - mistune=0.8.4=py37h1de35cc_0
+  - nbconvert=6.0.7=py37_0
+  - nbformat=5.1.2=pyhd3eb1b0_1
   - ncurses=6.2=h0a44026_1
+  - nest-asyncio=1.5.1=pyhd3eb1b0_0
+  - notebook=6.2.0=py37hecd8cb5_0
   - numpy=1.19.5=py37hec87de9_1
-  - openssl=1.1.1i=h35c211d_0
+  - openssl=1.1.1j=h9ed2024_0
+  - pandoc=2.11=h0dc7051_0
+  - pandocfilters=1.4.3=py37hecd8cb5_1
+  - pcre=8.44=hb1e8313_0
+  - pexpect=4.8.0=pyhd3eb1b0_3
+  - pickleshare=0.7.5=pyhd3eb1b0_1003
   - pip=20.3.3=py37hecd8cb5_0
+  - prometheus_client=0.9.0=pyhd3eb1b0_0
+  - prompt_toolkit=3.0.8=0
+  - ptyprocess=0.7.0=pyhd3eb1b0_2
+  - pycparser=2.20=py_2
   - pyparsing=2.4.7=pyh9f0ad1d_0
+  - pyqt=5.9.2=py37h655552a_2
+  - pyrsistent=0.17.3=py37haf1e3a3_0
   - python=3.7.9=h26836e1_0
   - python-dateutil=2.8.1=py_0
   - python_abi=3.7=1_cp37m
+  - qt=5.9.7=h468cd18_1
+  - qtconsole=5.0.2=pyhd3eb1b0_0
+  - qtpy=1.9.0=py_0
   - readline=8.0=h1de35cc_0
+  - send2trash=1.5.0=pyhd3eb1b0_1
   - setuptools=52.0.0=py37hecd8cb5_0
+  - sip=4.19.8=py37h0a44026_0
   - six=1.15.0=pyh9f0ad1d_0
   - slycot=0.4.0.0=py37hcf0ed48_4
   - sqlite=3.33.0=hffcf06c_0
+  - testpath=0.4.4=pyhd3eb1b0_0
   - tk=8.6.10=hb0a8c7a_0
   - tornado=6.1=py37hf967b71_1
+  - traitlets=5.0.5=pyhd3eb1b0_0
+  - wcwidth=0.2.5=py_0
   - wheel=0.36.2=pyhd3eb1b0_0
+  - widgetsnbextension=3.5.1=py37_0
   - xz=5.2.5=h1de35cc_0
+  - zeromq=4.3.3=hb1e8313_3
+  - zipp=3.4.0=pyhd3eb1b0_0
   - zlib=1.2.11=h1de35cc_3
   - pip:
+    - abagen==0.1.1
     - anyio==2.0.2
-    - appnope==0.1.2
-    - argon2-cffi==20.1.0
-    - async-generator==1.10
-    - attrs==20.3.0
     - babel==2.9.0
-    - backcall==0.2.0
     - bctpy==0.5.2
     - bleach==3.2.3
     - brainspace==0.1.1
     - cffi==1.14.4
     - chardet==4.0.0
     - cloudpickle==1.6.0
-    - decorator==4.4.2
     - defusedxml==0.6.0
     - entrypoints==0.3
+    - future==0.18.2
     - idna==2.10
     - importlib-metadata==3.4.0
     - ipykernel==5.4.3
     - ipython==7.19.0
-    - ipython-genutils==0.2.0
-    - ipywidgets==7.6.3
     - jedi==0.18.0
     - jinja2==2.11.2
     - joblib==1.0.0
     - json5==0.9.5
-    - jsonschema==3.2.0
     - jupyter-client==6.1.11
     - jupyter-contrib-core==0.3.3
     - jupyter-contrib-nbextensions==0.5.1
@@ -75,42 +120,30 @@ dependencies:
     - jupyter-nbextensions-configurator==0.4.1
     - jupyter-server==1.2.2
     - jupyterlab==3.0.5
-    - jupyterlab-pygments==0.1.2
     - jupyterlab-server==2.1.3
-    - jupyterlab-widgets==1.0.0
     - kiwisolver==1.3.1
     - littleutils==0.2.2
     - llvmlite==0.35.0
     - lxml==4.6.2
-    - markupsafe==1.1.1
     - matplotlib==3.3.3
-    - mistune==0.8.4
     - nbclassic==0.2.6
     - nbclient==0.5.1
-    - nbconvert==6.0.7
-    - nbformat==5.1.2
-    - nest-asyncio==1.5.1
     - nibabel==3.2.1
     - nilearn==0.7.0
-    - notebook==6.2.0
     - numba==0.52.0
     - outdated==0.2.0
     - packaging==20.8
     - pandas==1.2.1
     - pandas-flavor==0.2.0
-    - pandocfilters==1.4.3
     - parso==0.8.1
     - patsy==0.5.1
-    - pexpect==4.8.0
-    - pickleshare==0.7.5
     - pillow==8.1.0
     - pingouin==0.3.9
-    - prometheus-client==0.9.0
+    - progressbar2==3.53.1
     - prompt-toolkit==3.0.14
-    - ptyprocess==0.7.0
-    - pycparser==2.20
+    - pygam==0.8.0
     - pygments==2.7.4
-    - pyrsistent==0.17.3
+    - python-utils==2.5.6
     - pytz==2020.5
     - pyyaml==5.4.1
     - pyzmq==21.0.2
@@ -118,7 +151,6 @@ dependencies:
     - scikit-learn==0.24.1
     - scipy==1.6.0
     - seaborn==0.11.1
-    - send2trash==1.5.0
     - shap==0.39.0
     - sklearn==0.0
     - slicer==0.0.7
@@ -126,16 +158,11 @@ dependencies:
     - statsmodels==0.12.1
     - tabulate==0.8.7
     - terminado==0.9.2
-    - testpath==0.4.4
     - threadpoolctl==2.1.0
     - tqdm==4.56.0
-    - traitlets==5.0.5
     - typing-extensions==3.7.4.3
     - urllib3==1.26.3
     - vtk==9.0.1
-    - wcwidth==0.2.5
     - webencodings==0.5.1
-    - widgetsnbextension==3.5.1
     - xarray==0.16.2
-    - zipp==3.4.0
 prefix: /Users/lindenmp/opt/anaconda3/envs/pfactor_gradients
