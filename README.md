@@ -10,7 +10,7 @@
     pip install jupyter_contrib_nbextensions && jupyter contrib nbextension install
 
 	# Statistics
-	pip install scipy statsmodels sklearn pingouin brainspace bctpy shap
+	pip install scipy statsmodels sklearn pingouin brainspace bctpy shap pygam abagen
 	conda install -c conda-forge control
 
     cd /Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients
