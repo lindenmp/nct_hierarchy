@@ -14,12 +14,12 @@ class Environment():
         self.sc_edge_weight = sc_edge_weight
 
         # directories
-        self.projdir = '/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients'
+        self.projdir = os.path.join('Users', 'lindenmp', 'Google-Drive-Penn', 'work', 'research_projects', 'pfactor_gradients')
         self.pipelinedir = os.path.join(self.projdir, 'pipeline', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         self.outputdir = os.path.join(self.projdir, 'output', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         self.figdir = os.path.join(self.projdir, 'figures', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
 
-        self.external_ssd = '/Volumes/T7/research_data'
+        self.external_ssd = os.path.join('Volumes', 'T7', 'research_data')
         self.datadir = os.path.join(self.external_ssd, 'PNC')
         self.freezedir = os.path.join(self.datadir, 'pncDataFreeze20170905', 'n1601_dataFreeze')
         self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
@@ -99,7 +99,7 @@ class Environment():
         self.df = df
 
     def load_parc_data(self):
-        self.parcel_names = np.genfromtxt(os.path.join(self.projdir, 'figs_support', 'labels',
+        self.parcel_names = np.genfromtxt(os.path.join(self.external_ssd, 'Parcellations', 'support_files',
                                                        'schaefer{0}NodeNames.txt'.format(self.n_parcels)), dtype='str')
 
         if self.parc == 'schaefer':
@@ -107,18 +107,19 @@ class Environment():
         elif self.parc == 'glasser':
             self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage')
 
-        self.lh_annot_file = os.path.join(self.projdir, 'figs_support', 'Parcellations', 'FreeSurfer5.3',
+        self.lh_annot_file = os.path.join(self.external_ssd, 'Parcellations', 'FreeSurfer5.3',
                                           'fsaverage5', 'label',
                                           'lh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
 
-        self.rh_annot_file = os.path.join(self.projdir, 'figs_support', 'Parcellations', 'FreeSurfer5.3',
+        self.rh_annot_file = os.path.join(self.external_ssd, 'Parcellations', 'FreeSurfer5.3',
                                           'fsaverage5', 'label',
                                           'rh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
 
-        self.centroids = pd.read_csv(os.path.join(self.projdir, 'figs_support', 'labels', 'schaefer{0}'.format(self.n_parcels),
+        self.centroids = pd.read_csv(os.path.join(self.external_ssd, 'Parcellations', 'MNI', 'Centroid_coordinates',
                                                   'Schaefer2018_{0}Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'.format(self.n_parcels)))
-        self.centroids.drop('ROI Name', axis=1, inplace=True)
-        self.centroids.set_index('ROI Label', inplace=True)
+        self.centroids.drop('ROI Index', axis=1, inplace=True)
+        self.centroids.set_index('Label Name', inplace=True)
+        self.centroids.drop('NONE', axis=0, inplace=True)
 
 class Subject(Environment):
     def __init__(self, subjid='81287_2738'):
