@@ -196,7 +196,7 @@ class ComputeMinimumControlEnergy():
 
         return file_prefix
 
-    def run_average_adj(self):
+    def run_average_adj(self, force_rerun=False):
         print('Pipeline: getting minimum control energy')
         self._print_settings()
         file_prefix = self._get_file_prefix(subjid='average_adj')
@@ -206,7 +206,9 @@ class ComputeMinimumControlEnergy():
         elif type(self.B) == DataVector:
             B = self.B.data
 
-        if os.path.exists(self._output_dir()) and os.path.isfile(os.path.join(self._output_dir(), file_prefix+'E.npy')):
+        if os.path.exists(self._output_dir()) and \
+                os.path.isfile(os.path.join(self._output_dir(), file_prefix+'E.npy')) and \
+                force_rerun == False:
             print('\toutput already exists...skipping')
             self.E = np.load(os.path.join(self._output_dir(), file_prefix+'E.npy'))
             self.n_err = np.load(os.path.join(self._output_dir(), file_prefix+'n_err.npy'))
