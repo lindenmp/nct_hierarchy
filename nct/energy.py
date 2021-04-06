@@ -9,31 +9,35 @@ from tqdm import tqdm
 def get_B_matrix(x0, xf, version='wb'):
     num_parcels = x0.shape[0]
 
-    if version == 'wb':
-        B = np.eye(num_parcels)
-    elif version == 'x0xf':
+    if type(version) == str:
+        if version == 'wb':
+            B = np.eye(num_parcels)
+        elif version == 'x0xf':
+            B = np.zeros((num_parcels, num_parcels))
+            B[x0, x0] = 1
+            B[xf, xf] = 1
+        elif version == 'x0':
+            B = np.zeros((num_parcels, num_parcels))
+            B[x0, x0] = 1
+        elif version == 'xf':
+            B = np.zeros((num_parcels, num_parcels))
+            B[xf, xf] = 1
+        elif version == 'x0xfwb':
+            B = np.zeros((num_parcels, num_parcels))
+            B[np.eye(num_parcels) == 1] = 5 * 10e-5
+            B[x0, x0] = 1
+            B[xf, xf] = 1
+        elif version == 'x0wb':
+            B = np.zeros((num_parcels, num_parcels))
+            B[np.eye(num_parcels) == 1] = 5 * 10e-5
+            B[x0, x0] = 1
+        elif version == 'xfwb':
+            B = np.zeros((num_parcels, num_parcels))
+            B[np.eye(num_parcels) == 1] = 5 * 10e-5
+            B[xf, xf] = 1
+    else:
         B = np.zeros((num_parcels, num_parcels))
-        B[x0, x0] = 1
-        B[xf, xf] = 1
-    elif version == 'x0':
-        B = np.zeros((num_parcels, num_parcels))
-        B[x0, x0] = 1
-    elif version == 'xf':
-        B = np.zeros((num_parcels, num_parcels))
-        B[xf, xf] = 1
-    elif version == 'x0xfwb':
-        B = np.zeros((num_parcels, num_parcels))
-        B[np.eye(num_parcels) == 1] = 5 * 10e-5
-        B[x0, x0] = 1
-        B[xf, xf] = 1
-    elif version == 'x0wb':
-        B = np.zeros((num_parcels, num_parcels))
-        B[np.eye(num_parcels) == 1] = 5 * 10e-5
-        B[x0, x0] = 1
-    elif version == 'xfwb':
-        B = np.zeros((num_parcels, num_parcels))
-        B[np.eye(num_parcels) == 1] = 5 * 10e-5
-        B[xf, xf] = 1
+        B[np.eye(num_parcels) == 1] = version + 1
 
     return B
 
@@ -309,8 +313,7 @@ def minimum_energy_taylor(A, T, B, x0, xf, c=1, n_taylor=10, drop_taylor=0):
 
 
 def control_energy_gradient_clusters(A, kmeans, n_subsamples=20, control='minimum', T=1, B='wb', rho=1):
-    if type(B) == str:
-        B_str = B
+    B_store = B
 
     n_parcels = A.shape[0]
     n_clusters = kmeans.n_clusters
@@ -334,10 +337,7 @@ def control_energy_gradient_clusters(A, kmeans, n_subsamples=20, control='minimu
                     x0_tmp = subsample_state(x0, subsample_size)
                     xf_tmp = subsample_state(xf, subsample_size)
 
-                    try:
-                        B = get_B_matrix(x0_tmp, xf_tmp, version=B_str)
-                    except:
-                        pass
+                    B = get_B_matrix(x0_tmp, xf_tmp, version=B_store)
 
                     if control == 'minimum':
                         x, u, n_err[i, j, k] = minimum_energy(A, T, B, x0_tmp, xf_tmp)
