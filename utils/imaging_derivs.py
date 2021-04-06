@@ -164,6 +164,10 @@ class DataVector():
         self.data_resid = x_out
 
 
+    def rankdata(self):
+        self.data = sp.stats.rankdata(self.data)
+
+
     def rescale_unit_interval(self):
         self.data = (self.data - min(self.data)) / (max(self.data) - min(self.data))
 
