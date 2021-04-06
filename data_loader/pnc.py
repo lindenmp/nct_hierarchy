@@ -14,12 +14,14 @@ class Environment():
         self.sc_edge_weight = sc_edge_weight
 
         # directories
-        self.projdir = os.path.join('Users', 'lindenmp', 'Google-Drive-Penn', 'work', 'research_projects', 'pfactor_gradients')
+        self.userdir = '/Users/lindenmp'
+        self.projdir = os.path.join(self.userdir, 'Google-Drive-Penn', 'work', 'research_projects', 'pfactor_gradients')
         self.pipelinedir = os.path.join(self.projdir, 'pipeline', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         self.outputdir = os.path.join(self.projdir, 'output', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         self.figdir = os.path.join(self.projdir, 'figures', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
 
-        self.external_ssd = os.path.join('Volumes', 'T7', 'research_data')
+        self.rootdir = '/Volumes'
+        self.external_ssd = os.path.join(self.rootdir, 'T7', 'research_data')
         self.datadir = os.path.join(self.external_ssd, 'PNC')
         self.freezedir = os.path.join(self.datadir, 'pncDataFreeze20170905', 'n1601_dataFreeze')
         self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
