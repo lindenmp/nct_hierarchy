@@ -4,16 +4,14 @@ from sklearn.cluster import KMeans
 from data_loader.routines import LoadFC
 from utils.imaging_derivs import DataVector
 from brainspace.gradient import GradientMaps
-import nibabel as nib
 import abagen
 import pandas as pd
+from nct.energy import control_energy_gradient_clusters
 
 # %% Plotting
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils.plotting import roi_to_vtx
-import nibabel as nib
-from nilearn import plotting
+
 sns.set(style='white', context='talk', font_scale=1)
 import matplotlib.font_manager as font_manager
 fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
@@ -92,8 +90,8 @@ class ComputeGradients():
 
             # Plot first two gradients
             for g in np.arange(0, 2):
-                gradient = DataVector(data=self.gradients[:, g])
-                gradient.brain_surface_plot(self.environment, figname='gradient_{0}.png'.format(g))
+                gradient = DataVector(data=self.gradients[:, g], name='gradient_{0}'.format(g))
+                gradient.brain_surface_plot(self.environment)
 
         # Cluster gradient
         self.n_clusters = int(self.environment.n_parcels * .05)
@@ -145,3 +143,100 @@ class LoadGeneExpression():
             # save outputs
             if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
             self.expression.to_csv(os.path.join(self._output_dir(), self._output_file()))
+
+
+class ComputeMinimumControlEnergy():
+    def __init__(self, environment, grad_pipeline, sc_pipeline, spars_thresh=0.06, control='minimum', T=1, B='wb'):
+        self.environment = environment
+        self.grad_pipeline = grad_pipeline
+        self.sc_pipeline = sc_pipeline
+
+        self.spars_thresh = spars_thresh
+        self.control = control
+        self.T = T
+        self.B = B
+
+    def _output_dir(self):
+        return os.path.join(self.environment.pipelinedir, 'minimum_control_energy')
+
+    def _check_inputs(self):
+        try:
+            gradients = np.min(self.grad_pipeline.gradients)
+        except AttributeError:
+            self.grad_pipeline.run()
+
+        try:
+            A = self.sc_pipeline.A
+        except AttributeError:
+            self.sc_pipeline.run()
+
+    def _print_settings(self):
+        self._check_inputs()
+        print('\tsettings:')
+        print('\t\tsparsity: {0}'.format(self.spars_thresh))
+        print('\t\tn_clusters: {0}'.format(self.grad_pipeline.kmeans.n_clusters))
+        print('\t\tcontrol: {0}'.format(self.control))
+        print('\t\tT: {0}'.format(self.T))
+
+        if type(self.B) == str:
+            print('\t\tB: {0}'.format(self.B))
+        elif type(self.B) == DataVector:
+            print('\t\tB: {0}'.format(self.B.name))
+
+    def _get_file_prefix(self, subjid='average_adj'):
+        self._check_inputs()
+        file_prefix = '{0}_n-{1}_s-{2}_gc-{3}_c-{4}_T-{5}'.format(subjid, self.sc_pipeline.df.shape[0],
+                                                                               self.spars_thresh,
+                                                                               self.grad_pipeline.kmeans.n_clusters,
+                                                                               self.control, self.T)
+        if type(self.B) == str:
+            file_prefix = file_prefix+'_B-{0}_'.format(self.B)
+        elif type(self.B) == DataVector:
+            file_prefix = file_prefix+'_B-{0}_'.format(self.B.name)
+
+        return file_prefix
+
+    def run_average_adj(self):
+        print('Pipeline: getting minimum control energy')
+        self._print_settings()
+        file_prefix = self._get_file_prefix(subjid='average_adj')
+
+        if type(self.B) == str:
+            B = self.B
+        elif type(self.B) == DataVector:
+            B = self.B.data
+
+        if os.path.exists(self._output_dir()) and os.path.isfile(os.path.join(self._output_dir(), file_prefix+'E.npy')):
+            print('\toutput already exists...skipping')
+            self.E = np.load(os.path.join(self._output_dir(), file_prefix+'E.npy'))
+            self.n_err = np.load(os.path.join(self._output_dir(), file_prefix+'n_err.npy'))
+        else:
+            A = self.sc_pipeline.A
+            n_subs = self.sc_pipeline.df.shape[0]
+            print('\tnumber of subjects in average adj matrix: {0}'.format(n_subs))
+
+            # Get streamline count and network density
+            A_d = np.zeros((n_subs,))
+            for i in range(n_subs):
+                A_d[i] = np.count_nonzero(np.triu(A[:, :, i])) / (
+                            (A[:, :, i].shape[0] ** 2 - A[:, :, i].shape[0]) / 2)
+
+            # Get group average adj. matrix
+            A = np.mean(A, 2)
+            thresh = np.percentile(A, 100 - (self.spars_thresh * 100))
+            A[A < thresh] = 0
+
+            print('\tactual matrix sparsity = {:.2f}'.format(np.count_nonzero(np.triu(A)) / ((A.shape[0] ** 2 - A.shape[0]) / 2)))
+
+
+            E, n_err = control_energy_gradient_clusters(A, self.grad_pipeline.kmeans, n_subsamples=20,
+                                                        control=self.control, T=self.T, B=B)
+
+            self.E = E
+            self.n_err = n_err
+
+            # save outputs
+            if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
+            np.save(os.path.join(self._output_dir(), file_prefix+'E'), self.E)
+            np.save(os.path.join(self._output_dir(), file_prefix+'n_err'), self.n_err)
+
