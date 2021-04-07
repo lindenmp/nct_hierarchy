@@ -23,7 +23,7 @@
     conda activate pfactor_gradients
 
     # Essentials
-    pip install ipython pandas numpy nibabel nilearn tqdm
+    pip install ipython pandas numpy seaborn matplotlib nibabel nilearn ipywidgets tqdm
 
     # Tertiary
 	pip install scipy statsmodels sklearn pingouin brainspace bctpy shap pygam abagen
