@@ -9,13 +9,12 @@
     pip install jupyterlab ipython pandas numpy seaborn matplotlib nibabel nilearn ipywidgets tqdm
     pip install jupyter_contrib_nbextensions && jupyter contrib nbextension install
 
-	# Statistics
+	# Tertiary
 	pip install scipy statsmodels sklearn pingouin brainspace bctpy shap pygam abagen
 	conda install -c conda-forge control
 
     cd /Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients
     conda env export > environment.yml
-	pip freeze > requirements.txt
 
 
 # Environment build (cubic, home)
@@ -24,14 +23,14 @@
     conda activate pfactor_gradients
 
     # Essentials
-    pip install ipython pandas numpy
+    pip install ipython pandas numpy nibabel nilearn tqdm
 
-    # Statistics
-    pip install scipy statsmodels sklearn bctpy
+    # Tertiary
+	pip install scipy statsmodels sklearn pingouin brainspace bctpy shap pygam abagen
+	conda install -c conda-forge control
 
     # Octave support
     pip install oct2py
 
-    cd /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/
-    conda env export > environment.yml
-    pip freeze > requirements.txt
+    cd /cbica/home/parkesl/research_projects/pfactor_gradients/
+    conda env export > environment_cluster.yml
