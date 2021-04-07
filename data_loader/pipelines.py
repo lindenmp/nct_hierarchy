@@ -6,7 +6,7 @@ from utils.imaging_derivs import DataVector
 from brainspace.gradient import GradientMaps
 import abagen
 import pandas as pd
-from nct.energy import control_energy_gradient_clusters
+from nct.energy import control_energy_helper
 
 # %% Plotting
 import matplotlib.pyplot as plt
@@ -146,35 +146,24 @@ class LoadGeneExpression():
 
 
 class ComputeMinimumControlEnergy():
-    def __init__(self, environment, grad_pipeline, sc_pipeline, spars_thresh=0.06, control='minimum', T=1, B='wb'):
+    def __init__(self, environment, A, states, control='minimum', T=1, B='wb', file_prefix=''):
         self.environment = environment
-        self.grad_pipeline = grad_pipeline
-        self.sc_pipeline = sc_pipeline
+        self.A = A
+        self.states = states
 
-        self.spars_thresh = spars_thresh
         self.control = control
         self.T = T
         self.B = B
 
+        self.file_prefix = file_prefix
+
     def _output_dir(self):
         return os.path.join(self.environment.pipelinedir, 'minimum_control_energy')
 
-    def _check_inputs(self):
-        try:
-            gradients = np.min(self.grad_pipeline.gradients)
-        except AttributeError:
-            self.grad_pipeline.run()
-
-        try:
-            A = self.sc_pipeline.A
-        except AttributeError:
-            self.sc_pipeline.run()
-
     def _print_settings(self):
-        self._check_inputs()
+        unique = np.unique(self.states, return_counts=False)
         print('\tsettings:')
-        print('\t\tsparsity: {0}'.format(self.spars_thresh))
-        print('\t\tn_clusters: {0}'.format(self.grad_pipeline.kmeans.n_clusters))
+        print('\t\tn_states: {0}'.format(len(unique)))
         print('\t\tcontrol: {0}'.format(self.control))
         print('\t\tT: {0}'.format(self.T))
 
@@ -183,12 +172,9 @@ class ComputeMinimumControlEnergy():
         elif type(self.B) == DataVector:
             print('\t\tB: {0}'.format(self.B.name))
 
-    def _get_file_prefix(self, subjid='average_adj'):
-        self._check_inputs()
-        file_prefix = '{0}_n-{1}_s-{2}_gc-{3}_c-{4}_T-{5}'.format(subjid, self.sc_pipeline.df.shape[0],
-                                                                               self.spars_thresh,
-                                                                               self.grad_pipeline.kmeans.n_clusters,
-                                                                               self.control, self.T)
+    def _get_file_prefix(self):
+        unique = np.unique(self.states, return_counts=False)
+        file_prefix = self.file_prefix+'ns-{0}_c-{1}_T-{2}'.format(len(unique), self.control, self.T)
         if type(self.B) == str:
             file_prefix = file_prefix+'_B-{0}_'.format(self.B)
         elif type(self.B) == DataVector:
@@ -196,10 +182,11 @@ class ComputeMinimumControlEnergy():
 
         return file_prefix
 
-    def run_average_adj(self, force_rerun=False):
+    def run(self, force_rerun=False):
         print('Pipeline: getting minimum control energy')
         self._print_settings()
-        file_prefix = self._get_file_prefix(subjid='average_adj')
+        file_prefix = self._get_file_prefix()
+        print('\t' + file_prefix)
 
         if type(self.B) == str:
             B = self.B
@@ -213,32 +200,10 @@ class ComputeMinimumControlEnergy():
             self.E = np.load(os.path.join(self._output_dir(), file_prefix+'E.npy'))
             self.n_err = np.load(os.path.join(self._output_dir(), file_prefix+'n_err.npy'))
         else:
-            A = self.sc_pipeline.A
-            n_subs = self.sc_pipeline.df.shape[0]
-            print('\tnumber of subjects in average adj matrix: {0}'.format(n_subs))
-
-            # Get streamline count and network density
-            A_d = np.zeros((n_subs,))
-            for i in range(n_subs):
-                A_d[i] = np.count_nonzero(np.triu(A[:, :, i])) / (
-                            (A[:, :, i].shape[0] ** 2 - A[:, :, i].shape[0]) / 2)
-
-            # Get group average adj. matrix
-            A = np.mean(A, 2)
-            thresh = np.percentile(A, 100 - (self.spars_thresh * 100))
-            A[A < thresh] = 0
-
-            print('\tactual matrix sparsity = {:.2f}'.format(np.count_nonzero(np.triu(A)) / ((A.shape[0] ** 2 - A.shape[0]) / 2)))
-
-
-            E, n_err = control_energy_gradient_clusters(A, self.grad_pipeline.kmeans, n_subsamples=20,
-                                                        control=self.control, T=self.T, B=B)
-
-            self.E = E
-            self.n_err = n_err
+            self.E, self.n_err = control_energy_helper(self.A, self.states, n_subsamples=1,
+                                                       control=self.control, T=self.T, B=B)
 
             # save outputs
             if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
             np.save(os.path.join(self._output_dir(), file_prefix+'E'), self.E)
             np.save(os.path.join(self._output_dir(), file_prefix+'n_err'), self.n_err)
-
