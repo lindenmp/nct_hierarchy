@@ -312,26 +312,23 @@ def minimum_energy_taylor(A, T, B, x0, xf, c=1, n_taylor=10, drop_taylor=0):
     return E
 
 
-def control_energy_gradient_clusters(A, kmeans, n_subsamples=20, control='minimum', T=1, B='wb', rho=1):
+def control_energy_helper(A, states, n_subsamples=20, control='minimum', T=1, B='wb', rho=1):
     B_store = B
 
-    n_parcels = A.shape[0]
-    n_clusters = kmeans.n_clusters
-    labels = kmeans.labels_
-
-    unique, counts = np.unique(labels, return_counts=True)
+    unique, counts = np.unique(states, return_counts=True)
+    n_states = len(unique)
     subsample_size = np.min(counts)
 
-    E = np.zeros((n_clusters, n_clusters, n_subsamples))
-    n_err = np.zeros((n_clusters, n_clusters, n_subsamples))
+    E = np.zeros((n_states, n_states, n_subsamples))
+    n_err = np.zeros((n_states, n_states, n_subsamples))
 
-    for i in tqdm(np.arange(n_clusters)):
-        for j in np.arange(n_clusters):
+    for i in tqdm(np.arange(n_states)):
+        for j in np.arange(n_states):
             if i != j:
                 np.random.seed(0)
 
-                x0 = labels == i
-                xf = labels == j
+                x0 = states == i
+                xf = states == j
 
                 for k in np.arange(n_subsamples):
                     x0_tmp = subsample_state(x0, subsample_size)
@@ -341,11 +338,9 @@ def control_energy_gradient_clusters(A, kmeans, n_subsamples=20, control='minimu
 
                     if control == 'minimum':
                         x, u, n_err[i, j, k] = minimum_energy(A, T, B, x0_tmp, xf_tmp)
-                        u = np.multiply(np.matlib.repmat(B[np.eye(n_parcels) == 1], u.shape[0], 1), u) # scale energy
                         E[i, j, k] = np.sum(np.square(u))
                     elif control == 'optimal':
                         x, u, n_err[i, j, k] = optimal_energy(A, T, B, x0_tmp, xf_tmp, rho, S) # get optimal control energy
-                        u = np.multiply(np.matlib.repmat(B[np.eye(n_parcels) == 1], u.shape[0], 1), u) # scale energy
                         E[i, j, k] = np.sum(np.square(u))
 
     return E, n_err
