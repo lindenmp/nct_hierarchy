@@ -203,7 +203,7 @@ class ComputeMinimumControlEnergy():
             self.E = np.load(os.path.join(self._output_dir(), file_prefix+'E.npy'))
             self.n_err = np.load(os.path.join(self._output_dir(), file_prefix+'n_err.npy'))
         else:
-            self.E, self.n_err = control_energy_helper(self.A, self.states, n_subsamples=1,
+            self.E, self.n_err = control_energy_helper(self.A, self.states, n_subsamples=20,
                                                        control=self.control, T=self.T, B=B)
 
             # save outputs
