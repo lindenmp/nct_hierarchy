@@ -14,10 +14,13 @@ import seaborn as sns
 
 sns.set(style='white', context='talk', font_scale=1)
 import matplotlib.font_manager as font_manager
-fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
-prop = font_manager.FontProperties(fname=fontpath)
-plt.rcParams['font.family'] = prop.get_name()
-plt.rcParams['svg.fonttype'] = 'none'
+try:
+    fontpath = 'PublicSans-Thin.ttf'
+    prop = font_manager.FontProperties(fname=fontpath)
+    plt.rcParams['font.family'] = prop.get_name()
+    plt.rcParams['svg.fonttype'] = 'none'
+except:
+    pass
 
 # %% pipeline classes
 class ComputeGradients():
