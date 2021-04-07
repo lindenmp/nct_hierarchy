@@ -17,7 +17,7 @@ class LoadSC():
         subj_filt = np.zeros((n_subs,)).astype(bool)
 
         for i in np.arange(n_subs):
-            subject = self.Subject(subjid=self.df.index[i])
+            subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_sc()
             self.A[:, :, i] = subject.sc.data.copy()
@@ -90,7 +90,7 @@ class LoadFC():
         subj_filt = np.zeros((n_subs,)).astype(bool)
 
         for i in np.arange(n_subs):
-            subject = self.Subject(subjid=self.df.index[i])
+            subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_rsfc()
             self.fc[:, :, i] = subject.rsfc.data.copy()
@@ -124,7 +124,7 @@ class LoadRLFP():
         subj_filt = np.zeros((n_subs,)).astype(bool)
 
         for i in np.arange(n_subs):
-            subject = self.Subject(subjid=self.df.index[i])
+            subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_rlfp()
             self.rlfp[i, :] = subject.rlfp.copy()
@@ -158,7 +158,7 @@ class LoadCT():
         subj_filt = np.zeros((n_subs,)).astype(bool)
 
         for i in np.arange(n_subs):
-            subject = self.Subject(subjid=self.df.index[i])
+            subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_ct()
             self.ct[i, :] = subject.ct.copy()
