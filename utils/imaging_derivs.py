@@ -164,12 +164,29 @@ class DataVector():
         self.data_resid = x_out
 
 
-    def rankdata(self):
-        self.data = sp.stats.rankdata(self.data)
+    def rankdata(self, descending=False):
+        if descending:
+            self.data = (len(self.data) + 1) - sp.stats.rankdata(self.data).astype(int)
+        else:
+            self.data = sp.stats.rankdata(self.data).astype(int)
 
 
     def rescale_unit_interval(self):
         self.data = (self.data - min(self.data)) / (max(self.data) - min(self.data))
+
+
+    def mean_over_clusters(self, cluster_labels):
+        x = self.data
+
+        unique = np.unique(cluster_labels, return_counts=False)
+        n_clusters = len(unique)
+
+        x_out = np.zeros((n_clusters, n_clusters))
+        for i in np.arange(n_clusters):
+            for j in np.arange(n_clusters):
+                x_out[i, j] = np.nanmean(x[np.logical_or(cluster_labels == i, cluster_labels == j)])
+
+        self.data_clusters = x_out
 
 
     def brain_surface_plot(self, environment):
