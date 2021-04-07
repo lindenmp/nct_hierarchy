@@ -5,6 +5,7 @@ from data_loader.pnc import Environment, Subject
 from data_loader.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP
 from data_loader.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from utils.imaging_derivs import DataVector
+import numpy as np
 
 # %% Setup project environment
 computer = 'cbica'
