@@ -2,7 +2,6 @@ import numpy as np
 import scipy as sp
 import math
 from scipy.linalg import svd
-import numpy.matlib
 from tqdm import tqdm
 
 # %% functions
