@@ -7,37 +7,37 @@ from tqdm import tqdm
 
 # %% functions
 def get_B_matrix(x0, xf, version='wb'):
-    num_parcels = x0.shape[0]
+    n_parcels = x0.shape[0]
 
     if type(version) == str:
         if version == 'wb':
-            B = np.eye(num_parcels)
+            B = np.eye(n_parcels)
         elif version == 'x0xf':
-            B = np.zeros((num_parcels, num_parcels))
+            B = np.zeros((n_parcels, n_parcels))
             B[x0, x0] = 1
             B[xf, xf] = 1
         elif version == 'x0':
-            B = np.zeros((num_parcels, num_parcels))
+            B = np.zeros((n_parcels, n_parcels))
             B[x0, x0] = 1
         elif version == 'xf':
-            B = np.zeros((num_parcels, num_parcels))
+            B = np.zeros((n_parcels, n_parcels))
             B[xf, xf] = 1
         elif version == 'x0xfwb':
-            B = np.zeros((num_parcels, num_parcels))
-            B[np.eye(num_parcels) == 1] = 5 * 10e-5
+            B = np.zeros((n_parcels, n_parcels))
+            B[np.eye(n_parcels) == 1] = 5 * 10e-5
             B[x0, x0] = 1
             B[xf, xf] = 1
         elif version == 'x0wb':
-            B = np.zeros((num_parcels, num_parcels))
-            B[np.eye(num_parcels) == 1] = 5 * 10e-5
+            B = np.zeros((n_parcels, n_parcels))
+            B[np.eye(n_parcels) == 1] = 5 * 10e-5
             B[x0, x0] = 1
         elif version == 'xfwb':
-            B = np.zeros((num_parcels, num_parcels))
-            B[np.eye(num_parcels) == 1] = 5 * 10e-5
+            B = np.zeros((n_parcels, n_parcels))
+            B[np.eye(n_parcels) == 1] = 5 * 10e-5
             B[xf, xf] = 1
     else:
-        B = np.zeros((num_parcels, num_parcels))
-        B[np.eye(num_parcels) == 1] = version + 1
+        B = np.zeros((n_parcels, n_parcels))
+        B[np.eye(n_parcels) == 1] = version + 1
 
     return B
 
