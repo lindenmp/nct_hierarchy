@@ -55,3 +55,9 @@ def mean_over_clusters(x, cluster_labels):
             x_out[i, j] = np.nanmean(np.nanmean(x[cluster_labels == i, :], axis=0)[cluster_labels == j])
 
     return x_out
+
+
+def get_exact_p(x, y):
+    pval = 2 * np.min([np.mean(x - y >= 0), np.mean(x - y <= 0)])
+
+    return pval
