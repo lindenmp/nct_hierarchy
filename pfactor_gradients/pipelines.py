@@ -1,8 +1,8 @@
 import os
 import numpy as np
 from sklearn.cluster import KMeans
-from data_loader.routines import LoadFC
-from utils.imaging_derivs import DataVector
+from pfactor_gradients.routines import LoadFC
+from pfactor_gradients.imaging_derivs import DataVector
 from brainspace.gradient import GradientMaps
 import abagen
 import pandas as pd
