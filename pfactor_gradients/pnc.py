@@ -4,7 +4,7 @@ import scipy.io as sio
 import pandas as pd
 from nilearn import datasets
 
-from utils.imaging_derivs import DataMatrix, compute_fc, compute_rlfp
+from pfactor_gradients.imaging_derivs import DataMatrix, compute_fc, compute_rlfp
 
 class Environment():
     def __init__(self, computer='macbook', parc='schaefer', n_parcels=400, sc_edge_weight='streamlineCount'):

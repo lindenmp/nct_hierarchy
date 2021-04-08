@@ -2,17 +2,20 @@
 import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
-from data_loader.pnc import Environment, Subject
-from data_loader.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP
-from data_loader.pipelines import ComputeGradients, ComputeMinimumControlEnergy
-from utils.imaging_derivs import DataVector
+from pfactor_gradients.pnc import Environment, Subject
+from pfactor_gradients.data_loader.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP
+from pfactor_gradients.data_loader.pipelines import ComputeGradients, ComputeMinimumControlEnergy
+from pfactor_gradients.utils.imaging_derivs import DataVector
 import numpy as np
 
 # %% Setup project environment
 if platform.system() == 'Linux':
     computer = 'cbica'
+    sge_task_id = int(os.getenv("SGE_TASK_ID"))
 elif platform.system() == 'Darwin':
     computer = 'macbook'
+    sge_task_id = 1
+print(sge_task_id)
 
 parc = 'schaefer'
 n_parcels = 400
@@ -42,11 +45,6 @@ load_average_sc.run()
 # %% get control energy
 file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
 n_subsamples = 20
-try:
-    sge_task_id = int(os.getenv("SGE_TASK_ID"))
-except:
-    sge_task_id = 1
-print(sge_task_id)
 
 # %%
 if sge_task_id == 1:
