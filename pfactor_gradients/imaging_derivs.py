@@ -202,13 +202,13 @@ class DataVector():
         vtx_data = vtx_data.astype(float)
         plotting.plot_surf_roi(environment.fsaverage['infl_left'], roi_map=vtx_data,
                                hemi='left', view='lateral', vmin=plot_min, vmax=plot_max,
-                               bg_map=environment.fsaverage['sulc_left'], bg_on_data=False, axes=ax[0],
-                               darkness=.5, cmap='viridis')
+                               bg_map=environment.fsaverage['sulc_left'], bg_on_data=True, axes=ax[0],
+                               darkness=.5, cmap='viridis', colorbar=False)
 
         plotting.plot_surf_roi(environment.fsaverage['infl_left'], roi_map=vtx_data,
                                hemi='left', view='medial', vmin=plot_min, vmax=plot_max,
-                               bg_map=environment.fsaverage['sulc_left'], bg_on_data=False, axes=ax[1],
-                               darkness=.5, cmap='viridis')
+                               bg_map=environment.fsaverage['sulc_left'], bg_on_data=True, axes=ax[1],
+                               darkness=.5, cmap='viridis', colorbar=False)
 
         labels, ctab, surf_names = nib.freesurfer.read_annot(environment.rh_annot_file)
         vtx_data, plot_min, plot_max = roi_to_vtx(self.data, environment.parcel_names,
@@ -216,15 +216,16 @@ class DataVector():
         vtx_data = vtx_data.astype(float)
         plotting.plot_surf_roi(environment.fsaverage['infl_right'], roi_map=vtx_data,
                                hemi='right', view='lateral', vmin=plot_min, vmax=plot_max,
-                               bg_map=environment.fsaverage['sulc_right'], bg_on_data=False, axes=ax[2],
-                               darkness=.5, cmap='viridis')
+                               bg_map=environment.fsaverage['sulc_right'], bg_on_data=True, axes=ax[2],
+                               darkness=.5, cmap='viridis', colorbar=False)
 
         plotting.plot_surf_roi(environment.fsaverage['infl_right'], roi_map=vtx_data,
                                hemi='right', view='medial', vmin=plot_min, vmax=plot_max,
-                               bg_map=environment.fsaverage['sulc_right'], bg_on_data=False, axes=ax[3],
-                               darkness=.5, cmap='viridis')
-
-        f.savefig(os.path.join(environment.figdir, self.name+'.png'), dpi=150, bbox_inches='tight', pad_inches=0)
+                               bg_map=environment.fsaverage['sulc_right'], bg_on_data=True, axes=ax[3],
+                               darkness=.5, cmap='viridis', colorbar=True)
+        plt.show()
+        f.savefig(os.path.join(environment.figdir, self.name+'.png'), dpi=300, bbox_inches='tight', pad_inches=0)
+        plt.close()
 
 def compute_fc(ts):
     """
