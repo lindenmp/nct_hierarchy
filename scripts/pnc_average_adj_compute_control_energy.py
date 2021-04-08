@@ -3,9 +3,9 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.data_loader.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP
-from pfactor_gradients.data_loader.pipelines import ComputeGradients, ComputeMinimumControlEnergy
-from pfactor_gradients.utils.imaging_derivs import DataVector
+from pfactor_gradients.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP
+from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
+from pfactor_gradients.imaging_derivs import DataVector
 import numpy as np
 
 # %% Setup project environment
@@ -14,7 +14,7 @@ if platform.system() == 'Linux':
     sge_task_id = int(os.getenv("SGE_TASK_ID"))
 elif platform.system() == 'Darwin':
     computer = 'macbook'
-    sge_task_id = 1
+    sge_task_id = 5
 print(sge_task_id)
 
 parc = 'schaefer'
@@ -50,7 +50,7 @@ n_subsamples = 20
 if sge_task_id == 1:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
                                                states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum', T=1, B='wb', file_prefix=file_prefix)
+                                               control='minimum_fast', T=1, B='wb', file_prefix=file_prefix)
     nct_pipeline.run()
 # %%
 elif sge_task_id == 2:
@@ -65,7 +65,7 @@ elif sge_task_id == 2:
 
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
                                                states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum', T=1, B=ct, file_prefix=file_prefix)
+                                               control='minimum_fast', T=1, B=ct, file_prefix=file_prefix)
     nct_pipeline.run()
 # %%
 elif sge_task_id == 3:
@@ -80,12 +80,11 @@ elif sge_task_id == 3:
 
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
                                                states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum', T=1, B=rlfp, file_prefix=file_prefix)
+                                               control='minimum_fast', T=1, B=rlfp, file_prefix=file_prefix)
     nct_pipeline.run()
 # %%
 elif sge_task_id == 4:
-    file_prefix = 'noise_'+file_prefix
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
                                                states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum', T=1, B='wb', file_prefix=file_prefix)
+                                               control='minimum_fast', T=1, B='wb', file_prefix=file_prefix)
     nct_pipeline.run(add_noise=True)
