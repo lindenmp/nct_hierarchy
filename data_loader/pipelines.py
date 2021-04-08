@@ -149,10 +149,11 @@ class LoadGeneExpression():
 
 
 class ComputeMinimumControlEnergy():
-    def __init__(self, environment, A, states, control='minimum', T=1, B='wb', file_prefix=''):
+    def __init__(self, environment, A, states, n_subsamples=0, control='minimum', T=1, B='wb', file_prefix=''):
         self.environment = environment
         self.A = A
         self.states = states
+        self.n_subsamples = n_subsamples
 
         self.control = control
         self.T = T
@@ -167,6 +168,7 @@ class ComputeMinimumControlEnergy():
         unique = np.unique(self.states, return_counts=False)
         print('\tsettings:')
         print('\t\tn_states: {0}'.format(len(unique)))
+        print('\t\tn_subsamples: {0}'.format(self.n_subsamples))
         print('\t\tcontrol: {0}'.format(self.control))
         print('\t\tT: {0}'.format(self.T))
 
@@ -177,7 +179,7 @@ class ComputeMinimumControlEnergy():
 
     def _get_file_prefix(self):
         unique = np.unique(self.states, return_counts=False)
-        file_prefix = self.file_prefix+'ns-{0}_c-{1}_T-{2}'.format(len(unique), self.control, self.T)
+        file_prefix = self.file_prefix+'ns-{0}-{1}_c-{2}_T-{3}'.format(len(unique), self.n_subsamples, self.control, self.T)
         if type(self.B) == str:
             file_prefix = file_prefix+'_B-{0}_'.format(self.B)
         elif type(self.B) == DataVector:
@@ -185,7 +187,7 @@ class ComputeMinimumControlEnergy():
 
         return file_prefix
 
-    def run(self, force_rerun=False):
+    def run(self, force_rerun=False, add_noise=False):
         print('Pipeline: getting minimum control energy')
         self._print_settings()
         file_prefix = self._get_file_prefix()
@@ -203,8 +205,8 @@ class ComputeMinimumControlEnergy():
             self.E = np.load(os.path.join(self._output_dir(), file_prefix+'E.npy'))
             self.n_err = np.load(os.path.join(self._output_dir(), file_prefix+'n_err.npy'))
         else:
-            self.E, self.n_err = control_energy_helper(self.A, self.states, n_subsamples=20,
-                                                       control=self.control, T=self.T, B=B)
+            self.E, self.n_err = control_energy_helper(self.A, self.states, n_subsamples=self.n_subsamples,
+                                                       control=self.control, T=self.T, B=B, add_noise=add_noise)
 
             # save outputs
             if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
