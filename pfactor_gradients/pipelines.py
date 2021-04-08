@@ -6,7 +6,7 @@ from utils.imaging_derivs import DataVector
 from brainspace.gradient import GradientMaps
 import abagen
 import pandas as pd
-from nct.energy import control_energy_helper
+from pfactor_gradients.energy import control_energy_helper
 
 # %% Plotting
 import matplotlib.pyplot as plt

@@ -10,7 +10,7 @@ from sklearn.kernel_ridge import KernelRidge
 # %% Plotting
 import matplotlib.pyplot as plt
 import seaborn as sns
-from utils.plotting import roi_to_vtx
+from pfactor_gradients.plotting import roi_to_vtx
 import nibabel as nib
 from nilearn import plotting
 sns.set(style='white', context='talk', font_scale=1)
