@@ -312,15 +312,24 @@ def minimum_energy_taylor(A, T, B, x0, xf, c=1, n_taylor=10, drop_taylor=0):
     return E
 
 
-def control_energy_helper(A, states, n_subsamples=20, control='minimum', T=1, B='wb', rho=1):
+def control_energy_helper(A, states, n_subsamples=0, control='minimum', T=1, B='wb', rho=1, add_noise=False):
+    n_parcels = A.shape[0]
     B_store = B
 
     unique, counts = np.unique(states, return_counts=True)
     n_states = len(unique)
     subsample_size = np.min(counts)
 
-    E = np.zeros((n_states, n_states, n_subsamples))
-    n_err = np.zeros((n_states, n_states, n_subsamples))
+    if n_subsamples > 0:
+        E = np.zeros((n_states, n_states, n_subsamples))
+        n_err = np.zeros((n_states, n_states, n_subsamples))
+    else:
+        E = np.zeros((n_states, n_states))
+        n_err = np.zeros((n_states, n_states))
+
+    np.random.seed(0)
+    if add_noise:
+        noise = np.random.rand(n_parcels) * 0.1
 
     for i in tqdm(np.arange(n_states)):
         for j in np.arange(n_states):
@@ -330,17 +339,31 @@ def control_energy_helper(A, states, n_subsamples=20, control='minimum', T=1, B=
                 x0 = states == i
                 xf = states == j
 
-                for k in np.arange(n_subsamples):
-                    x0_tmp = subsample_state(x0, subsample_size)
-                    xf_tmp = subsample_state(xf, subsample_size)
+                if n_subsamples > 0:
+                    for k in np.arange(n_subsamples):
+                        x0_tmp = subsample_state(x0, subsample_size)
+                        xf_tmp = subsample_state(xf, subsample_size)
 
-                    B = get_B_matrix(x0_tmp, xf_tmp, version=B_store)
+                        B = get_B_matrix(x0_tmp, xf_tmp, version=B_store)
+                        if add_noise:
+                            B[np.eye(n_parcels) == 1] = B[np.eye(n_parcels) == 1] + noise
+
+                        if control == 'minimum':
+                            x, u, n_err[i, j, k] = minimum_energy(A, T, B, x0_tmp, xf_tmp)
+                            E[i, j, k] = np.sum(np.square(u))
+                        elif control == 'optimal':
+                            x, u, n_err[i, j, k] = optimal_energy(A, T, B, x0_tmp, xf_tmp, rho, S) # get optimal control energy
+                            E[i, j, k] = np.sum(np.square(u))
+                else:
+                    B = get_B_matrix(x0, xf, version=B_store)
+                    if add_noise:
+                        B[np.eye(n_parcels) == 1] = B[np.eye(n_parcels) == 1] + noise
 
                     if control == 'minimum':
-                        x, u, n_err[i, j, k] = minimum_energy(A, T, B, x0_tmp, xf_tmp)
-                        E[i, j, k] = np.sum(np.square(u))
+                        x, u, n_err[i, j] = minimum_energy(A, T, B, x0, xf)
+                        E[i, j] = np.sum(np.square(u))
                     elif control == 'optimal':
-                        x, u, n_err[i, j, k] = optimal_energy(A, T, B, x0_tmp, xf_tmp, rho, S) # get optimal control energy
-                        E[i, j, k] = np.sum(np.square(u))
+                        x, u, n_err[i, j] = optimal_energy(A, T, B, x0, xf, rho, S)  # get optimal control energy
+                        E[i, j] = np.sum(np.square(u))
 
     return E, n_err
