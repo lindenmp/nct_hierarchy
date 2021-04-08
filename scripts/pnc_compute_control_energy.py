@@ -3,9 +3,9 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from data_loader.routines import LoadSC, LoadCT, LoadRLFP
-from data_loader.pipelines import ComputeGradients, ComputeMinimumControlEnergy
-from utils.imaging_derivs import DataVector
+from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP
+from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
+from pfactor_gradients.imaging_derivs import DataVector
 
 # %% Setup project environment
 if platform.system() == 'Linux':
@@ -66,15 +66,15 @@ n_subsamples = 20
 
 nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                            states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                           control='minimum', T=1, B='wb', file_prefix=file_prefix)
+                                           control='minimum_fast', T=1, B='wb', file_prefix=file_prefix)
 nct_pipeline.run()
 
 nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                            states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                           control='minimum', T=1, B=ct, file_prefix=file_prefix)
+                                           control='minimum_fast', T=1, B=ct, file_prefix=file_prefix)
 nct_pipeline.run()
 
 nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                            states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                           control='minimum', T=1, B=rlfp, file_prefix=file_prefix)
+                                           control='minimum_fast', T=1, B=rlfp, file_prefix=file_prefix)
 nct_pipeline.run()
