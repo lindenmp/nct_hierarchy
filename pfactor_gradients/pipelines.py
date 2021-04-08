@@ -191,6 +191,9 @@ class ComputeMinimumControlEnergy():
         print('Pipeline: getting minimum control energy')
         self._print_settings()
         file_prefix = self._get_file_prefix()
+        if add_noise:
+            file_prefix = 'noise_'+file_prefix
+
         print('\t' + file_prefix)
 
         if type(self.B) == str:
