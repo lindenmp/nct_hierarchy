@@ -14,7 +14,7 @@ if platform.system() == 'Linux':
     sge_task_id = int(os.getenv("SGE_TASK_ID"))
 elif platform.system() == 'Darwin':
     computer = 'macbook'
-    sge_task_id = 5
+    sge_task_id = 1
 print(sge_task_id)
 
 parc = 'schaefer'
