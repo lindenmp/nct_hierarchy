@@ -311,7 +311,80 @@ def minimum_energy_taylor(A, T, B, x0, xf, c=1, n_taylor=10, drop_taylor=0):
     return E
 
 
-def control_energy_helper(A, states, n_subsamples=0, control='minimum', T=1, B='wb', rho=1, add_noise=False):
+def expand_states(states):
+
+    unique, counts = np.unique(states, return_counts=True)
+    n_parcels = len(states)
+    n_states = len(unique)
+
+    x0_mat = np.zeros((n_parcels, 1)).astype(bool)
+    xf_mat = np.zeros((n_parcels, 1)).astype(bool)
+
+    for i in np.arange(n_states):
+        for j in np.arange(n_states):
+            x0 = states == i
+            xf = states == j
+
+            x0_mat = np.append(x0_mat, x0.reshape(-1, 1), axis=1)
+            xf_mat = np.append(xf_mat, xf.reshape(-1, 1), axis=1)
+
+    x0_mat = x0_mat[:, 1:]
+    xf_mat = xf_mat[:, 1:]
+
+    return x0_mat, xf_mat
+
+
+def minimum_energy_fast(A, T, B, x0, xf, c=1):
+    # System Size
+    n_parcels = A.shape[0]
+
+    # singluar value decomposition
+    u, s, vt = svd(A)
+    # Matrix normalization
+    A = A / (c + s[0]) - np.eye(n_parcels)
+
+    if type(x0[0][0]) == np.bool_:
+        x0 = x0.astype(float)
+    if type(xf[0][0]) == np.bool_:
+        xf = xf.astype(float)
+
+    # Number of integration steps
+    nt = 1000
+    dt = T/nt
+
+    # Numerical integration with Simpson's 1/3 rule
+    # Integration step
+    dE = sp.linalg.expm(A * dt)
+    # Accumulation of expm(A * dt)
+    dEA = np.eye(n_parcels)
+    # Gramian
+    G = np.zeros((n_parcels, n_parcels))
+
+    for i in np.arange(1, nt/2):
+        # Add odd terms
+        dEA = np.matmul(dEA, dE)
+        p1 = np.matmul(dEA, B)
+        # Add even terms
+        dEA = np.matmul(dEA, dE)
+        p2 = np.matmul(dEA, B)
+        G = G + 4 * (np.matmul(p1, p1.transpose())) + 2 * (np.matmul(p2, p2.transpose()))
+
+    # Add final odd term
+    dEA = np.matmul(dEA, dE)
+    p1 = np.matmul(dEA, B)
+    G = G + 4 * (np.matmul(p1, p1.transpose()))
+
+    # Divide by integration step
+    E = sp.linalg.expm(A * T)
+    G = (G + np.matmul(B, B.transpose()) + np.matmul(np.matmul(E, B), np.matmul(E, B).transpose())) * dt / 3
+
+    delx = xf - np.matmul(E, x0)
+    E = np.sum(np.multiply(np.matmul(np.linalg.pinv(G), delx), delx), axis=0)
+
+    return E
+
+
+def control_energy_helper(A, states, n_subsamples=0, control='minimum_fast', T=1, B='wb', add_noise=False):
     n_parcels = A.shape[0]
     B_store = B
 
@@ -330,39 +403,64 @@ def control_energy_helper(A, states, n_subsamples=0, control='minimum', T=1, B='
     if add_noise:
         noise = np.random.rand(n_parcels) * 0.1
 
-    for i in tqdm(np.arange(n_states)):
-        for j in np.arange(n_states):
-            if i != j:
-                np.random.seed(0)
+    # create state space by expanding state vector to matrices
+    x0_mat, xf_mat = expand_states(states=states)
+    if n_subsamples > 0:
+        x0_sub = np.zeros((x0_mat.shape[0], x0_mat.shape[1], n_subsamples)).astype(bool)
+        xf_sub = np.zeros((xf_mat.shape[0], xf_mat.shape[1], n_subsamples)).astype(bool)
 
-                x0 = states == i
-                xf = states == j
+        for j in np.arange(x0_mat.shape[1]):
+            np.random.seed(0)
+            for k in np.arange(n_subsamples):
+                x0_sub[:, j, k] = subsample_state(x0_mat[:, j], subsample_size)
+                xf_sub[:, j, k] = subsample_state(xf_mat[:, j], subsample_size)
 
+    # run control code
+    if control == 'minimum_fast':
+        if type(B_store) == str and B_store != 'wb':
+            B_store = 'wb'
+
+        n_err[:] = np.nan
+
+        # get B matrix, this will either be identity or a brain map, since these are the only that work here
+        if type(B_store) == str and B_store == 'wb':
+            B = np.eye(n_parcels)
+        else:
+            B = np.zeros((n_parcels, n_parcels))
+            B[np.eye(n_parcels) == 1] = B_store + 1
+
+        if add_noise:
+            B[np.eye(n_parcels) == 1] = B[np.eye(n_parcels) == 1] + noise
+
+        if n_subsamples > 0:
+            for k in tqdm(np.arange(n_subsamples)):
+                e = minimum_energy_fast(A, T, B, x0_sub[:, :, k], xf_sub[:, :, k])
+                E[:, :, k] = e.reshape(n_states, n_states)
+        else:
+            e = minimum_energy_fast(A, T, B, x0_mat, xf_mat)
+            E[:] = e.reshape(n_states, n_states)
+    else:
+        col = 0
+        for i in tqdm(np.arange(n_states)):
+            for j in np.arange(n_states):
                 if n_subsamples > 0:
                     for k in np.arange(n_subsamples):
-                        x0_tmp = subsample_state(x0, subsample_size)
-                        xf_tmp = subsample_state(xf, subsample_size)
-
-                        B = get_B_matrix(x0_tmp, xf_tmp, version=B_store)
+                        B = get_B_matrix(x0_sub[:, col, k], xf_sub[:, col, k], version=B_store)
                         if add_noise:
                             B[np.eye(n_parcels) == 1] = B[np.eye(n_parcels) == 1] + noise
 
                         if control == 'minimum':
-                            x, u, n_err[i, j, k] = minimum_energy(A, T, B, x0_tmp, xf_tmp)
-                            E[i, j, k] = np.sum(np.square(u))
-                        elif control == 'optimal':
-                            x, u, n_err[i, j, k] = optimal_energy(A, T, B, x0_tmp, xf_tmp, rho, S) # get optimal control energy
+                            x, u, n_err[i, j, k] = minimum_energy(A, T, B, x0_sub[:, col, k], xf_sub[:, col, k])
                             E[i, j, k] = np.sum(np.square(u))
                 else:
-                    B = get_B_matrix(x0, xf, version=B_store)
+                    B = get_B_matrix(x0_mat[:, col], xf_mat[:, col], version=B_store)
                     if add_noise:
                         B[np.eye(n_parcels) == 1] = B[np.eye(n_parcels) == 1] + noise
 
                     if control == 'minimum':
-                        x, u, n_err[i, j] = minimum_energy(A, T, B, x0, xf)
+                        x, u, n_err[i, j] = minimum_energy(A, T, B, x0_mat[:, col], xf_mat[:, col])
                         E[i, j] = np.sum(np.square(u))
-                    elif control == 'optimal':
-                        x, u, n_err[i, j] = optimal_energy(A, T, B, x0, xf, rho, S)  # get optimal control energy
-                        E[i, j] = np.sum(np.square(u))
+
+                col += 1
 
     return E, n_err
