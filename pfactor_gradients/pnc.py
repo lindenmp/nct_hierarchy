@@ -21,18 +21,16 @@ class Environment():
             self.rootdir = '/Volumes'
             self.research_data = os.path.join(self.rootdir, 'T7', 'research_data')
 
-            self.pipelinedir = os.path.join(self.projdir, 'pipeline_local', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
             self.outputdir = os.path.join(self.projdir, 'output_local', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
-            self.figdir = os.path.join(self.projdir, 'figures_local', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         elif self.computer == 'cbica':
             self.userdir = '/cbica/home/parkesl'
             self.projdir = os.path.join(self.userdir, 'research_projects', 'pfactor_gradients')
             self.research_data = os.path.join(self.userdir, 'research_data')
 
-            self.pipelinedir = os.path.join(self.projdir, 'pipeline', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
-            self.outputdir = os.path.join(self.projdir, 'output', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
-            self.figdir = os.path.join(self.projdir, 'figures', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
+            self.outputdir = os.path.join(self.projdir, 'output_cluster', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
 
+        self.pipelinedir = os.path.join(self.outputdir, 'pipelines')
+        self.figdir = os.path.join(self.outputdir, 'figures')
         self.datadir = os.path.join(self.research_data, 'PNC')
         self.freezedir = os.path.join(self.datadir, 'pncDataFreeze20170905', 'n1601_dataFreeze')
         self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
