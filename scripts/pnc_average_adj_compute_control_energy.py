@@ -9,12 +9,21 @@ from pfactor_gradients.imaging_derivs import DataVector
 import numpy as np
 
 # %% Setup project environment
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set(style='white', context='talk', font_scale=1)
 if platform.system() == 'Linux':
     computer = 'cbica'
     sge_task_id = int(os.getenv("SGE_TASK_ID"))
 elif platform.system() == 'Darwin':
     computer = 'macbook'
     sge_task_id = 1
+
+    import matplotlib.font_manager as font_manager
+    fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
+    prop = font_manager.FontProperties(fname=fontpath)
+    plt.rcParams['font.family'] = prop.get_name()
+    plt.rcParams['svg.fonttype'] = 'none'
 print(sge_task_id)
 
 parc = 'schaefer'
@@ -86,5 +95,6 @@ elif sge_task_id == 3:
 elif sge_task_id == 4:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
                                                states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B='wb', file_prefix=file_prefix)
-    nct_pipeline.run(add_noise=True)
+                                               control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
+                                               add_noise=True)
+    nct_pipeline.run()
