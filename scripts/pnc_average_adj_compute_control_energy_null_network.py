@@ -86,9 +86,9 @@ rlfp.rescale_unit_interval()
 n_subsamples = 20
 
 i_list = [Wwp, Wsp, Wssp]
-file_prefixes = ['average_adj_n-{0}_s-{1}_null-mni-wwp_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh),
-                 'average_adj_n-{0}_s-{1}_null-mni-wsp_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh),
-                 'average_adj_n-{0}_s-{1}_null-mni-wssp_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)]
+file_prefixes = ['average_adj_n-{0}_s-{1}_null-mni-wwp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
+                 'average_adj_n-{0}_s-{1}_null-mni-wsp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
+                 'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id)]
 j_list = ['wb', ct, rlfp]
 
 for i_idx, i_entry in enumerate(i_list):
