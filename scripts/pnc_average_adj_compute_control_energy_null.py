@@ -51,10 +51,6 @@ spars_thresh = 0.06
 load_average_sc = LoadAverageSC(load_sc=load_sc, spars_thresh=spars_thresh)
 load_average_sc.run()
 
-# %% get control energy
-file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
-n_subsamples = 20
-
 # load ct data
 load_ct = LoadCT(environment=environment, Subject=Subject)
 load_ct.run()
@@ -64,10 +60,31 @@ ct.rankdata()
 ct.rescale_unit_interval()
 ct.shuffle_data(shuffle_indices=environment.spun_indices)
 
-ct_null = DataVector(data=ct.data_shuf[:, sge_task_id], name='ct-null-{0}'.format(sge_task_id))
+# load rlfp data
+load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
+load_rlfp.run()
 
+rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
+rlfp.rankdata()
+rlfp.rescale_unit_interval()
+rlfp.shuffle_data(shuffle_indices=environment.spun_indices)
+
+# %% get control energy
+file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
+n_subsamples = 20
+
+# ct null
+ct_null = DataVector(data=ct.data_shuf[:, sge_task_id], name='ct-null-{0}'.format(sge_task_id))
 nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
                                            states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
                                            control='minimum_fast', T=1, B=ct_null, file_prefix=file_prefix,
+                                           force_rerun=False, save_outputs=True, verbose=True)
+nct_pipeline.run()
+
+# rlfp null
+rlfp_null = DataVector(data=rlfp.data_shuf[:, sge_task_id], name='rlfp-null-{0}'.format(sge_task_id))
+nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
+                                           states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
+                                           control='minimum_fast', T=1, B=rlfp_null, file_prefix=file_prefix,
                                            force_rerun=False, save_outputs=True, verbose=True)
 nct_pipeline.run()
