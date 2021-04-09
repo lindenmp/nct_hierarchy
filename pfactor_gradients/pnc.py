@@ -28,6 +28,7 @@ class Environment():
             self.research_data = os.path.join(self.userdir, 'research_data')
 
             self.outputdir = os.path.join(self.projdir, 'output_cluster', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
+        # self.outputdir = os.path.join(self.projdir, 'output_cluster', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
 
         self.pipelinedir = os.path.join(self.outputdir, 'pipelines')
         self.figdir = os.path.join(self.outputdir, 'figures')
@@ -110,27 +111,29 @@ class Environment():
         self.df = df
 
     def load_parc_data(self):
-        self.parcel_names = np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'support_files',
-                                                       'schaefer{0}NodeNames.txt'.format(self.n_parcels)), dtype='str')
-
         if self.parc == 'schaefer':
+            self.parcel_names = np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'support_files',
+                                                           'schaefer{0}NodeNames.txt'.format(self.n_parcels)),
+                                              dtype='str')
             self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
+            self.lh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
+                                              'fsaverage5', 'label',
+                                              'lh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
+            self.rh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
+                                              'fsaverage5', 'label',
+                                              'rh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
+            self.centroids = pd.read_csv(os.path.join(self.research_data, 'Parcellations', 'MNI', 'Centroid_coordinates',
+                                                      'Schaefer2018_{0}Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'.format(self.n_parcels)))
+            self.centroids.drop('ROI Index', axis=1, inplace=True)
+            self.centroids.set_index('Label Name', inplace=True)
+            self.centroids.drop('NONE', axis=0, inplace=True)
+            self.spun_indices = np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'spin_test',
+                                                        'rotated_ind_schaefer{0}.csv'.format(self.n_parcels)),
+                                              delimiter=',', dtype=int)
+            self.spun_indices = self.spun_indices - 1
+
         elif self.parc == 'glasser':
             self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage')
-
-        self.lh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
-                                          'fsaverage5', 'label',
-                                          'lh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
-
-        self.rh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
-                                          'fsaverage5', 'label',
-                                          'rh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
-
-        self.centroids = pd.read_csv(os.path.join(self.research_data, 'Parcellations', 'MNI', 'Centroid_coordinates',
-                                                  'Schaefer2018_{0}Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'.format(self.n_parcels)))
-        self.centroids.drop('ROI Index', axis=1, inplace=True)
-        self.centroids.set_index('Label Name', inplace=True)
-        self.centroids.drop('NONE', axis=0, inplace=True)
 
 class Subject():
     def __init__(self, environment=Environment(), subjid='81287_2738'):
