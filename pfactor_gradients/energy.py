@@ -433,7 +433,7 @@ def control_energy_helper(A, states, n_subsamples=0, control='minimum_fast', T=1
             B[np.eye(n_parcels) == 1] = B[np.eye(n_parcels) == 1] + noise
 
         if n_subsamples > 0:
-            for k in tqdm(np.arange(n_subsamples)):
+            for k in np.arange(n_subsamples):
                 e = minimum_energy_fast(A, T, B, x0_sub[:, :, k], xf_sub[:, :, k])
                 E[:, :, k] = e.reshape(n_states, n_states)
         else:
@@ -441,7 +441,7 @@ def control_energy_helper(A, states, n_subsamples=0, control='minimum_fast', T=1
             E[:] = e.reshape(n_states, n_states)
     else:
         col = 0
-        for i in tqdm(np.arange(n_states)):
+        for i in np.arange(n_states):
             for j in np.arange(n_states):
                 if n_subsamples > 0:
                     for k in np.arange(n_subsamples):
@@ -462,5 +462,9 @@ def control_energy_helper(A, states, n_subsamples=0, control='minimum_fast', T=1
                         E[i, j] = np.sum(np.square(u))
 
                 col += 1
+
+    if n_subsamples > 0:
+        E = np.nanmean(E, axis=2)
+        n_err = np.nanmean(n_err, axis=2)
 
     return E, n_err
