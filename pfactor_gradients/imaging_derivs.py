@@ -178,6 +178,24 @@ class DataVector():
         self.data = (self.data - min(self.data)) / (max(self.data) - min(self.data))
 
 
+    def shuffle_data(self, n_shuffles=10000, shuffle_indices=[]):
+        if len(shuffle_indices) == 0:
+            # for reproducibility
+            np.random.seed(0)
+            data_shuf = np.zeros((len(self.data), n_shuffles))
+            for i in np.arange(n_shuffles):
+                idx = np.arange(0, len(self.data))
+                np.random.shuffle(idx)
+                data_shuf[:, i] = self.data[idx].copy()
+        else:
+            n_shuffles = shuffle_indices.shape[1]
+            data_shuf = np.zeros((len(self.data), n_shuffles))
+            for i in np.arange(n_shuffles):
+                data_shuf[:, i] = self.data[shuffle_indices[:, i]].copy()
+
+        self.data_shuf = data_shuf
+
+
     def mean_over_clusters(self, cluster_labels):
         x = self.data
 
