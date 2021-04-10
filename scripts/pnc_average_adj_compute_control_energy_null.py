@@ -1,12 +1,20 @@
 # %%
 import sys, os, platform
+from oct2py import octave
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
+    sys.path.append('/usr/bin/octave') # octave install path
+    octave.addpath('/gpfs/fs001/cbica/home/parkesl/research_projects/pfactor_gradients/geomsurr') # path to matlab functions
+elif platform.system() == 'Darwin':
+    sys.path.append('usr/local/bin/octave') # octave install path
+    octave.addpath('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/geomsurr') # path to matlab functions
+
 from pfactor_gradients.pnc import Environment, Subject
 from pfactor_gradients.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
 import numpy as np
+import scipy as sp
 
 # %% Setup project environment
 import matplotlib.pyplot as plt
@@ -50,8 +58,15 @@ environment.df = load_sc.df.copy()
 spars_thresh = 0.06
 load_average_sc = LoadAverageSC(load_sc=load_sc, spars_thresh=spars_thresh)
 load_average_sc.run()
+A = load_average_sc.A.copy()
 
-# load ct data
+# rewire mean adjacency matrix
+D = sp.spatial.distance.pdist(environment.centroids, 'euclidean')
+D = sp.spatial.distance.squareform(D)
+octave.eval("rand('state',%i)" % sge_task_id)
+Wwp, Wsp, Wssp = octave.geomsurr(A, D, 3, 2, nout=3)
+
+# %% load ct data
 load_ct = LoadCT(environment=environment, Subject=Subject)
 load_ct.run()
 
@@ -60,7 +75,7 @@ ct.rankdata()
 ct.rescale_unit_interval()
 ct.shuffle_data(shuffle_indices=environment.spun_indices)
 
-# load rlfp data
+# %% load rlfp data
 load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
 load_rlfp.run()
 
@@ -70,21 +85,34 @@ rlfp.rescale_unit_interval()
 rlfp.shuffle_data(shuffle_indices=environment.spun_indices)
 
 # %% get control energy
-file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
 n_subsamples = 20
 
-# ct null
-ct_null = DataVector(data=ct.data_shuf[:, sge_task_id], name='ct-null-{0}'.format(sge_task_id))
-nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
-                                           states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                           control='minimum_fast', T=1, B=ct_null, file_prefix=file_prefix,
-                                           force_rerun=False, save_outputs=True, verbose=True)
-nct_pipeline.run()
+# %% brain map null (spin test)
+file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
 
-# rlfp null
+ct_null = DataVector(data=ct.data_shuf[:, sge_task_id], name='ct-null-{0}'.format(sge_task_id))
 rlfp_null = DataVector(data=rlfp.data_shuf[:, sge_task_id], name='rlfp-null-{0}'.format(sge_task_id))
-nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
-                                           states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                           control='minimum_fast', T=1, B=rlfp_null, file_prefix=file_prefix,
-                                           force_rerun=False, save_outputs=True, verbose=True)
-nct_pipeline.run()
+
+B_list = [ct_null, rlfp_null]
+for B_entry in B_list:
+    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+                                               states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
+                                               control='minimum_fast', T=1, B=B_entry, file_prefix=file_prefix,
+                                               force_rerun=False, save_outputs=True, verbose=True)
+    nct_pipeline.run()
+
+# %% network null
+A_list = [Wwp, Wsp, Wssp]
+file_prefixes = ['average_adj_n-{0}_s-{1}_null-mni-wwp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
+                 'average_adj_n-{0}_s-{1}_null-mni-wsp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
+                 'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id)]
+B_list = ['wb', ct, rlfp]
+
+for A_idx, A_entry in enumerate(A_list):
+    file_prefix = file_prefixes[A_idx]
+    for B_entry in B_list:
+        nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A_entry,
+                                                   states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
+                                                   control='minimum_fast', T=1, B=B_entry, file_prefix=file_prefix,
+                                                   force_rerun=False, save_outputs=True, verbose=True)
+        nct_pipeline.run()
