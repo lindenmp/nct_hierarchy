@@ -135,3 +135,23 @@ class LoadCT():
             self.ct[i, :] = subject.ct.copy()
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
+
+class LoadCBF():
+    def __init__(self, environment, Subject):
+        self.environment = environment
+        self.Subject = Subject
+
+    def run(self):
+        print('Routine: loading cerebral blood flow data')
+        start_time = time.time()
+        n_subs = self.environment.df.shape[0]
+        self.df = self.environment.df.copy()
+        self.cbf = np.zeros((n_subs, self.environment.n_parcels))
+
+        for i in np.arange(n_subs):
+            subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
+            subject.get_file_names()
+            subject.load_cbf()
+            self.cbf[i, :] = subject.cbf.copy()
+
+        print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
