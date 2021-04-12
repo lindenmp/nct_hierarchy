@@ -73,7 +73,6 @@ load_ct.run()
 ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct')
 ct.rankdata()
 ct.rescale_unit_interval()
-ct.shuffle_data(shuffle_indices=environment.spun_indices)
 
 # %% load rlfp data
 load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
@@ -82,7 +81,6 @@ load_rlfp.run()
 rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
 rlfp.rankdata()
 rlfp.rescale_unit_interval()
-rlfp.shuffle_data(shuffle_indices=environment.spun_indices)
 
 # %% get control energy
 n_subsamples = 20
@@ -90,10 +88,28 @@ n_subsamples = 20
 # %% brain map null (spin test)
 file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
 
-ct_null = DataVector(data=ct.data_shuf[:, sge_task_id], name='ct-null-{0}'.format(sge_task_id))
-rlfp_null = DataVector(data=rlfp.data_shuf[:, sge_task_id], name='rlfp-null-{0}'.format(sge_task_id))
+ct.shuffle_data(shuffle_indices=environment.spun_indices)
+ct_null = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-null-{0}'.format(sge_task_id))
+
+rlfp.shuffle_data(shuffle_indices=environment.spun_indices)
+rlfp_null = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-null-{0}'.format(sge_task_id))
 
 B_list = [ct_null, rlfp_null]
+for B_entry in B_list:
+    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+                                               states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
+                                               control='minimum_fast', T=1, B=B_entry, file_prefix=file_prefix,
+                                               force_rerun=False, save_outputs=True, verbose=True)
+    nct_pipeline.run()
+
+# %% brain map null (random, no spatial preservation)
+ct.shuffle_data(n_shuffles=10000)
+ct_rnull = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-rnull-{0}'.format(sge_task_id))
+
+rlfp.shuffle_data(n_shuffles=10000)
+rlfp_rnull = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-rnull-{0}'.format(sge_task_id))
+
+B_list = [ct_rnull, rlfp_rnull]
 for B_entry in B_list:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                                states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
