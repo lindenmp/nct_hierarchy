@@ -10,7 +10,7 @@ elif platform.system() == 'Darwin':
     octave.addpath('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/geomsurr') # path to matlab functions
 
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP
+from pfactor_gradients.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP, LoadCBF
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
 import numpy as np
@@ -82,6 +82,14 @@ rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
 rlfp.rankdata()
 rlfp.rescale_unit_interval()
 
+# %% load cbf data
+load_cbf = LoadCBF(environment=environment, Subject=Subject)
+load_cbf.run()
+
+cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf')
+cbf.rankdata()
+cbf.rescale_unit_interval()
+
 # %% get control energy
 n_subsamples = 20
 
@@ -94,7 +102,10 @@ ct_null = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-null-{0}
 rlfp.shuffle_data(shuffle_indices=environment.spun_indices)
 rlfp_null = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-null-{0}'.format(sge_task_id))
 
-B_list = [ct_null, rlfp_null]
+cbf.shuffle_data(shuffle_indices=environment.spun_indices)
+cbf_null = DataVector(data=cbf.data_shuf[:, sge_task_id].copy(), name='cbf-null-{0}'.format(sge_task_id))
+
+B_list = [ct_null, rlfp_null, cbf_null]
 for B_entry in B_list:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                                states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
@@ -109,7 +120,10 @@ ct_rnull = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-rnull-{
 rlfp.shuffle_data(n_shuffles=10000)
 rlfp_rnull = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-rnull-{0}'.format(sge_task_id))
 
-B_list = [ct_rnull, rlfp_rnull]
+cbf.shuffle_data(n_shuffles=10000)
+cbf_rnull = DataVector(data=cbf.data_shuf[:, sge_task_id].copy(), name='cbf-rnull-{0}'.format(sge_task_id))
+
+B_list = [ct_rnull, rlfp_rnull, cbf_rnull]
 for B_entry in B_list:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                                states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
@@ -122,7 +136,7 @@ A_list = [Wwp, Wsp, Wssp]
 file_prefixes = ['average_adj_n-{0}_s-{1}_null-mni-wwp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
                  'average_adj_n-{0}_s-{1}_null-mni-wsp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
                  'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id)]
-B_list = ['wb', ct, rlfp]
+B_list = ['wb', ct, rlfp, cbf]
 
 for A_idx, A_entry in enumerate(A_list):
     file_prefix = file_prefixes[A_idx]

@@ -3,7 +3,7 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP
+from pfactor_gradients.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP, LoadCBF
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
 import numpy as np
@@ -93,6 +93,21 @@ elif sge_task_id == 3:
     nct_pipeline.run()
 # %%
 elif sge_task_id == 4:
+    # load cbf data
+    load_cbf = LoadCBF(environment=environment, Subject=Subject)
+    load_cbf.run()
+
+    cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf')
+    cbf.rankdata()
+    cbf.rescale_unit_interval()
+    cbf.brain_surface_plot(environment)
+
+    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
+                                               states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
+                                               control='minimum_fast', T=1, B=cbf, file_prefix=file_prefix)
+    nct_pipeline.run()
+# %%
+elif sge_task_id == 5:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
                                                states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
                                                control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
