@@ -37,6 +37,7 @@ class Environment():
         self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
         self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCorticalThickness')
         self.rstsdir = os.path.join(self.datadir, 'processedData', 'restbold', 'restbold_201607151621')
+        self.cbfdir = os.path.join(self.datadir, 'processedData', 'asl', 'parcelwise_cbf')
 
         # imaging parameters
         self.rsfmri_tr = 3
@@ -156,6 +157,10 @@ class Subject():
                                        'ct_schaefer{0}_17.txt'.format(self.environment.n_parcels))
             ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
 
+            cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_schaefer{1}_17.txt'.format(self.scanid,
+                                                                                      self.environment.n_parcels))
+            cbf_filename = glob.glob(os.path.join(self.environment.cbfdir, cbf_filename))
+
             if self.environment.n_parcels == 200:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
@@ -180,6 +185,9 @@ class Subject():
         try: self.rsts_filename = rsts_filename[0]
         except IndexError: self.rsts_filename = []
 
+        try: self.cbf_filename = cbf_filename[0]
+        except IndexError: self.cbf_filename = []
+
     def load_sc(self):
         mat_contents = sio.loadmat(self.sc_filename)
 
@@ -203,6 +211,5 @@ class Subject():
 
         self.rlfp = rlfp
 
-
-
-
+    def load_cbf(self):
+        self.cbf = np.loadtxt(self.cbf_filename)
