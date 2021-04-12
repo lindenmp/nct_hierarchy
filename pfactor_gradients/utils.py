@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+from statsmodels.stats import multitest
 
 def get_pdist_clusters(coords, labels, method='mean'):
     unique, counts = np.unique(labels, return_counts=True)
@@ -61,3 +61,23 @@ def get_exact_p(x, y):
     pval = 2 * np.min([np.mean(x - y >= 0), np.mean(x - y <= 0)])
 
     return pval
+
+
+def get_null_p(E, E_null):
+    return np.sum(E >= E_null) / len(E_null)
+
+
+def get_fdr_p(p_vals, alpha=0.05):
+    if p_vals.ndim == 2:
+        dims = p_vals.shape
+        p_vals = p_vals.reshape(-1)
+
+        do_reshape = True
+
+    out = multitest.multipletests(p_vals, alpha=alpha, method='fdr_bh')
+    p_fdr = out[1]
+
+    if do_reshape:
+        p_fdr = p_fdr.reshape(dims)
+
+    return p_fdr
