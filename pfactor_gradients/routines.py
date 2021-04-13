@@ -155,3 +155,43 @@ class LoadCBF():
             self.cbf[i, :] = subject.cbf.copy()
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
+
+class LoadREHO():
+    def __init__(self, environment, Subject):
+        self.environment = environment
+        self.Subject = Subject
+
+    def run(self):
+        print('Routine: loading REHO data')
+        start_time = time.time()
+        n_subs = self.environment.df.shape[0]
+        self.df = self.environment.df.copy()
+        self.reho = np.zeros((n_subs, self.environment.n_parcels))
+
+        for i in np.arange(n_subs):
+            subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
+            subject.get_file_names()
+            subject.load_reho()
+            self.reho[i, :] = subject.reho.copy()
+
+        print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
+
+class LoadALFF():
+    def __init__(self, environment, Subject):
+        self.environment = environment
+        self.Subject = Subject
+
+    def run(self):
+        print('Routine: loading ALFF data')
+        start_time = time.time()
+        n_subs = self.environment.df.shape[0]
+        self.df = self.environment.df.copy()
+        self.alff = np.zeros((n_subs, self.environment.n_parcels))
+
+        for i in np.arange(n_subs):
+            subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
+            subject.get_file_names()
+            subject.load_alff()
+            self.alff[i, :] = subject.alff.copy()
+
+        print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
