@@ -66,12 +66,15 @@ D = sp.spatial.distance.squareform(D)
 octave.eval("rand('state',%i)" % sge_task_id)
 Wwp, Wsp, Wssp = octave.geomsurr(A, D, 3, 2, nout=3)
 
+# flip brain maps
+descending = True
+
 # %% load ct data
 load_ct = LoadCT(environment=environment, Subject=Subject)
 load_ct.run()
 
 ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct')
-ct.rankdata()
+ct.rankdata(descending=descending)
 ct.rescale_unit_interval()
 
 # %% load rlfp data
@@ -79,7 +82,7 @@ load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
 load_rlfp.run()
 
 rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
-rlfp.rankdata()
+rlfp.rankdata(descending=descending)
 rlfp.rescale_unit_interval()
 
 # %% load cbf data
@@ -87,7 +90,7 @@ load_cbf = LoadCBF(environment=environment, Subject=Subject)
 load_cbf.run()
 
 cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf')
-cbf.rankdata()
+cbf.rankdata(descending=descending)
 cbf.rescale_unit_interval()
 
 # %% get control energy
@@ -97,13 +100,22 @@ n_subsamples = 20
 file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
 
 ct.shuffle_data(shuffle_indices=environment.spun_indices)
-ct_null = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-null-{0}'.format(sge_task_id))
+if descending:
+    ct_null = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-d-null-{0}'.format(sge_task_id))
+else:
+    ct_null = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-null-{0}'.format(sge_task_id))
 
 rlfp.shuffle_data(shuffle_indices=environment.spun_indices)
-rlfp_null = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-null-{0}'.format(sge_task_id))
+if descending:
+    rlfp_null = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-d-null-{0}'.format(sge_task_id))
+else:
+    rlfp_null = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-null-{0}'.format(sge_task_id))
 
 cbf.shuffle_data(shuffle_indices=environment.spun_indices)
-cbf_null = DataVector(data=cbf.data_shuf[:, sge_task_id].copy(), name='cbf-null-{0}'.format(sge_task_id))
+if descending:
+    cbf_null = DataVector(data=cbf.data_shuf[:, sge_task_id].copy(), name='cbf-d-null-{0}'.format(sge_task_id))
+else:
+    cbf_null = DataVector(data=cbf.data_shuf[:, sge_task_id].copy(), name='cbf-null-{0}'.format(sge_task_id))
 
 B_list = [ct_null, rlfp_null, cbf_null]
 for B_entry in B_list:
@@ -115,13 +127,22 @@ for B_entry in B_list:
 
 # %% brain map null (random, no spatial preservation)
 ct.shuffle_data(n_shuffles=10000)
-ct_rnull = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-rnull-{0}'.format(sge_task_id))
+if descending:
+    ct_rnull = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-d-rnull-{0}'.format(sge_task_id))
+else:
+    ct_rnull = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-rnull-{0}'.format(sge_task_id))
 
 rlfp.shuffle_data(n_shuffles=10000)
-rlfp_rnull = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-rnull-{0}'.format(sge_task_id))
+if descending:
+    rlfp_rnull = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-d-rnull-{0}'.format(sge_task_id))
+else:
+    rlfp_rnull = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-rnull-{0}'.format(sge_task_id))
 
 cbf.shuffle_data(n_shuffles=10000)
-cbf_rnull = DataVector(data=cbf.data_shuf[:, sge_task_id].copy(), name='cbf-rnull-{0}'.format(sge_task_id))
+if descending:
+    cbf_rnull = DataVector(data=cbf.data_shuf[:, sge_task_id].copy(), name='cbf-d-rnull-{0}'.format(sge_task_id))
+else:
+    cbf_rnull = DataVector(data=cbf.data_shuf[:, sge_task_id].copy(), name='cbf-rnull-{0}'.format(sge_task_id))
 
 B_list = [ct_rnull, rlfp_rnull, cbf_rnull]
 for B_entry in B_list:
