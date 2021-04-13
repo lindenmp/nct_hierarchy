@@ -3,7 +3,7 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP
+from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
 
@@ -52,6 +52,7 @@ load_ct.run()
 ct = DataVector(data=load_ct.ct[0, :], name='ct')
 ct.rankdata()
 ct.rescale_unit_interval()
+# ct.brain_surface_plot(environment)
 
 # Load ct data for ith subject
 load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
@@ -59,6 +60,15 @@ load_rlfp.run()
 rlfp = DataVector(data=load_rlfp.rlfp[0, :], name='rlfp')
 rlfp.rankdata()
 rlfp.rescale_unit_interval()
+# rlfp.brain_surface_plot(environment)
+
+# Load ct data for ith subject
+load_cbf = LoadCBF(environment=environment, Subject=Subject)
+load_cbf.run()
+cbf = DataVector(data=load_cbf.cbf[0, :], name='cbf')
+cbf.rankdata()
+cbf.rescale_unit_interval()
+# cbf.brain_surface_plot(environment)
 
 # %% compute minimum energy
 file_prefix = '{0}_'.format(environment.df.index[0])
@@ -77,4 +87,9 @@ nct_pipeline.run()
 nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                            states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
                                            control='minimum_fast', T=1, B=rlfp, file_prefix=file_prefix)
+nct_pipeline.run()
+
+nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+                                           states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
+                                           control='minimum_fast', T=1, B=cbf, file_prefix=file_prefix)
 nct_pipeline.run()
