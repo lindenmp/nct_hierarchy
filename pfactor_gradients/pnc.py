@@ -176,6 +176,20 @@ class Subject():
                                              .format(self.bblid, self.scanid))
                 rsts_filename = glob.glob(os.path.join(self.environment.rstsdir, rsts_filename))
 
+                reho_filename = os.path.join('{0}'.format(self.bblid),
+                                             '*x{0}'.format(self.scanid),
+                                             'reho', 'roi', 'SchaeferPNC',
+                                             '{0}_*x{1}_SchaeferPNC_val_reho.1D' \
+                                             .format(self.bblid, self.scanid))
+                reho_filename = glob.glob(os.path.join(self.environment.rstsdir, reho_filename))
+
+                alff_filename = os.path.join('{0}'.format(self.bblid),
+                                             '*x{0}'.format(self.scanid),
+                                             'alff', 'roi', 'SchaeferPNC',
+                                             '{0}_*x{1}_SchaeferPNC_val_alff.1D' \
+                                             .format(self.bblid, self.scanid))
+                alff_filename = glob.glob(os.path.join(self.environment.rstsdir, alff_filename))
+
         try: self.sc_filename = sc_filename[0]
         except IndexError: self.sc_filename = []
 
@@ -187,6 +201,12 @@ class Subject():
 
         try: self.cbf_filename = cbf_filename[0]
         except IndexError: self.cbf_filename = []
+
+        try: self.reho_filename = reho_filename[0]
+        except IndexError: self.reho_filename = []
+
+        try: self.alff_filename = alff_filename[0]
+        except IndexError: self.alff_filename = []
 
     def load_sc(self):
         mat_contents = sio.loadmat(self.sc_filename)
@@ -213,3 +233,9 @@ class Subject():
 
     def load_cbf(self):
         self.cbf = np.loadtxt(self.cbf_filename)
+
+    def load_reho(self):
+        self.reho = np.genfromtxt(self.reho_filename, skip_header=1)[2:]
+
+    def load_alff(self):
+        self.alff = np.genfromtxt(self.alff_filename, skip_header=1)[2:]
