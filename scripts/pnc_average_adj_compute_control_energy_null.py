@@ -73,7 +73,10 @@ descending = True
 load_ct = LoadCT(environment=environment, Subject=Subject)
 load_ct.run()
 
-ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct')
+if descending:
+    ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct-d')
+else:
+    ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct')
 ct.rankdata(descending=descending)
 ct.rescale_unit_interval()
 
@@ -81,7 +84,10 @@ ct.rescale_unit_interval()
 load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
 load_rlfp.run()
 
-rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
+if descending:
+    rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp-d')
+else:
+    rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
 rlfp.rankdata(descending=descending)
 rlfp.rescale_unit_interval()
 
@@ -89,7 +95,10 @@ rlfp.rescale_unit_interval()
 load_cbf = LoadCBF(environment=environment, Subject=Subject)
 load_cbf.run()
 
-cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf')
+if descending:
+    cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf-d')
+else:
+    cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf')
 cbf.rankdata(descending=descending)
 cbf.rescale_unit_interval()
 
