@@ -55,6 +55,9 @@ load_average_sc.run()
 file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
 n_subsamples = 20
 
+# flip brain maps
+descending = True
+
 # %%
 if sge_task_id == 1:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
@@ -67,8 +70,8 @@ elif sge_task_id == 2:
     load_ct = LoadCT(environment=environment, Subject=Subject)
     load_ct.run()
 
-    ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct')
-    ct.rankdata()
+    ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct-d')
+    ct.rankdata(descending=descending)
     ct.rescale_unit_interval()
     ct.brain_surface_plot(environment)
 
@@ -82,8 +85,8 @@ elif sge_task_id == 3:
     load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
     load_rlfp.run()
 
-    rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
-    rlfp.rankdata()
+    rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp-d')
+    rlfp.rankdata(descending=descending)
     rlfp.rescale_unit_interval()
     rlfp.brain_surface_plot(environment)
 
@@ -97,8 +100,8 @@ elif sge_task_id == 4:
     load_cbf = LoadCBF(environment=environment, Subject=Subject)
     load_cbf.run()
 
-    cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf')
-    cbf.rankdata()
+    cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf-d')
+    cbf.rankdata(descending=descending)
     cbf.rescale_unit_interval()
     cbf.brain_surface_plot(environment)
 
