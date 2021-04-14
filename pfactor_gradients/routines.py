@@ -1,5 +1,6 @@
 import numpy as np
 import time
+from pfactor_gradients.imaging_derivs import DataVector
 
 class LoadSC():
     def __init__(self, environment, Subject):
@@ -86,13 +87,13 @@ class LoadFC():
         start_time = time.time()
         n_subs = self.environment.df.shape[0]
         self.df = self.environment.df.copy()
-        self.fc = np.zeros((self.environment.n_parcels, self.environment.n_parcels, n_subs))
+        self.values = np.zeros((self.environment.n_parcels, self.environment.n_parcels, n_subs))
 
         for i in np.arange(n_subs):
             subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_rsfc()
-            self.fc[:, :, i] = subject.rsfc.data.copy()
+            self.values[:, :, i] = subject.rsfc.data.copy()
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
 
@@ -106,13 +107,13 @@ class LoadRLFP():
         start_time = time.time()
         n_subs = self.environment.df.shape[0]
         self.df = self.environment.df.copy()
-        self.rlfp = np.zeros((n_subs, self.environment.n_parcels))
+        self.values = np.zeros((n_subs, self.environment.n_parcels))
 
         for i in np.arange(n_subs):
             subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_rlfp()
-            self.rlfp[i, :] = subject.rlfp.copy()
+            self.values[i, :] = subject.rlfp.copy()
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
 
@@ -126,13 +127,13 @@ class LoadCT():
         start_time = time.time()
         n_subs = self.environment.df.shape[0]
         self.df = self.environment.df.copy()
-        self.ct = np.zeros((n_subs, self.environment.n_parcels))
+        self.values = np.zeros((n_subs, self.environment.n_parcels))
 
         for i in np.arange(n_subs):
             subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_ct()
-            self.ct[i, :] = subject.ct.copy()
+            self.values[i, :] = subject.ct.copy()
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
 
@@ -146,13 +147,13 @@ class LoadCBF():
         start_time = time.time()
         n_subs = self.environment.df.shape[0]
         self.df = self.environment.df.copy()
-        self.cbf = np.zeros((n_subs, self.environment.n_parcels))
+        self.values = np.zeros((n_subs, self.environment.n_parcels))
 
         for i in np.arange(n_subs):
             subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_cbf()
-            self.cbf[i, :] = subject.cbf.copy()
+            self.values[i, :] = subject.cbf.copy()
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
 
@@ -166,13 +167,13 @@ class LoadREHO():
         start_time = time.time()
         n_subs = self.environment.df.shape[0]
         self.df = self.environment.df.copy()
-        self.reho = np.zeros((n_subs, self.environment.n_parcels))
+        self.values = np.zeros((n_subs, self.environment.n_parcels))
 
         for i in np.arange(n_subs):
             subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_reho()
-            self.reho[i, :] = subject.reho.copy()
+            self.values[i, :] = subject.reho.copy()
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
 
@@ -186,12 +187,29 @@ class LoadALFF():
         start_time = time.time()
         n_subs = self.environment.df.shape[0]
         self.df = self.environment.df.copy()
-        self.alff = np.zeros((n_subs, self.environment.n_parcels))
+        self.values = np.zeros((n_subs, self.environment.n_parcels))
 
         for i in np.arange(n_subs):
             subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_alff()
-            self.alff[i, :] = subject.alff.copy()
+            self.values[i, :] = subject.alff.copy()
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
+
+
+class LoadAverageBrainMaps():
+    def __init__(self, loaders_dict):
+        self.loaders_dict = loaders_dict
+
+    def run(self, descending=False):
+        self.brain_maps = dict()
+
+        for key in self.loaders_dict:
+            self.loaders_dict[key].run()
+
+            brain_map = DataVector(data=np.nanmean(self.loaders_dict[key].values, axis=0), name=key)
+            brain_map.rankdata(descending=descending)
+            brain_map.rescale_unit_interval()
+
+            self.brain_maps[key] = brain_map
