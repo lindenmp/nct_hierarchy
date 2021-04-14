@@ -73,6 +73,8 @@ def get_fdr_p(p_vals, alpha=0.05):
         p_vals = p_vals.reshape(-1)
 
         do_reshape = True
+    else:
+        do_reshape = False
 
     out = multitest.multipletests(p_vals, alpha=alpha, method='fdr_bh')
     p_fdr = out[1]
