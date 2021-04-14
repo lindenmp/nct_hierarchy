@@ -61,7 +61,7 @@ loaders_dict = {
 }
 
 load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
-load_average_bms.run()
+load_average_bms.run(return_descending=False)
 
 # %% get control energy
 file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
