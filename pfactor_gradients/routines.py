@@ -202,7 +202,7 @@ class LoadAverageBrainMaps():
     def __init__(self, loaders_dict):
         self.loaders_dict = loaders_dict
 
-    def run(self):
+    def run(self, return_descending=False):
         self.brain_maps = dict()
 
         for key in self.loaders_dict:
@@ -213,7 +213,8 @@ class LoadAverageBrainMaps():
             brain_map.rescale_unit_interval()
             self.brain_maps[key] = brain_map
 
-            brain_map_flip = DataVector(data=np.nanmean(self.loaders_dict[key].values, axis=0), name=key+'_flip')
-            brain_map_flip.rankdata(descending=True)
-            brain_map_flip.rescale_unit_interval()
-            self.brain_maps[key+'_flip'] = brain_map_flip
+            if return_descending:
+                brain_map_flip = DataVector(data=np.nanmean(self.loaders_dict[key].values, axis=0), name=key+'_flip')
+                brain_map_flip.rankdata(descending=True)
+                brain_map_flip.rescale_unit_interval()
+                self.brain_maps[key+'_flip'] = brain_map_flip
