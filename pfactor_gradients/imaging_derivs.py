@@ -196,18 +196,31 @@ class DataVector():
         self.data_shuf = data_shuf
 
 
-    def mean_over_clusters(self, cluster_labels):
+    def mean_between_states(self, states):
         x = self.data
 
-        unique = np.unique(cluster_labels, return_counts=False)
-        n_clusters = len(unique)
+        unique = np.unique(states, return_counts=False)
+        n_states = len(unique)
 
-        x_out = np.zeros((n_clusters, n_clusters))
-        for i in np.arange(n_clusters):
-            for j in np.arange(n_clusters):
-                x_out[i, j] = np.nanmean(x[np.logical_or(cluster_labels == i, cluster_labels == j)])
+        x_out = np.zeros((n_states, n_states))
+        for i in np.arange(n_states):
+            for j in np.arange(n_states):
+                x_out[i, j] = np.nanmean(x[np.logical_or(states == i, states == j)])
 
-        self.data_clusters = x_out
+        self.data_mean = x_out
+
+
+    def mean_within_states(self, states):
+        x = self.data
+
+        unique = np.unique(states, return_counts=False)
+        n_states = len(unique)
+
+        x_out = np.zeros(n_states)
+        for i in np.arange(n_states):
+            x_out[i] = np.nanmean(x[states == i])
+
+        self.data_mean = x_out
 
 
     def brain_surface_plot(self, environment, cmap='viridis'):
