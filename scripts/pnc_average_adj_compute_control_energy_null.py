@@ -10,7 +10,8 @@ elif platform.system() == 'Darwin':
     octave.addpath('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/geomsurr') # path to matlab functions
 
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF
+from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF,\
+    LoadAverageSC, LoadAverageBrainMaps
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
 import numpy as np
@@ -66,71 +67,33 @@ D = sp.spatial.distance.squareform(D)
 octave.eval("rand('state',%i)" % sge_task_id)
 Wwp, Wsp, Wssp = octave.geomsurr(A, D, 3, 2, nout=3)
 
-# %% load ct data
-load_ct = LoadCT(environment=environment, Subject=Subject)
-load_ct.run()
+# %% load mean brain maps
+loaders_dict = {
+    'ct': LoadCT(environment=environment, Subject=Subject),
+    'rlfp': LoadRLFP(environment=environment, Subject=Subject),
+    'cbf': LoadCBF(environment=environment, Subject=Subject),
+    'reho': LoadREHO(environment=environment, Subject=Subject),
+    'alff': LoadALFF(environment=environment, Subject=Subject)
+}
 
-ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct')
-ct.rankdata(descending=False)
-ct.rescale_unit_interval()
+load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
+load_average_bms.run(return_descending=False)
 
-# %% load rlfp data
-load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
-load_rlfp.run()
-
-rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
-rlfp.rankdata(descending=False)
-rlfp.rescale_unit_interval()
-
-# %% load cbf data
-load_cbf = LoadCBF(environment=environment, Subject=Subject)
-load_cbf.run()
-
-cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf')
-cbf.rankdata(descending=False)
-cbf.rescale_unit_interval()
-
-# %% load reho data
-load_reho = LoadREHO(environment=environment, Subject=Subject)
-load_reho.run()
-
-reho = DataVector(data=np.nanmean(load_reho.reho, axis=0), name='reho')
-reho.rankdata(descending=False)
-reho.rescale_unit_interval()
-
-# %% load alff data
-load_alff = LoadALFF(environment=environment, Subject=Subject)
-load_alff.run()
-
-alff = DataVector(data=np.nanmean(load_alff.alff, axis=0), name='alff')
-alff.rankdata(descending=False)
-alff.rescale_unit_interval()
+for key in load_average_bms.brain_maps:
+    load_average_bms.brain_maps[key].shuffle_data(shuffle_indices=environment.spun_indices)
 
 # %% get control energy
 file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
 n_subsamples = 0
 
 # %% brain map null (spin test)
-ct.shuffle_data(shuffle_indices=environment.spun_indices)
-ct_null = DataVector(data=ct.data_shuf[:, sge_task_id].copy(), name='ct-null-{0}'.format(sge_task_id))
+for key in load_average_bms.brain_maps:
+    permuted_bm = DataVector(data=load_average_bms.brain_maps[key].data_shuf[:, sge_task_id].copy(),
+                             name='{0}-null-{1}'.format(key, sge_task_id))
 
-rlfp.shuffle_data(shuffle_indices=environment.spun_indices)
-rlfp_null = DataVector(data=rlfp.data_shuf[:, sge_task_id].copy(), name='rlfp-null-{0}'.format(sge_task_id))
-
-cbf.shuffle_data(shuffle_indices=environment.spun_indices)
-cbf_null = DataVector(data=cbf.data_shuf[:, sge_task_id].copy(), name='cbf-null-{0}'.format(sge_task_id))
-
-reho.shuffle_data(shuffle_indices=environment.spun_indices)
-reho_null = DataVector(data=reho.data_shuf[:, sge_task_id].copy(), name='reho-null-{0}'.format(sge_task_id))
-
-alff.shuffle_data(shuffle_indices=environment.spun_indices)
-alff_null = DataVector(data=alff.data_shuf[:, sge_task_id].copy(), name='alff-null-{0}'.format(sge_task_id))
-
-B_list = [ct_null, rlfp_null, cbf_null, reho_null, alff_null]
-for B_entry in B_list:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                                states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B=B_entry, file_prefix=file_prefix,
+                                               control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
                                                force_rerun=False, save_outputs=True, verbose=True)
     nct_pipeline.run()
 
@@ -139,13 +102,19 @@ A_list = [Wwp, ]
 file_prefixes = ['average_adj_n-{0}_s-{1}_null-mni-wwp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
                  'average_adj_n-{0}_s-{1}_null-mni-wsp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
                  'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id)]
-B_list = ['wb', ct, rlfp, cbf, reho, alff]
 
 for A_idx, A_entry in enumerate(A_list):
     file_prefix = file_prefixes[A_idx]
-    for B_entry in B_list:
+
+    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A_entry,
+                                               states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+                                               control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
+                                               force_rerun=False, save_outputs=True, verbose=True)
+    nct_pipeline.run()
+
+    for key in load_average_bms.brain_maps:
         nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A_entry,
                                                    states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
-                                                   control='minimum_fast', T=1, B=B_entry, file_prefix=file_prefix,
+                                                   control='minimum_fast', T=1, B=load_average_bms.brain_maps[key], file_prefix=file_prefix,
                                                    force_rerun=False, save_outputs=True, verbose=True)
         nct_pipeline.run()
