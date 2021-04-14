@@ -14,7 +14,6 @@ from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadRE
     LoadAverageSC, LoadAverageBrainMaps
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
-import numpy as np
 import scipy as sp
 
 # %% Setup project environment
