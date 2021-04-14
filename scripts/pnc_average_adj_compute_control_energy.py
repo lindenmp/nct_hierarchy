@@ -14,17 +14,17 @@ import seaborn as sns
 sns.set(style='white', context='talk', font_scale=1)
 if platform.system() == 'Linux':
     computer = 'cbica'
-    sge_task_id = int(os.getenv("SGE_TASK_ID"))
+    # sge_task_id = int(os.getenv("SGE_TASK_ID"))
 elif platform.system() == 'Darwin':
     computer = 'macbook'
-    sge_task_id = 1
+    # sge_task_id = 1
 
     import matplotlib.font_manager as font_manager
     fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
     prop = font_manager.FontProperties(fname=fontpath)
     plt.rcParams['font.family'] = prop.get_name()
     plt.rcParams['svg.fonttype'] = 'none'
-print(sge_task_id)
+# print(sge_task_id)
 
 parc = 'schaefer'
 n_parcels = 400
@@ -51,10 +51,6 @@ spars_thresh = 0.06
 load_average_sc = LoadAverageSC(load_sc=load_sc, spars_thresh=spars_thresh)
 load_average_sc.run()
 A = load_average_sc.A.copy()
-
-# %% get control energy
-file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
-n_subsamples = 0
 
 # %% load ct data
 load_ct = LoadCT(environment=environment, Subject=Subject)
@@ -115,6 +111,10 @@ alff.rescale_unit_interval()
 alff_d = DataVector(data=np.nanmean(load_alff.alff, axis=0), name='alff-d')
 alff_d.rankdata(descending=True)
 alff_d.rescale_unit_interval()
+
+# %% get control energy
+file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
+n_subsamples = 0
 
 # %%
 B_list = ['wb', ct, rlfp, cbf, reho, alff, ct_d, rlfp_d, cbf_d, reho_d, alff_d]
