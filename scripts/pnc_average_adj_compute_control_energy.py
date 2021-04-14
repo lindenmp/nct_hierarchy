@@ -3,7 +3,7 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP, LoadCBF
+from pfactor_gradients.routines import LoadSC, LoadAverageSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
 import numpy as np
@@ -50,78 +50,83 @@ environment.df = load_sc.df.copy()
 spars_thresh = 0.06
 load_average_sc = LoadAverageSC(load_sc=load_sc, spars_thresh=spars_thresh)
 load_average_sc.run()
+A = load_average_sc.A.copy()
 
 # %% get control energy
 file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
-n_subsamples = 20
+n_subsamples = 0
 
-# flip brain maps
-descending = True
+# %% load ct data
+load_ct = LoadCT(environment=environment, Subject=Subject)
+load_ct.run()
+
+ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct')
+ct.rankdata(descending=False)
+ct.rescale_unit_interval()
+
+ct_d = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct-d')
+ct_d.rankdata(descending=True)
+ct_d.rescale_unit_interval()
+
+# %% load rlfp data
+load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
+load_rlfp.run()
+
+rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
+rlfp.rankdata(descending=False)
+rlfp.rescale_unit_interval()
+
+rlfp_d = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp-d')
+rlfp_d.rankdata(descending=True)
+rlfp_d.rescale_unit_interval()
+
+# %% load cbf data
+load_cbf = LoadCBF(environment=environment, Subject=Subject)
+load_cbf.run()
+
+cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf')
+cbf.rankdata(descending=False)
+cbf.rescale_unit_interval()
+
+cbf_d = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf-d')
+cbf_d.rankdata(descending=True)
+cbf_d.rescale_unit_interval()
+
+# %% load reho data
+load_reho = LoadREHO(environment=environment, Subject=Subject)
+load_reho.run()
+
+reho = DataVector(data=np.nanmean(load_reho.reho, axis=0), name='reho')
+reho.rankdata(descending=False)
+reho.rescale_unit_interval()
+
+reho_d = DataVector(data=np.nanmean(load_reho.reho, axis=0), name='reho-d')
+reho_d.rankdata(descending=True)
+reho_d.rescale_unit_interval()
+
+# %% load alff data
+load_alff = LoadALFF(environment=environment, Subject=Subject)
+load_alff.run()
+
+alff = DataVector(data=np.nanmean(load_alff.alff, axis=0), name='alff')
+alff.rankdata(descending=False)
+alff.rescale_unit_interval()
+
+alff_d = DataVector(data=np.nanmean(load_alff.alff, axis=0), name='alff-d')
+alff_d.rankdata(descending=True)
+alff_d.rescale_unit_interval()
 
 # %%
-if sge_task_id == 1:
-    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
-                                               states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B='wb', file_prefix=file_prefix)
+B_list = ['wb', ct, rlfp, cbf, reho, alff, ct_d, rlfp_d, cbf_d, reho_d, alff_d]
+for B_entry in B_list:
+    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+                                               states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+                                               control='minimum_fast', T=1, B=B_entry, file_prefix=file_prefix,
+                                               force_rerun=False, save_outputs=True, verbose=True)
     nct_pipeline.run()
-# %%
-elif sge_task_id == 2:
-    # load ct data
-    load_ct = LoadCT(environment=environment, Subject=Subject)
-    load_ct.run()
 
-    if descending:
-        ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct-d')
-    else:
-        ct = DataVector(data=np.nanmean(load_ct.ct, axis=0), name='ct')
-    ct.rankdata(descending=descending)
-    ct.rescale_unit_interval()
-    ct.brain_surface_plot(environment)
-
-    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
-                                               states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B=ct, file_prefix=file_prefix)
-    nct_pipeline.run()
-# %%
-elif sge_task_id == 3:
-    # load rlfp data
-    load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
-    load_rlfp.run()
-
-    if descending:
-        rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp-d')
-    else:
-        rlfp = DataVector(data=np.nanmean(load_rlfp.rlfp, axis=0), name='rlfp')
-    rlfp.rankdata(descending=descending)
-    rlfp.rescale_unit_interval()
-    rlfp.brain_surface_plot(environment)
-
-    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
-                                               states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B=rlfp, file_prefix=file_prefix)
-    nct_pipeline.run()
-# %%
-elif sge_task_id == 4:
-    # load cbf data
-    load_cbf = LoadCBF(environment=environment, Subject=Subject)
-    load_cbf.run()
-
-    if descending:
-        cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf-d')
-    else:
-        cbf = DataVector(data=np.nanmean(load_cbf.cbf, axis=0), name='cbf')
-    cbf.rankdata(descending=descending)
-    cbf.rescale_unit_interval()
-    cbf.brain_surface_plot(environment)
-
-    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
-                                               states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B=cbf, file_prefix=file_prefix)
-    nct_pipeline.run()
-# %%
-elif sge_task_id == 5:
-    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
-                                               states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
-                                               add_noise=True)
-    nct_pipeline.run()
+nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
+                                           states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+                                           control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
+                                           add_noise=True)
+nct_pipeline.run()
