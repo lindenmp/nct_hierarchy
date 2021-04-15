@@ -3,7 +3,7 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF
+from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF,\
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
 
@@ -31,13 +31,11 @@ environment.load_metadata(filters)
 compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
 compute_gradients.run()
 
-# %% load data
-
-# Load sc data
+# %% Load sc data
 load_sc = LoadSC(environment=environment, Subject=Subject)
 load_sc.run()
 # get subject A matrix out
-A = load_sc.A[:, :, sge_task_id]
+A = load_sc.A[:, :, sge_task_id].copy()
 print(load_sc.df.index[sge_task_id])
 
 # refilter environment due to LoadSC excluding on disconnected nodes
@@ -46,50 +44,35 @@ environment.df = load_sc.df.copy()
 environment.df = environment.df.iloc[sge_task_id, :].to_frame().transpose()
 print(environment.df.index[0])
 
-# Load ct data for ith subject
-load_ct = LoadCT(environment=environment, Subject=Subject)
-load_ct.run()
-ct = DataVector(data=load_ct.ct[0, :], name='ct')
-ct.rankdata()
-ct.rescale_unit_interval()
-# ct.brain_surface_plot(environment)
+# %% load mean brain maps
+loaders_dict = {
+    'ct': LoadCT(environment=environment, Subject=Subject),
+    # 'rlfp': LoadRLFP(environment=environment, Subject=Subject),
+    'cbf': LoadCBF(environment=environment, Subject=Subject),
+    'reho': LoadREHO(environment=environment, Subject=Subject),
+    'alff': LoadALFF(environment=environment, Subject=Subject)
+}
 
-# Load ct data for ith subject
-load_rlfp = LoadRLFP(environment=environment, Subject=Subject)
-load_rlfp.run()
-rlfp = DataVector(data=load_rlfp.rlfp[0, :], name='rlfp')
-rlfp.rankdata()
-rlfp.rescale_unit_interval()
-# rlfp.brain_surface_plot(environment)
-
-# Load ct data for ith subject
-load_cbf = LoadCBF(environment=environment, Subject=Subject)
-load_cbf.run()
-cbf = DataVector(data=load_cbf.cbf[0, :], name='cbf')
-cbf.rankdata()
-cbf.rescale_unit_interval()
-# cbf.brain_surface_plot(environment)
+for key in loaders_dict:
+    loaders_dict[key].run()
 
 # %% compute minimum energy
 file_prefix = '{0}_'.format(environment.df.index[0])
-n_subsamples = 20
+n_subsamples = 0
 
 nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
-                                           states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                           control='minimum_fast', T=1, B='wb', file_prefix=file_prefix)
+                                           states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+                                           control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
+                                           force_rerun=False, save_outputs=True, verbose=True)
 nct_pipeline.run()
 
-nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
-                                           states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                           control='minimum_fast', T=1, B=ct, file_prefix=file_prefix)
-nct_pipeline.run()
+for key in loaders_dict:
+    bm = DataVector(data=loaders_dict[key].values[0, :].copy(), name=key)
+    bm.rankdata()
+    bm.rescale_unit_interval()
 
-nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
-                                           states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                           control='minimum_fast', T=1, B=rlfp, file_prefix=file_prefix)
-nct_pipeline.run()
-
-nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
-                                           states=compute_gradients.kmeans.labels_, n_subsamples=n_subsamples,
-                                           control='minimum_fast', T=1, B=cbf, file_prefix=file_prefix)
-nct_pipeline.run()
+    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+                                               states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+                                               control='minimum_fast', T=1, B=bm, file_prefix=file_prefix,
+                                               force_rerun=False, save_outputs=True, verbose=True)
+    nct_pipeline.run()
