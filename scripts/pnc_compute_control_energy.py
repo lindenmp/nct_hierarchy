@@ -3,7 +3,7 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF,\
+from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
 
