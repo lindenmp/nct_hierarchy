@@ -45,7 +45,6 @@ load_sc.run()
 environment.df = load_sc.df.copy()
 
 # %% load mean brain maps
-descending=False
 loaders_dict = {
     'ct': LoadCT(environment=environment, Subject=Subject),
     # 'rlfp': LoadRLFP(environment=environment, Subject=Subject),
@@ -60,8 +59,8 @@ load_average_bms.run()
 for key in load_average_bms.brain_maps:
     load_average_bms.brain_maps[key].mean_between_states(compute_gradients.grad_bins)
 
-n_clusters = len(np.unique(compute_gradients.grad_bins))
-mask = ~np.eye(n_clusters, dtype=bool)
+n_states = len(np.unique(compute_gradients.grad_bins))
+mask = ~np.eye(n_states, dtype=bool)
 indices = np.where(mask)
 
 # %% get minimum control energy
