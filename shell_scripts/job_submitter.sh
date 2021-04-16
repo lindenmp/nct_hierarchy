@@ -21,6 +21,6 @@ qsub -N subjects -l h_vmem=3G,s_vmem=3G -pe threaded 1 -j y -b y -o /cbica/home/
 
 # prediction
 qsub -N prediction -l h_vmem=3G,s_vmem=3G -pe threaded 8 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
--t 1:10 \
+-t 1:20 \
 /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
 /cbica/home/parkesl/research_projects/pfactor_gradients/scripts/pnc_run_prediction.py
