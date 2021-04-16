@@ -94,6 +94,43 @@ def get_prediction_pipeline(sge_task_id=np.nan):
         X_name = 'alff'
         score = 'corr'
 
+    elif sge_task_id == 10:
+        X_name = 'wb'
+        alg = 'krr_rbf'
+    elif sge_task_id == 11:
+        X_name = 'ct'
+        alg = 'krr_rbf'
+    elif sge_task_id == 12:
+        X_name = 'cbf'
+        alg = 'krr_rbf'
+    elif sge_task_id == 13:
+        X_name = 'reho'
+        alg = 'krr_rbf'
+    elif sge_task_id == 14:
+        X_name = 'alff'
+        alg = 'krr_rbf'
+
+    elif sge_task_id == 15:
+        X_name = 'wb'
+        alg = 'krr_rbf'
+        score = 'corr'
+    elif sge_task_id == 16:
+        X_name = 'ct'
+        alg = 'krr_rbf'
+        score = 'corr'
+    elif sge_task_id == 17:
+        X_name = 'cbf'
+        alg = 'krr_rbf'
+        score = 'corr'
+    elif sge_task_id == 18:
+        X_name = 'reho'
+        alg = 'krr_rbf'
+        score = 'corr'
+    elif sge_task_id == 19:
+        X_name = 'alff'
+        alg = 'krr_rbf'
+        score = 'corr'
+
     return X_name, y_name, c_name, covs, alg, score, n_splits, runpca, n_rand_splits
 
 # load settings
