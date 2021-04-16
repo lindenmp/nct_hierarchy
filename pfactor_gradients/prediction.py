@@ -2,13 +2,11 @@ import numpy as np
 import scipy as sp
 from scipy import stats
 
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import KFold, GridSearchCV, cross_val_score
+from sklearn.model_selection import KFold
 from sklearn.linear_model import Ridge, Lasso, LinearRegression
 from sklearn.kernel_ridge import KernelRidge
-from sklearn.svm import SVR, LinearSVR
-from sklearn.metrics import make_scorer, r2_score, mean_squared_error, mean_absolute_error
+from sklearn.svm import SVR
 from sklearn.decomposition import PCA
 import copy
 
@@ -140,12 +138,6 @@ def my_cross_val_score(X, y, c, my_cv, reg, scorer, runpca=False):
             X_train = pca.transform(X_train)
             X_test = pca.transform(X_test)
 
-        # # regress nuisance (y)
-        # nuis_reg = LinearRegression() nuis_reg.fit(c_train, y_train)
-        # # nuis_reg = KernelRidge(kernel='rbf') nuis_reg.fit(c_train, y_train)
-        # y_pred = nuis_reg.predict(c_train) y_train = y_train - y_pred
-        # y_pred = nuis_reg.predict(c_test) y_test = y_test - y_pred
-
         reg.fit(X_train, y_train)
         accuracy[k] = scorer(reg, X_test, y_test)
         y_pred_out[te] = reg.predict(X_test)
@@ -175,10 +167,6 @@ def run_perm(X, y, c, reg, scorer, n_splits=10, runpca=False):
         idx = np.arange(y.shape[0])
         np.random.shuffle(idx)
 
-        # try:
-        #     c_perm = c[idx, :].copy()
-        # except:
-        #     c_perm = c[idx].copy()
         y_perm = y[idx].copy()
 
         temp_acc, y_pred_out_tmp = my_cross_val_score(X=X, y=y_perm, c=c, my_cv=my_cv, reg=reg,
