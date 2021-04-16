@@ -9,7 +9,7 @@ from sklearn.kernel_ridge import KernelRidge
 from sklearn.svm import SVR
 from sklearn.decomposition import PCA
 import copy
-
+from tqdm import tqdm
 
 def corr_true_pred(y_true, y_pred):
     if type(y_true) == np.ndarray:
@@ -159,10 +159,10 @@ def run_reg(X, y, c, reg, scorer, n_splits=10, runpca=False, seed=0):
 def run_perm(X, y, c, reg, scorer, n_splits=10, runpca=False):
     my_cv = get_cv(y, n_splits=n_splits)
 
-    n_perm = 10
+    n_perm = int(1e4)
     permuted_acc = np.zeros(n_perm)
 
-    for i in np.arange(n_perm):
+    for i in tqdm(np.arange(n_perm)):
         np.random.seed(i)
         idx = np.arange(y.shape[0])
         np.random.shuffle(idx)
