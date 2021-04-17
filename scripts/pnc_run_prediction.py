@@ -57,7 +57,7 @@ def get_prediction_pipeline(sge_task_id=np.nan):
     alg = 'rr'
     score = 'rmse'
     n_splits = 10
-    runpca = '1%'
+    runpca = '80%'
     n_rand_splits = 100
 
     if sge_task_id == 0:
