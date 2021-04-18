@@ -8,6 +8,28 @@ from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadRE
 from pfactor_gradients.pipelines import ComputeGradients
 from pfactor_gradients.pipelines import Regression
 
+# %% parse input arguments
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("-X_name", help="", dest="X_name", default='wb')
+parser.add_argument("-y_name", help="", dest="y_name", default='Overall_Psychopathology')
+parser.add_argument("-c_name", help="", dest="c_name", default='asvm')
+parser.add_argument("-alg", help="", dest="alg", default='rr')
+parser.add_argument("-score", help="", dest="score", default='rmse')
+parser.add_argument("-runpca", help="", dest="runpca", default='1%')
+
+args = parser.parse_args()
+print(args)
+X_name = args.X_name
+y_name = args.y_name
+c_name = args.c_name
+alg = args.alg
+score = args.score
+runpca = args.runpca
+
+n_splits = 10
+n_rand_splits = 100
+
 # %% Setup project environment
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -48,88 +70,9 @@ load_sc.run()
 environment.df = load_sc.df.copy()
 n_subs = environment.df.shape[0]
 
-# %% prediction settings
-def get_prediction_pipeline(sge_task_id=np.nan):
-    X_name = 'wb'
-    y_name = 'Overall_Psychopathology'
-    c_name = 'asvm'
-    covs = ['ageAtScan1', 'sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
-    alg = 'rr'
-    score = 'rmse'
-    n_splits = 10
-    runpca = '80%'
-    n_rand_splits = 100
-
-    if sge_task_id == 0:
-        X_name = 'wb'
-    elif sge_task_id == 1:
-        X_name = 'ct'
-    elif sge_task_id == 2:
-        X_name = 'cbf'
-    elif sge_task_id == 3:
-        X_name = 'reho'
-    elif sge_task_id == 4:
-        X_name = 'alff'
-
-    elif sge_task_id == 5:
-        X_name = 'wb'
-        score = 'corr'
-    elif sge_task_id == 6:
-        X_name = 'ct'
-        score = 'corr'
-    elif sge_task_id == 7:
-        X_name = 'cbf'
-        score = 'corr'
-    elif sge_task_id == 8:
-        X_name = 'reho'
-        score = 'corr'
-    elif sge_task_id == 9:
-        X_name = 'alff'
-        score = 'corr'
-
-    elif sge_task_id == 10:
-        X_name = 'wb'
-        runpca = 25
-    elif sge_task_id == 11:
-        X_name = 'ct'
-        runpca = 25
-    elif sge_task_id == 12:
-        X_name = 'cbf'
-        runpca = 25
-    elif sge_task_id == 13:
-        X_name = 'reho'
-        runpca = 25
-    elif sge_task_id == 14:
-        X_name = 'alff'
-        runpca = 25
-
-    elif sge_task_id == 15:
-        X_name = 'wb'
-        score = 'corr'
-        runpca = 25
-    elif sge_task_id == 16:
-        X_name = 'ct'
-        score = 'corr'
-        runpca = 25
-    elif sge_task_id == 17:
-        X_name = 'cbf'
-        score = 'corr'
-        runpca = 25
-    elif sge_task_id == 18:
-        X_name = 'reho'
-        score = 'corr'
-        runpca = 25
-    elif sge_task_id == 19:
-        X_name = 'alff'
-        score = 'corr'
-        runpca = 25
-
-    return X_name, y_name, c_name, covs, alg, score, n_splits, runpca, n_rand_splits
-
-X_name, y_name, c_name, covs, alg, score, n_splits, runpca, n_rand_splits = get_prediction_pipeline(
-    sge_task_id=sge_task_id)
-
 y = environment.df.loc[:, y_name].values
+if c_name == 'asvm':
+    covs = ['ageAtScan1', 'sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
 c = environment.df.loc[:, covs]
 c['sex'] = c['sex'] - 1
 c = c.values
