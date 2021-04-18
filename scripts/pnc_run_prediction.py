@@ -27,6 +27,9 @@ alg = args.alg
 score = args.score
 runpca = args.runpca
 
+if type(runpca) and '%' not in runpca:
+    runpca = int(runpca)
+
 n_splits = 10
 n_rand_splits = 100
 
