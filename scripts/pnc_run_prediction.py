@@ -74,6 +74,10 @@ environment.df = load_sc.df.copy()
 n_subs = environment.df.shape[0]
 
 y = environment.df.loc[:, y_name].values
+
+if np.any(np.isnan(y)):
+    y[np.isnan(y)] = np.nanmedian(y)
+
 if c_name == 'asvm':
     covs = ['ageAtScan1', 'sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
 c = environment.df.loc[:, covs]
