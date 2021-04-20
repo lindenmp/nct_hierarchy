@@ -15,6 +15,7 @@ from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadRE
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
 import scipy as sp
+import numpy as np
 
 # %% Setup project environment
 import matplotlib.pyplot as plt
@@ -83,17 +84,17 @@ file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape
 n_subsamples = 0
 
 # %% brain map null (spin test)
-for key in load_average_bms.brain_maps:
-    load_average_bms.brain_maps[key].shuffle_data(shuffle_indices=environment.spun_indices)
-
-    permuted_bm = DataVector(data=load_average_bms.brain_maps[key].data_shuf[:, sge_task_id].copy(),
-                             name='{0}-spin-{1}'.format(key, sge_task_id))
-
-    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
-                                               states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
-                                               force_rerun=False, save_outputs=True, verbose=True)
-    nct_pipeline.run()
+# for key in load_average_bms.brain_maps:
+#     load_average_bms.brain_maps[key].shuffle_data(shuffle_indices=environment.spun_indices)
+#
+#     permuted_bm = DataVector(data=load_average_bms.brain_maps[key].data_shuf[:, sge_task_id].copy(),
+#                              name='{0}-spin-{1}'.format(key, sge_task_id))
+#
+#     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+#                                                states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+#                                                control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
+#                                                force_rerun=False, save_outputs=True, verbose=True)
+#     nct_pipeline.run()
 
 # %% brain map null (random)
 # for key in load_average_bms.brain_maps:
