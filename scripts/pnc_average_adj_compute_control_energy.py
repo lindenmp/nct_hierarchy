@@ -54,7 +54,7 @@ A = load_average_sc.A.copy()
 # %% load mean brain maps
 loaders_dict = {
     'ct': LoadCT(environment=environment, Subject=Subject),
-    'rlfp': LoadRLFP(environment=environment, Subject=Subject),
+    # 'rlfp': LoadRLFP(environment=environment, Subject=Subject),
     'cbf': LoadCBF(environment=environment, Subject=Subject),
     'reho': LoadREHO(environment=environment, Subject=Subject),
     'alff': LoadALFF(environment=environment, Subject=Subject)
@@ -68,13 +68,13 @@ file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape
 n_subsamples = 0
 
 # %%
-for add_noise in [False, True]:
-    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
-                                               states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
-                                               force_rerun=True, save_outputs=True, verbose=True,
-                                               add_noise=add_noise)
-    nct_pipeline.run()
+# for add_noise in [False, True]:
+nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
+                                           states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+                                           control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
+                                           force_rerun=True, save_outputs=True, verbose=True,
+                                           add_noise=False)
+nct_pipeline.run()
 
 for key in load_average_bms.brain_maps:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
