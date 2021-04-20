@@ -21,19 +21,22 @@ qsub -N subjects -l h_vmem=3G,s_vmem=3G -pe threaded 1 -j y -b y -o /cbica/home/
 
 # prediction
 X_list=('wb' 'ct' 'cbf' 'reho' 'alff')
-alg_list=('rr' 'krr_rbf')
-score_list=('rmse' 'corr' 'r2')
-runpca_list=('1%' '80%' 25 50)
+y_list=('Overall_Psychopathology' 'F3_Executive_Efficiency' 'F1_Exec_Comp_Res_Accuracy')
+alg_list=('rr')
+score_list=('rmse' 'corr')
+runpca_list=('1%' '80%' 50)
 
 for X_name in "${X_list[@]}"; do
-  for alg in "${alg_list[@]}"; do
-    for score in "${score_list[@]}"; do
-      for runpca in "${runpca_list[@]}"; do
-        qsub -N prediction -l h_vmem=3G,s_vmem=3G -pe threaded 8 -j y -b y -o \
-        /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
-        /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
-        /cbica/home/parkesl/research_projects/pfactor_gradients/scripts/pnc_run_prediction.py \
-        -X_name $X_name -alg $alg -score $score -runpca $runpca
+  for y_name in "${y_list[@]}"; do
+    for alg in "${alg_list[@]}"; do
+      for score in "${score_list[@]}"; do
+        for runpca in "${runpca_list[@]}"; do
+          qsub -N prediction -l h_vmem=3G,s_vmem=3G -pe threaded 8 -j y -b y -o \
+          /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
+          /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
+          /cbica/home/parkesl/research_projects/pfactor_gradients/scripts/pnc_run_prediction.py \
+          -X_name $X_name -y_name $y_name -alg $alg -score $score -runpca $runpca
+        done
       done
     done
   done
