@@ -168,6 +168,20 @@ class Subject():
                                              '{0}_*x{1}_Schaefer{2}PNC_ts.1D' \
                                              .format(self.bblid, self.scanid, self.environment.n_parcels))
                 rsts_filename = glob.glob(os.path.join(self.environment.rstsdir, rsts_filename))
+
+                reho_filename = os.path.join('{0}'.format(self.bblid),
+                                             '*x{0}'.format(self.scanid),
+                                             'reho', 'roi', 'SchaeferPNC',
+                                             '{0}_*x{1}_Schaefer{2}PNC_val_reho.1D' \
+                                             .format(self.bblid, self.scanid, self.environment.n_parcels))
+                reho_filename = glob.glob(os.path.join(self.environment.rstsdir, reho_filename))
+
+                alff_filename = os.path.join('{0}'.format(self.bblid),
+                                             '*x{0}'.format(self.scanid),
+                                             'alff', 'roi', 'SchaeferPNC',
+                                             '{0}_*x{1}_Schaefer{2}PNC_val_alff.1D' \
+                                             .format(self.bblid, self.scanid, self.environment.n_parcels))
+                alff_filename = glob.glob(os.path.join(self.environment.rstsdir, alff_filename))
             elif self.environment.n_parcels == 400:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
