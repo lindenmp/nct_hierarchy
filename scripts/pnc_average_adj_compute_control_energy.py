@@ -46,7 +46,10 @@ load_sc.run()
 # refilter environment due to LoadSC excluding on disconnected nodes
 environment.df = load_sc.df.copy()
 
-spars_thresh = 0.06
+if parc == 'schaefer' and n_parcels == 400:
+    spars_thresh = 0.06
+elif parc == 'schaefer' and n_parcels == 200:
+    spars_thresh = 0.12
 load_average_sc = LoadAverageSC(load_sc=load_sc, spars_thresh=spars_thresh)
 load_average_sc.run()
 A = load_average_sc.A.copy()
