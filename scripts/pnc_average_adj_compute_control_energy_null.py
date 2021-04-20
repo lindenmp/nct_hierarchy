@@ -69,7 +69,7 @@ Wwp, Wsp, Wssp = octave.geomsurr(A, D, 3, 2, nout=3)
 # %% load mean brain maps
 loaders_dict = {
     'ct': LoadCT(environment=environment, Subject=Subject),
-    'rlfp': LoadRLFP(environment=environment, Subject=Subject),
+    # 'rlfp': LoadRLFP(environment=environment, Subject=Subject),
     'cbf': LoadCBF(environment=environment, Subject=Subject),
     'reho': LoadREHO(environment=environment, Subject=Subject),
     'alff': LoadALFF(environment=environment, Subject=Subject)
@@ -96,17 +96,28 @@ for key in load_average_bms.brain_maps:
     nct_pipeline.run()
 
 # %% brain map null (random)
-for key in load_average_bms.brain_maps:
-    load_average_bms.brain_maps[key].shuffle_data(n_shuffles=10000)
+# for key in load_average_bms.brain_maps:
+#     load_average_bms.brain_maps[key].shuffle_data(n_shuffles=10000)
+#
+#     permuted_bm = DataVector(data=load_average_bms.brain_maps[key].data_shuf[:, sge_task_id].copy(),
+#                              name='{0}-rand-{1}'.format(key, sge_task_id))
+#
+#     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+#                                                states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+#                                                control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
+#                                                force_rerun=False, save_outputs=True, verbose=True)
+#     nct_pipeline.run()
 
-    permuted_bm = DataVector(data=load_average_bms.brain_maps[key].data_shuf[:, sge_task_id].copy(),
-                             name='{0}-rand-{1}'.format(key, sge_task_id))
+# %% random b map
+np.random.seed(sge_task_id)
+permuted_bm = DataVector(data=np.random.uniform(low=0, high=1, size=environment.n_parcels),
+                         name='runi-{0}'.format(sge_task_id))
 
-    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
-                                               states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
-                                               force_rerun=False, save_outputs=True, verbose=True)
-    nct_pipeline.run()
+nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+                                           states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+                                           control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
+                                           force_rerun=False, save_outputs=True, verbose=True)
+nct_pipeline.run()
 
 # %% network null
 A_list = [Wwp, ]
