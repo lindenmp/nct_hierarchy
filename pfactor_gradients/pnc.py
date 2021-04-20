@@ -171,14 +171,14 @@ class Subject():
 
                 reho_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
-                                             'reho', 'roi', 'SchaeferPNC',
+                                             'reho', 'roi', 'Schaefer{0}PNC'.format(self.environment.n_parcels),
                                              '{0}_*x{1}_Schaefer{2}PNC_val_reho.1D' \
                                              .format(self.bblid, self.scanid, self.environment.n_parcels))
                 reho_filename = glob.glob(os.path.join(self.environment.rstsdir, reho_filename))
 
                 alff_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
-                                             'alff', 'roi', 'SchaeferPNC',
+                                             'alff', 'roi', 'Schaefer{0}PNC'.format(self.environment.n_parcels),
                                              '{0}_*x{1}_Schaefer{2}PNC_val_alff.1D' \
                                              .format(self.bblid, self.scanid, self.environment.n_parcels))
                 alff_filename = glob.glob(os.path.join(self.environment.rstsdir, alff_filename))
@@ -223,9 +223,18 @@ class Subject():
         except IndexError: self.alff_filename = []
 
     def load_sc(self):
-        mat_contents = sio.loadmat(self.sc_filename)
+        try:
+            mat_contents = sio.loadmat(self.sc_filename)
+            self.sc = DataMatrix(data=mat_contents['connectivity'])
+        except:
+            sc = np.zeros((self.environment.n_parcels, self.environment.n_parcels))
+            sc[:] = np.nan
+            self.sc = DataMatrix(data=sc)
 
-        self.sc = DataMatrix(data=mat_contents['connectivity'])
+        if self.sc.data.shape[0] != self.environment.n_parcels or self.sc.data.shape[1] != self.environment.n_parcels:
+            sc = np.zeros((self.environment.n_parcels, self.environment.n_parcels))
+            sc[:] = np.nan
+            self.sc = DataMatrix(data=sc)
 
     def load_ct(self):
         self.ct = np.loadtxt(self.ct_filename)
