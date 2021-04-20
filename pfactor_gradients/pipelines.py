@@ -56,7 +56,7 @@ class ComputeGradients():
             # Load FC data
             loadfc = LoadFC(environment=self.environment, Subject=self.Subject)
             loadfc.run()
-            fc = loadfc.fc
+            fc = loadfc.values
 
             # Average over subjects
             pnc_conn_mat = np.nanmean(fc, axis=2)
