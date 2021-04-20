@@ -23,6 +23,9 @@ class LoadSC():
             subject.load_sc()
             self.A[:, :, i] = subject.sc.data.copy()
 
+            if np.all(np.isnan(subject.sc.data)):
+                subj_filt[i] = True
+
             subject.sc.check_disconnected_nodes()
             if subject.sc.disconnected_nodes:
                 subj_filt[i] = True
