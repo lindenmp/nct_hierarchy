@@ -220,6 +220,9 @@ class DataVector():
         for i in np.arange(n_states):
             x_out[i] = np.nanmean(x[states == i])
 
+        # tile to match target states (columns)
+        x_out = np.tile(x_out, (n_states, 1))
+
         self.data_mean = x_out
 
 
