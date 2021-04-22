@@ -334,7 +334,7 @@ def expand_states(states):
     return x0_mat, xf_mat
 
 
-def minimum_energy_fast(A, T, B, x0, xf, c=1):
+def minimum_energy_fast(A, T, B, x0, xf, c=1, return_regional=False):
     # System Size
     n_parcels = A.shape[0]
 
@@ -379,7 +379,10 @@ def minimum_energy_fast(A, T, B, x0, xf, c=1):
     G = (G + np.matmul(B, B.transpose()) + np.matmul(np.matmul(E, B), np.matmul(E, B).transpose())) * dt / 3
 
     delx = xf - np.matmul(E, x0)
-    E = np.sum(np.multiply(np.matmul(np.linalg.pinv(G), delx), delx), axis=0)
+    if return_regional:
+        E = np.multiply(np.matmul(np.linalg.pinv(G), delx), delx)
+    else:
+        E = np.sum(np.multiply(np.matmul(np.linalg.pinv(G), delx), delx), axis=0)
 
     return E
 
@@ -468,3 +471,30 @@ def control_energy_helper(A, states, n_subsamples=0, control='minimum_fast', T=1
         n_err = np.nanmean(n_err, axis=2)
 
     return E, n_err
+
+
+def control_energy_brainmap(A, states, T=1, B='wb'):
+    n_parcels = A.shape[0]
+    B_store = B
+
+    unique, counts = np.unique(states, return_counts=True)
+    n_states = len(unique)
+
+    # create state space by expanding state vector to matrices
+    x0_mat, xf_mat = expand_states(states=states)
+
+    if type(B_store) == str and B_store != 'wb':
+        B_store = 'wb'
+
+    # get B matrix, this will either be identity or a brain map, since these are the only that work here
+    if type(B_store) == str and B_store == 'wb':
+        B = np.eye(n_parcels)
+    else:
+        B = np.zeros((n_parcels, n_parcels))
+        B[np.eye(n_parcels) == 1] = B_store + 1
+
+    E = minimum_energy_fast(A, T, B, x0_mat, xf_mat, return_regional=True)
+    E = E.reshape(n_parcels, n_states, n_states)
+    E = np.moveaxis(E, 0, -1)
+
+    return E
