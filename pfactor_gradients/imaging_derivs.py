@@ -227,11 +227,13 @@ class DataVector():
 
 
     def brain_surface_plot(self, environment, cmap='viridis'):
-        f, ax = plt.subplots(1, 4, figsize=(20, 5), subplot_kw={'projection': '3d'})
-        plt.subplots_adjust(wspace=0, hspace=0)
+        f, ax = plt.subplots(1, 4, subplot_kw={'projection': '3d'})
+        data = self.data
 
-        labels, ctab, surf_names = nib.freesurfer.read_annot(environment.lh_annot_file)
-        vtx_data, plot_min, plot_max = roi_to_vtx(self.data, environment.parcel_names,
+        if np.min(data) == 0:
+            data = data + 1e-5
+
+        vtx_data, plot_min, plot_max = roi_to_vtx(data, environment.parcel_names,
                                                   environment.lh_annot_file)
         vtx_data = vtx_data.astype(float)
         plotting.plot_surf_roi(environment.fsaverage['infl_left'], roi_map=vtx_data,
@@ -244,8 +246,7 @@ class DataVector():
                                bg_map=environment.fsaverage['sulc_left'], bg_on_data=True, axes=ax[1],
                                darkness=.5, cmap=cmap, colorbar=False)
 
-        labels, ctab, surf_names = nib.freesurfer.read_annot(environment.rh_annot_file)
-        vtx_data, plot_min, plot_max = roi_to_vtx(self.data, environment.parcel_names,
+        vtx_data, plot_min, plot_max = roi_to_vtx(data, environment.parcel_names,
                                                   environment.rh_annot_file)
         vtx_data = vtx_data.astype(float)
         plotting.plot_surf_roi(environment.fsaverage['infl_right'], roi_map=vtx_data,
@@ -257,7 +258,8 @@ class DataVector():
                                hemi='right', view='medial', vmin=plot_min, vmax=plot_max,
                                bg_map=environment.fsaverage['sulc_right'], bg_on_data=True, axes=ax[3],
                                darkness=.5, cmap=cmap, colorbar=True)
-        plt.show()
+        # plt.show()
+        plt.subplots_adjust(wspace=0, hspace=0)
         f.savefig(os.path.join(environment.figdir, self.name+'.png'), dpi=300, bbox_inches='tight', pad_inches=0)
         plt.close()
 
@@ -332,18 +334,31 @@ def compute_rlfp(ts, tr, num_bands=5, band_of_interest=1):
 
     return bandpower(y, sample_freq, band_freq_range[0], band_freq_range[1])
 
-def compute_transition_probs_updown(rsts_labels, states):
+def compute_transition_probs_updown(rsts_labels, states, n_steps=1):
     unique = np.unique(states)
     n_states = len(unique)
     n_trs = len(rsts_labels)
+
     probs_up = np.zeros(n_states)
     probs_down = np.zeros(n_states)
 
     for i in np.arange(n_states):
         try:
             state_idx = np.where(rsts_labels == i)[0]
-            probs_up[i] = np.sum(rsts_labels[state_idx + 1] == i + 1) / len(state_idx)
-            probs_down[i] = np.sum(rsts_labels[state_idx + 1] == i - 1) / len(state_idx)
+
+            up = np.zeros(len(state_idx)).astype(bool)
+            for j in np.arange(1, n_steps + 1):
+                # tmp = rsts_labels[state_idx + 1] == i + j
+                tmp = rsts_labels[state_idx + j] == i + 1
+                up = up + tmp
+            probs_up[i] = np.sum(up) / len(state_idx)
+
+            down = np.zeros(len(state_idx)).astype(bool)
+            for j in np.arange(1, n_steps + 1):
+                # tmp = rsts_labels[state_idx + 1] == i - j
+                tmp = rsts_labels[state_idx + j] == i - 1
+                down = down + tmp
+            probs_down[i] = np.sum(down) / len(state_idx)
         except:
             probs_up[i] = np.nan
             probs_down[i] = np.nan
