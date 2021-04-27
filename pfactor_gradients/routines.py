@@ -1,6 +1,7 @@
 import numpy as np
+import scipy as sp
 import time
-from pfactor_gradients.imaging_derivs import DataVector
+from pfactor_gradients.imaging_derivs import DataVector, compute_transition_probs_updown
 
 class LoadSC():
     def __init__(self, environment, Subject):
@@ -221,3 +222,43 @@ class LoadAverageBrainMaps():
                 brain_map_flip.rankdata(descending=True)
                 brain_map_flip.rescale_unit_interval()
                 self.brain_maps[key+'_flip'] = brain_map_flip
+
+
+class LoadTransitionProbs():
+    def __init__(self, environment, Subject, states):
+        self.environment = environment
+        self.Subject = Subject
+        self.states = states
+
+    def run(self):
+        print('Routine: loading up/down transition probabilities')
+        start_time = time.time()
+        n_subs = self.environment.df.shape[0]
+        n_trs = self.environment.n_trs * n_subs
+        unique = np.unique(self.states)
+        n_states = len(unique)
+
+        rsts = np.zeros((n_trs, n_states))
+
+        for i in np.arange(n_subs):
+            subject = self.Subject(environment=self.environment, subjid=self.environment.df.index[i])
+            subject.get_file_names()
+            subject.load_rsts()
+
+            # mean over states
+            rsts_mean = np.zeros((self.environment.n_trs, n_states))
+            for j in np.arange(n_states):
+                rsts_mean[:, j] = np.mean(subject.rsts[:, self.states == j], axis=1)
+
+            # z score and store
+            start_idx = i * self.environment.n_trs
+            end_idx = start_idx + self.environment.n_trs
+            rsts[start_idx:end_idx, :] = sp.stats.zscore(rsts_mean, axis=0)
+
+        # find maximally active state for each TR
+        rsts_labels = np.argmax(rsts, axis=1)
+
+        probs_up, probs_down, probs_ratio = compute_transition_probs_updown(rsts_labels, self.states)
+        self.values = probs_ratio
+
+        print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
