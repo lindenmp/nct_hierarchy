@@ -239,10 +239,13 @@ class Subject():
     def load_ct(self):
         self.ct = np.loadtxt(self.ct_filename)
 
-    def load_rsfc(self):
-        rsts = np.loadtxt(self.rsts_filename)
+    def load_rsts(self):
+        self.rsts = np.loadtxt(self.rsts_filename)
 
-        self.rsfc = DataMatrix(data=compute_fc(rsts))
+    def load_rsfc(self):
+        self.load_rsts()
+
+        self.rsfc = DataMatrix(data=compute_fc(self.rsts))
 
     def load_rlfp(self):
         rsts = np.loadtxt(self.rsts_filename)
