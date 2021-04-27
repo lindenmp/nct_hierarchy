@@ -225,10 +225,11 @@ class LoadAverageBrainMaps():
 
 
 class LoadTransitionProbs():
-    def __init__(self, environment, Subject, states):
+    def __init__(self, environment, Subject, states, n_steps=1):
         self.environment = environment
         self.Subject = Subject
         self.states = states
+        self.n_steps = n_steps
 
     def run(self):
         print('Routine: loading up/down transition probabilities')
@@ -258,7 +259,9 @@ class LoadTransitionProbs():
         # find maximally active state for each TR
         rsts_labels = np.argmax(rsts, axis=1)
 
-        probs_up, probs_down, probs_ratio = compute_transition_probs_updown(rsts_labels, self.states)
+        probs_up, probs_down, probs_ratio = compute_transition_probs_updown(rsts_labels, self.states, self.n_steps)
         self.values = probs_ratio
+        self.rsts = rsts
+        self.rsts_labels = rsts_labels
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
