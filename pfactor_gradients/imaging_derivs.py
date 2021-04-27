@@ -331,3 +331,23 @@ def compute_rlfp(ts, tr, num_bands=5, band_of_interest=1):
     band_freq_range = band_intervals[band_of_interest - 1:band_of_interest + 1]
 
     return bandpower(y, sample_freq, band_freq_range[0], band_freq_range[1])
+
+def compute_transition_probs_updown(rsts_labels, states):
+    unique = np.unique(states)
+    n_states = len(unique)
+    n_trs = len(rsts_labels)
+    probs_up = np.zeros(n_states)
+    probs_down = np.zeros(n_states)
+
+    for i in np.arange(n_states):
+        try:
+            state_idx = np.where(rsts_labels == i)[0]
+            probs_up[i] = np.sum(rsts_labels[state_idx + 1] == i + 1) / len(state_idx)
+            probs_down[i] = np.sum(rsts_labels[state_idx + 1] == i - 1) / len(state_idx)
+        except:
+            probs_up[i] = np.nan
+            probs_down[i] = np.nan
+
+    probs_ratio = probs_up / probs_down
+
+    return probs_up, probs_down, probs_ratio
