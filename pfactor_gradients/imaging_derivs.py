@@ -366,3 +366,21 @@ def compute_transition_probs_updown(rsts_labels, states, n_steps=1):
     probs_ratio = probs_up / probs_down
 
     return probs_up, probs_down, probs_ratio
+
+
+# def compute_transition_probs_updown(rsts_labels, states):
+#     unique = np.unique(states)
+#     n_states = len(unique)
+#     n_TRs = len(rsts_labels)
+#     probabilities = np.zeros(n_states)
+#
+#     for i in np.arange(n_states):
+#         try:
+#             state_idx = np.where(rsts_labels == i)[0]
+#             if n_TRs - 1 in state_idx:
+#                 state_idx = np.delete(state_idx, state_idx == n_TRs - 1)
+#             probabilities[i] = np.sum(rsts_labels[state_idx + 1] >= rsts_labels[state_idx]) / len(state_idx)
+#         except:
+#             probabilities[i] = np.nan
+#
+#     return probabilities
