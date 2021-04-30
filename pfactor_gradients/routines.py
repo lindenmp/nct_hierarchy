@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import time
-from pfactor_gradients.imaging_derivs import DataVector, compute_transition_probs_updown
+from pfactor_gradients.imaging_derivs import DataVector, compute_transition_probs_updown, compute_fc
 
 class LoadSC():
     def __init__(self, environment, Subject):
@@ -98,6 +98,36 @@ class LoadFC():
             subject.get_file_names()
             subject.load_rsfc()
             self.values[:, :, i] = subject.rsfc.data.copy()
+
+        print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
+
+class LoadStateFC():
+    def __init__(self, environment, Subject, states):
+        self.environment = environment
+        self.Subject = Subject
+        self.states = states
+
+    def run(self):
+        print('Routine: loading resting state FC data (states)')
+        start_time = time.time()
+        n_subs = self.environment.df.shape[0]
+        unique = np.unique(self.states)
+        n_states = len(unique)
+        self.df = self.environment.df.copy()
+        self.values = np.zeros((n_states, n_states, n_subs))
+
+        for i in np.arange(n_subs):
+            subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
+            subject.get_file_names()
+            subject.load_rsts()
+
+            # mean over states
+            rsts = sp.stats.zscore(subject.rsts, axis=0)
+            rsts_mean = np.zeros((self.environment.n_trs, n_states))
+            for j in np.arange(n_states):
+                rsts_mean[:, j] = np.mean(rsts[:, self.states == j], axis=1)
+
+            self.values[:, :, i] = compute_fc(rsts_mean)
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
 
