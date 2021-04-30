@@ -41,6 +41,7 @@ class Environment():
 
         # imaging parameters
         self.rsfmri_tr = 3
+        self.n_trs = 120
 
     def make_output_dirs(self):
         if not os.path.exists(self.pipelinedir): os.makedirs(self.pipelinedir)
