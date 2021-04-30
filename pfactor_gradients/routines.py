@@ -295,3 +295,40 @@ class LoadTransitionProbs():
         self.rsts_labels = rsts_labels
 
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
+
+
+# class LoadTransitionProbs():
+#     def __init__(self, environment, Subject, states):
+#         self.environment = environment
+#         self.Subject = Subject
+#         self.states = states
+#
+#     def run(self):
+#         print('Routine: loading up/down transition probabilities')
+#         start_time = time.time()
+#         n_subs = self.environment.df.shape[0]
+#         unique = np.unique(self.states)
+#         n_states = len(unique)
+#
+#         self.df = self.environment.df.copy()
+#         self.values = np.zeros((n_subs, n_states))
+#
+#         for i in np.arange(n_subs):
+#             subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
+#             subject.get_file_names()
+#             subject.load_rsts()
+#
+#             rsts_mean = np.zeros((self.environment.n_trs, n_states))
+#             for j in np.arange(n_states):
+#                 rsts_mean[:, j] = np.mean(subject.rsts[:, self.states == j], axis=1)
+#
+#             # normalize
+#             rsts_mean = sp.stats.zscore(rsts_mean, axis=0)
+#
+#             # get max
+#             rsts_max = np.argmax(rsts_mean, axis=1)
+#
+#             # get probabilities
+#             self.values[i, :] = compute_transition_probs_updown(rsts_max, self.states)
+#
+#         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
