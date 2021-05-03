@@ -116,7 +116,6 @@ else:
 n_states = len(np.unique(compute_gradients.grad_bins))
 mask = ~np.eye(n_states, dtype=bool)
 indices = np.where(mask)
-# indices = np.triu_indices(n_states, k=1)
 n_transitions = len(indices[0])
 
 # load energy
@@ -137,3 +136,39 @@ regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{
                         force_rerun=False)
 regression.run()
 regression.run_perm()
+
+# %% prediction from energy bottom-up
+indices = np.triu_indices(n_states, k=1)
+n_transitions = len(indices[0])
+
+# load energy
+X = np.zeros((n_subs, n_transitions))
+for i in np.arange(n_subs):
+    subjid = environment.df.index[i]
+    file = '{0}_ns-40-0_c-minimum_fast_T-1_B-{1}_E.npy'.format(subjid, X_name)
+    E = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+    X[i, :] = E[indices]
+
+regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{0}-u'.format(X_name), y_name=y_name, c_name=c_name,
+                        alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
+                        force_rerun=False)
+regression.run()
+# regression.run_perm()
+
+# %% prediction from energy top-down
+indices = np.tril_indices(n_states, k=-1)
+n_transitions = len(indices[0])
+
+# load energy
+X = np.zeros((n_subs, n_transitions))
+for i in np.arange(n_subs):
+    subjid = environment.df.index[i]
+    file = '{0}_ns-40-0_c-minimum_fast_T-1_B-{1}_E.npy'.format(subjid, X_name)
+    E = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+    X[i, :] = E[indices]
+
+regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{0}-l'.format(X_name), y_name=y_name, c_name=c_name,
+                        alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
+                        force_rerun=False)
+regression.run()
+# regression.run_perm()
