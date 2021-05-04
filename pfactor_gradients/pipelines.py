@@ -33,10 +33,10 @@ except:
 
 # %% pipeline classes
 class ComputeGradients():
-    def __init__(self, environment, Subject, bin_frac=0.10):
+    def __init__(self, environment, Subject, n_bins=40):
         self.environment = environment
         self.Subject = Subject
-        self.bin_frac = bin_frac
+        self.n_bins = n_bins
 
     def _output_dir(self):
         return os.path.join(self.environment.pipelinedir, 'gradients')
@@ -124,12 +124,19 @@ class ComputeGradients():
         #           pad_inches=0.1)
 
         # equally sized bins based on principal gradient
-        n_bins = int(self.environment.n_parcels * self.bin_frac)
-        bin_size = int(self.environment.n_parcels / n_bins)
+        # n_bins = int(self.environment.n_parcels * self.bin_frac)
+        # bin_size = int(self.environment.n_parcels / n_bins)
+        bin_size = int(self.environment.n_parcels / self.n_bins)
 
         grad_bins = np.array([])
-        for i in np.arange(n_bins):
+        for i in np.arange(self.n_bins):
             grad_bins = np.append(grad_bins, np.ones(bin_size) * i)
+
+        if len(grad_bins) < self.environment.n_parcels:
+            grad_bins = np.append(grad_bins, np.ones(bin_size) * (self.n_bins - 1))
+
+        if len(grad_bins) > self.environment.n_parcels:
+            grad_bins = grad_bins[:self.environment.n_parcels]
 
         grad_bins = grad_bins.astype(int)
         sort_idx = np.argsort(self.gradients[:, 0])
