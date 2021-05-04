@@ -1,0 +1,86 @@
+import sys, os, platform
+import numpy as np
+import scipy as sp
+import pandas as pd
+from pfactor_gradients.pnc import Environment, Subject
+from pfactor_gradients.routines import LoadSC
+from pfactor_gradients.pipelines import ComputeGradients, DCM
+from tqdm import tqdm
+
+# from oct2py import octave
+# if platform.system() == 'Linux':
+#     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
+#     sys.path.append('/usr/bin/octave') # octave install path
+#     octave.addpath('/gpfs/fs001/cbica/home/parkesl/research_projects/pfactor_gradients/scripts') # path to matlab functions
+# elif platform.system() == 'Darwin':
+#     sys.path.append('usr/local/bin/octave') # octave install path
+#     octave.addpath('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/scripts') # path to matlab functions
+
+# %% Plotting
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set(style='white', context='talk', font_scale=1)
+import matplotlib.font_manager as font_manager
+fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
+prop = font_manager.FontProperties(fname=fontpath)
+plt.rcParams['font.family'] = prop.get_name()
+plt.rcParams['svg.fonttype'] = 'none'
+
+# %% Setup project environment
+computer = 'macbook'
+parc = 'schaefer'
+n_parcels = 400
+sc_edge_weight = 'streamlineCount'
+environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_edge_weight=sc_edge_weight)
+environment.make_output_dirs()
+environment.load_parc_data()
+
+# %% get clustered gradients
+filters = {'healthExcludev2': 0, 't1Exclude': 0,
+           'b0ProtocolValidationStatus': 1, 'dti64ProtocolValidationStatus': 1, 'dti64Exclude': 0,
+           'psychoactiveMedPsychv2': 0, 'restProtocolValidationStatus': 1, 'restExclude': 0}
+environment.load_metadata(filters)
+n_bins = 40
+compute_gradients = ComputeGradients(environment=environment, Subject=Subject, n_bins=n_bins)
+compute_gradients.run()
+n_states = compute_gradients.n_states
+
+# %% indices
+mask = ~np.eye(compute_gradients.n_states, dtype=bool)
+indices = np.where(mask)
+upper_indices = np.triu_indices(compute_gradients.n_states, k=1)
+lower_indices = np.tril_indices(compute_gradients.n_states, k=-1)
+
+# %% Load sc data
+load_sc = LoadSC(environment=environment, Subject=Subject)
+load_sc.run()
+# refilter environment due to LoadSC excluding on disconnected nodes
+environment.df = load_sc.df.copy()
+# environment.df = environment.df.iloc[:100, :]
+n_subs = environment.df.shape[0]
+
+# %% DCM
+dcm = DCM(environment=environment, Subject=Subject, states=compute_gradients.grad_bins,
+          force_rerun=True)
+# dcm.run_mean_ts()
+# dcm.run_concat_ts()
+dcm.run_concat_mean_ts()
+
+# %%
+f, ax = plt.subplots(1, 1, figsize=(15, 4))
+sns.heatmap(dcm.rsts_states.transpose(), cmap='gray', ax=ax, center=0)
+ax.tick_params(pad=-2.5)
+f.savefig(os.path.join(environment.figdir, 'spdcm_ts.png'), dpi=500, bbox_inches='tight',
+          pad_inches=0.1)
+plt.close()
+
+# %%
+# rsts = dcm.rsts_states
+# print(rsts.shape)
+#
+# spmdir = '/Users/lindenmp/Google-Drive-Penn/work/matlab_tools/spm12'
+# outdir = '/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/output_cluster/pnc/schaefer_400_streamlineCount/pipelines/spdcm'
+
+# octave.eval("rand('state',%i)" % 1)
+# octave.spdcm_firstlevel(spmdir, rsts, environment.rsfmri_tr, environment.rsfmri_te, outdir)
