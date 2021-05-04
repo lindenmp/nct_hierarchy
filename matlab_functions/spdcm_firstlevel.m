@@ -54,6 +54,12 @@ function [] = spdcm_firstlevel(spmdir, rsts, tr, te, outdir)
     dcm.options.induced = 1;
     dcm.options.maxnodes = n_rois;
 
+    % add connections to model
+     a = ones(n_rois, n_rois); % specify fully connected model
+%    a = eye(n_rois);
+%    a = a + diag(ones(n_rois-1,1),1);
+%    a = a + diag(ones(n_rois-1,1),-1);
+    dcm.a = a;
     dcm.b = zeros(dcm.n,dcm.n);
     dcm.c = zeros(dcm.n,1);
     dcm.d = zeros(dcm.n,dcm.n,0);
@@ -61,7 +67,7 @@ function [] = spdcm_firstlevel(spmdir, rsts, tr, te, outdir)
 
     % wrap dcm
     DCM{1} = dcm;
-    DCM{1}.a = ones(n_rois, n_rois); % specify fully connected model
+    DCM{1}
 
     % invert fully connected model
     fprintf(1, '\nInverting model... \n');
