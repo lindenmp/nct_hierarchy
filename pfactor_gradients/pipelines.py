@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
+import scipy as sp
 from pfactor_gradients.routines import LoadFC
 from pfactor_gradients.imaging_derivs import DataVector
 from pfactor_gradients.energy import control_energy_helper
@@ -11,6 +12,8 @@ from sklearn.linear_model import Ridge, Lasso, LinearRegression
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.svm import SVR
 from sklearn.metrics import make_scorer, r2_score, mean_squared_error, mean_absolute_error
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 import abagen
 from tqdm import tqdm
 
@@ -96,7 +99,7 @@ class ComputeGradients():
 
             # save outputs
             if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
-            np.savetxt(os.path.join(self._output_dir(), 'gradients.txt'), self.gradients)
+            np.savetxt(os.path.join(self._output_dir(), self._output_file()), self.gradients)
 
             # Plot first two gradients
             for g in np.arange(0, 2):
@@ -402,3 +405,79 @@ class Regression():
             if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
             primary_files, secondary_file = self._output_files()
             np.savetxt(os.path.join(self._output_dir(), secondary_file), self.accuracy_perm)
+
+
+class DCM():
+    def __init__(self, environment, Subject, states):
+        self.environment = environment
+        self.Subject = Subject
+        self.states = states
+
+    def _output_dir(self):
+        return os.path.join(self.environment.pipelinedir, 'spdcm')
+
+    @staticmethod
+    def _output_file():
+        return 'rsts_states.npy'
+
+    def _check_outputs(self):
+        if os.path.exists(self._output_dir()) and os.path.isfile(os.path.join(self._output_dir(), self._output_file())):
+            return True
+        else:
+            return False
+
+    def run(self):
+        print('Pipeline: getting time series for dcm')
+        if self._check_outputs():
+            print('\toutput already exists...skipping')
+            self.rsts_states = np.load(os.path.join(self._output_dir(), self._output_file()))
+        else:
+            n_subs = self.environment.df.shape[0]
+            unique = np.unique(self.states)
+            n_states = len(unique)
+
+            rsts = np.zeros((self.environment.n_trs, self.environment.n_parcels, n_subs))
+            # rsts_states = np.zeros((self.environment.n_trs, n_states, n_subs))
+            rsts_states = np.zeros((self.environment.n_trs, n_states))
+
+            for i in tqdm(np.arange(n_subs)):
+                subject = self.Subject(environment=self.environment, subjid=self.environment.df.index[i])
+                subject.get_file_names()
+                subject.load_rsts()
+                rsts[:, :, i] = sp.stats.zscore(subject.rsts, axis=0)
+
+                # # get state time series for each subject
+                # for j in np.arange(n_states):
+                #     rsts_tmp = subject.rsts[:, self.states == j]
+                #     # rsts_tmp = np.mean(rsts_tmp, axis=1)
+                #
+                #     # sc = StandardScaler()
+                #     # sc.fit(rsts_tmp)
+                #     # rsts_tmp = sc.transform(rsts_tmp)
+                #     pca = PCA(n_components=1, svd_solver='full')
+                #     pca.fit(rsts_tmp)
+                #     rsts_tmp = pca.transform(rsts_tmp)
+                #
+                #     rsts_states[:, j, i] = rsts_tmp[:, 0]
+
+            # mean over subjects
+            rsts = np.mean(rsts, axis=2)
+
+            for j in np.arange(n_states):
+                rsts_tmp = rsts[:, self.states == j]
+
+                sc = StandardScaler()
+                sc.fit(rsts_tmp)
+                rsts_tmp = sc.transform(rsts_tmp)
+                pca = PCA(n_components=1, svd_solver='full')
+                pca.fit(rsts_tmp)
+                rsts_tmp = pca.transform(rsts_tmp)
+
+                rsts_states[:, j] = rsts_tmp[:, 0]
+
+            self.rsts = rsts
+            self.rsts_states = rsts_states
+
+            # save outputs
+            if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
+            np.save(os.path.join(self._output_dir(), self._output_file()), self.rsts_states)
