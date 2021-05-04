@@ -415,17 +415,21 @@ class Regression():
 
 
 class DCM():
-    def __init__(self, environment, Subject, states):
+    def __init__(self, environment, Subject, states,
+                 force_rerun=False):
         self.environment = environment
         self.Subject = Subject
         self.states = states
+        self.force_rerun = force_rerun
 
     def _output_dir(self):
         return os.path.join(self.environment.pipelinedir, 'spdcm')
 
-    @staticmethod
-    def _output_file():
-        return 'rsts_states.npy'
+    def _output_file(self):
+        unique = np.unique(self.states)
+        n_states = len(unique)
+
+        return 'rsts_states_ns-{0}.npy'.format(n_states)
 
     def _check_outputs(self):
         if os.path.exists(self._output_dir()) and os.path.isfile(os.path.join(self._output_dir(), self._output_file())):
@@ -433,9 +437,9 @@ class DCM():
         else:
             return False
 
-    def run(self):
+    def run_mean_ts(self):
         print('Pipeline: getting time series for dcm')
-        if self._check_outputs():
+        if self._check_outputs() and self.force_rerun == False:
             print('\toutput already exists...skipping')
             self.rsts_states = np.load(os.path.join(self._output_dir(), self._output_file()))
         else:
@@ -483,6 +487,86 @@ class DCM():
                 rsts_states[:, j] = rsts_tmp[:, 0]
 
             self.rsts = rsts
+            self.rsts_states = rsts_states
+
+            # save outputs
+            if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
+            np.save(os.path.join(self._output_dir(), self._output_file()), self.rsts_states)
+
+    def run_concat_ts(self):
+        print('Pipeline: getting time series for dcm')
+        if self._check_outputs() and self.force_rerun == False:
+            print('\toutput already exists...skipping')
+            self.rsts_states = np.load(os.path.join(self._output_dir(), self._output_file()))
+        else:
+            n_subs = self.environment.df.shape[0]
+            n_trs = self.environment.n_trs * n_subs
+            unique = np.unique(self.states)
+            n_states = len(unique)
+
+            rsts_states = np.zeros((n_trs, n_states))
+
+            for i in tqdm(np.arange(n_subs)):
+                subject = self.Subject(environment=self.environment, subjid=self.environment.df.index[i])
+                subject.get_file_names()
+                subject.load_rsts()
+                rsts = sp.stats.zscore(subject.rsts, axis=0)
+
+                # mean over states
+                rsts_mean = np.zeros((self.environment.n_trs, n_states))
+                for j in np.arange(n_states):
+                    rsts_mean[:, j] = np.mean(rsts[:, self.states == j], axis=1)
+
+                # z score and store
+                start_idx = i * self.environment.n_trs
+                end_idx = start_idx + self.environment.n_trs
+                rsts_states[start_idx:end_idx, :] = rsts_mean
+
+            self.rsts_states = rsts_states
+
+            # save outputs
+            if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
+            np.save(os.path.join(self._output_dir(), self._output_file()), self.rsts_states)
+
+    def run_concat_mean_ts(self):
+        print('Pipeline: getting time series for dcm')
+        if self._check_outputs() and self.force_rerun == False:
+            print('\toutput already exists...skipping')
+            self.rsts_states = np.load(os.path.join(self._output_dir(), self._output_file()))
+        else:
+            n_subs = self.environment.df.shape[0]
+            if n_subs % 10 > 0:
+                n_subs = n_subs - (n_subs % 10)
+
+            n_trs = self.environment.n_trs * n_subs
+            unique = np.unique(self.states)
+            n_states = len(unique)
+
+            rsts_states = np.zeros((n_trs, n_states))
+
+            for i in tqdm(np.arange(n_subs)):
+                subject = self.Subject(environment=self.environment, subjid=self.environment.df.index[i])
+                subject.get_file_names()
+                subject.load_rsts()
+                rsts = sp.stats.zscore(subject.rsts, axis=0)
+
+                # mean over states
+                rsts_mean = np.zeros((self.environment.n_trs, n_states))
+                for j in np.arange(n_states):
+                    rsts_mean[:, j] = np.mean(rsts[:, self.states == j], axis=1)
+
+                # z score and store
+                start_idx = i * self.environment.n_trs
+                end_idx = start_idx + self.environment.n_trs
+                rsts_states[start_idx:end_idx, :] = rsts_mean
+
+            # mean over subsets of subjects
+            n_trs_e = self.environment.n_trs * 10
+            n_cols = int(n_trs / n_trs_e)
+
+            rsts_states = rsts_states.reshape(n_trs_e, n_cols, n_states, order='F')
+            rsts_states = np.mean(rsts_states, axis=1)
+
             self.rsts_states = rsts_states
 
             # save outputs
