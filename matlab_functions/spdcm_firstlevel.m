@@ -41,14 +41,10 @@ function [] = spdcm_firstlevel(spmdir, rsts, tr, te, outdir)
 
     % add connections to model
     a = ones(n_rois, n_rois); % specify fully connected model
-%    a = eye(n_rois);
-%    a = a + diag(ones(n_rois-1,1),1);
-%    a = a + diag(ones(n_rois-1,1),-1);
     dcm.a = a;
     dcm.b = zeros(dcm.n,dcm.n);
     dcm.c = zeros(dcm.n,1);
-%    dcm.d = zeros(dcm.n,dcm.n,0);
-    dcm.d = double.empty(dcm.n,dcm.n,0);
+    dcm.d = zeros(dcm.n,dcm.n,0);
 
     % wrap dcm
     DCM{1} = dcm;
