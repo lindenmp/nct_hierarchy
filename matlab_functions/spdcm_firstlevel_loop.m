@@ -1,4 +1,4 @@
-function [] = spdcm_firstlevel(spmdir, rsts, tr, te, outdir)
+function [] = spdcm_firstlevel_loop(spmdir, rsts, tr, te, outdir)
     % where spm12 is
     addpath(spmdir)
     cd(outdir)
