@@ -34,8 +34,11 @@ class Environment():
         self.figdir = os.path.join(self.outputdir, 'figures')
         self.datadir = os.path.join(self.research_data, 'PNC')
         self.freezedir = os.path.join(self.datadir, 'pncDataFreeze20170905', 'n1601_dataFreeze')
-        self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
-        self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCorticalThickness')
+        if self.parc == 'schaefer':
+            self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
+        elif self.parc == 'glasser':
+            self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_dec2016')
+        self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCt', 'parcelwise_antsCt')
         self.rstsdir = os.path.join(self.datadir, 'processedData', 'restbold', 'restbold_201607151621')
         self.cbfdir = os.path.join(self.datadir, 'processedData', 'asl', 'parcelwise_cbf')
 
@@ -115,9 +118,9 @@ class Environment():
 
     def load_parc_data(self):
         if self.parc == 'schaefer':
-            self.parcel_names = np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'support_files',
+            self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'support_files',
                                                            'schaefer{0}NodeNames.txt'.format(self.n_parcels)),
-                                              dtype='str')
+                                                   dtype='str'))
             self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
             self.lh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
                                               'fsaverage5', 'label',
@@ -136,7 +139,24 @@ class Environment():
             self.spun_indices = self.spun_indices - 1
 
         elif self.parc == 'glasser':
+            self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'support_files',
+                                                           'glasser{0}NodeNames.txt'.format(self.n_parcels)),
+                                                   dtype='str'))
             self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage')
+            self.lh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
+                                              'fsaverage', 'label', 'lh.HCP-MMP1.annot')
+            self.rh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
+                                              'fsaverage', 'label', 'rh.HCP-MMP1.annot')
+
+            self.centroids = pd.read_csv(os.path.join(self.research_data, 'Parcellations', 'support_files',
+                                                    'HCP-MMP1_UniqueRegionList.csv'))
+            self.centroids = pd.concat((self.centroids.iloc[180:, :], self.centroids.iloc[0:180, :]), axis=0)
+            self.centroids.reset_index(inplace=True, drop=True)
+            self.centroids = self.centroids.loc[:, ['x-cog', 'y-cog', 'z-cog']]
+            self.spun_indices = np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'spin_test',
+                                                        'rotated_ind_glasser{0}.csv'.format(self.n_parcels)),
+                                              delimiter=',', dtype=int)
+            self.spun_indices = self.spun_indices - 1
 
 class Subject():
     def __init__(self, environment=Environment(), subjid='81287_2738'):
@@ -154,13 +174,12 @@ class Subject():
                                        .format(self.bblid, self.scanid, self.environment.n_parcels, self.environment.sc_edge_weight))
             sc_filename = glob.glob(os.path.join(self.environment.scdir, sc_filename))
 
-            ct_filename = os.path.join('{0}'.format(self.bblid),
-                                       '*x{0}'.format(self.scanid),
-                                       'ct_schaefer{0}_17.txt'.format(self.environment.n_parcels))
+            ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_schaefer{1}_17.txt' \
+                                       .format(self.scanid, self.environment.n_parcels))
             ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
 
-            cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_schaefer{1}_17.txt'.format(self.scanid,
-                                                                                      self.environment.n_parcels))
+            cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_schaefer{1}_17.txt' \
+                                       .format(self.scanid, self.environment.n_parcels))
             cbf_filename = glob.glob(os.path.join(self.environment.cbfdir, cbf_filename))
 
             if self.environment.n_parcels == 200:
@@ -205,24 +224,55 @@ class Subject():
                                              '{0}_*x{1}_SchaeferPNC_val_alff.1D' \
                                              .format(self.bblid, self.scanid))
                 alff_filename = glob.glob(os.path.join(self.environment.rstsdir, alff_filename))
+        elif self.environment.parc == 'glasser':
+            sc_filename = os.path.join('{0}'.format(self.environment.sc_edge_weight), 'GlasserPNC',
+                                       '{0}_{1}_GlasserPNC.mat'.format(self.scanid, self.environment.sc_edge_weight))
+            sc_filename = glob.glob(os.path.join(self.environment.scdir, sc_filename))
+
+            ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_glasser.txt'.format(self.scanid))
+            ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
+
+            cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_glasser.txt'.format(self.scanid))
+            cbf_filename = glob.glob(os.path.join(self.environment.cbfdir, cbf_filename))
+
+            rsts_filename = os.path.join('{0}'.format(self.bblid),
+                                         '*x{0}'.format(self.scanid),
+                                         'net', 'GlasserPNC',
+                                         '{0}_*x{1}_GlasserPNC_ts.1D' \
+                                         .format(self.bblid, self.scanid))
+            rsts_filename = glob.glob(os.path.join(self.environment.rstsdir, rsts_filename))
+
+            reho_filename = os.path.join('{0}'.format(self.bblid),
+                                         '*x{0}'.format(self.scanid),
+                                         'reho', 'roi', 'GlasserPNC',
+                                         '{0}_*x{1}_GlasserPNC_val_reho.1D' \
+                                         .format(self.bblid, self.scanid))
+            reho_filename = glob.glob(os.path.join(self.environment.rstsdir, reho_filename))
+
+            alff_filename = os.path.join('{0}'.format(self.bblid),
+                                         '*x{0}'.format(self.scanid),
+                                         'alff', 'roi', 'GlasserPNC',
+                                         '{0}_*x{1}_GlasserPNC_val_alff.1D' \
+                                         .format(self.bblid, self.scanid))
+            alff_filename = glob.glob(os.path.join(self.environment.rstsdir, alff_filename))
 
         try: self.sc_filename = sc_filename[0]
-        except IndexError: self.sc_filename = []
+        except: self.sc_filename = []
 
         try: self.ct_filename = ct_filename[0]
-        except IndexError: self.ct_filename = []
+        except: self.ct_filename = []
 
         try: self.rsts_filename = rsts_filename[0]
-        except IndexError: self.rsts_filename = []
+        except: self.rsts_filename = []
 
         try: self.cbf_filename = cbf_filename[0]
-        except IndexError: self.cbf_filename = []
+        except: self.cbf_filename = []
 
         try: self.reho_filename = reho_filename[0]
-        except IndexError: self.reho_filename = []
+        except: self.reho_filename = []
 
         try: self.alff_filename = alff_filename[0]
-        except IndexError: self.alff_filename = []
+        except: self.alff_filename = []
 
     def load_sc(self):
         try:
