@@ -70,6 +70,7 @@ class LoadAverageSC():
         for i in range(n_subs):
             A_d[i] = np.count_nonzero(np.triu(A[:, :, i])) / (
                         (A[:, :, i].shape[0] ** 2 - A[:, :, i].shape[0]) / 2)
+        print('\tmean sample sparsity = {:.2f}'.format(np.mean(A_d)))
 
         # Get group average adj. matrix
         A = np.mean(A, 2)
