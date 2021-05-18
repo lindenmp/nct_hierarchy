@@ -47,10 +47,7 @@ print(environment.df.index[0])
 # %% load mean brain maps
 loaders_dict = {
     'ct': LoadCT(environment=environment, Subject=Subject),
-    # 'rlfp': LoadRLFP(environment=environment, Subject=Subject),
-    'cbf': LoadCBF(environment=environment, Subject=Subject),
-    'reho': LoadREHO(environment=environment, Subject=Subject),
-    'alff': LoadALFF(environment=environment, Subject=Subject)
+    'cbf': LoadCBF(environment=environment, Subject=Subject)
 }
 
 for key in loaders_dict:
