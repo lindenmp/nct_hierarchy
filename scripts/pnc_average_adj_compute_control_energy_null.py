@@ -47,7 +47,8 @@ filters = {'healthExcludev2': 0, 't1Exclude': 0,
            'b0ProtocolValidationStatus': 1, 'dti64ProtocolValidationStatus': 1, 'dti64Exclude': 0,
            'psychoactiveMedPsychv2': 0, 'restProtocolValidationStatus': 1, 'restExclude': 0}
 environment.load_metadata(filters)
-compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
+n_bins = int(n_parcels/10)
+compute_gradients = ComputeGradients(environment=environment, Subject=Subject, n_bins=n_bins)
 compute_gradients.run()
 
 # %% Load sc data
@@ -60,6 +61,8 @@ if parc == 'schaefer' and n_parcels == 400:
     spars_thresh = 0.06
 elif parc == 'schaefer' and n_parcels == 200:
     spars_thresh = 0.12
+elif parc == 'glasser' and n_parcels == 360:
+    spars_thresh = 0.07
 load_average_sc = LoadAverageSC(load_sc=load_sc, spars_thresh=spars_thresh)
 load_average_sc.run()
 A = load_average_sc.A.copy()
@@ -73,10 +76,7 @@ Wwp, Wsp, Wssp = octave.geomsurr(A, D, 3, 2, nout=3)
 # %% load mean brain maps
 loaders_dict = {
     'ct': LoadCT(environment=environment, Subject=Subject),
-    # 'rlfp': LoadRLFP(environment=environment, Subject=Subject),
-    'cbf': LoadCBF(environment=environment, Subject=Subject),
-    'reho': LoadREHO(environment=environment, Subject=Subject),
-    'alff': LoadALFF(environment=environment, Subject=Subject)
+    'cbf': LoadCBF(environment=environment, Subject=Subject)
 }
 
 load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
@@ -113,18 +113,18 @@ for key in load_average_bms.brain_maps:
 #     nct_pipeline.run()
 
 # %% random b map
-np.random.seed(sge_task_id)
-permuted_bm = DataVector(data=np.random.uniform(low=0, high=1, size=environment.n_parcels),
-                         name='runi-{0}'.format(sge_task_id))
-
-nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
-                                           states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
-                                           control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
-                                           force_rerun=True, save_outputs=True, verbose=True)
-nct_pipeline.run()
+# np.random.seed(sge_task_id)
+# permuted_bm = DataVector(data=np.random.uniform(low=0, high=1, size=environment.n_parcels),
+#                          name='runi-{0}'.format(sge_task_id))
+#
+# nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+#                                            states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
+#                                            control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
+#                                            force_rerun=True, save_outputs=True, verbose=True)
+# nct_pipeline.run()
 
 # %% network null
-A_list = [Wwp, ]
+A_list = [Wwp, Wsp, Wssp]
 file_prefixes = ['average_adj_n-{0}_s-{1}_null-mni-wwp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
                  'average_adj_n-{0}_s-{1}_null-mni-wsp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
                  'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id)]
