@@ -102,7 +102,7 @@ class ComputeGradients():
             np.savetxt(os.path.join(self._output_dir(), self._output_file()), self.gradients)
 
             # Plot first two gradients
-            for g in np.arange(0, 2):
+            for g in np.arange(0, 1):
                 gradient = DataVector(data=self.gradients[:, g], name='gradient_{0}'.format(g))
                 gradient.brain_surface_plot(self.environment)
 
@@ -232,14 +232,14 @@ class ComputeMinimumControlEnergy():
         return file_prefix
 
     def run(self):
-        print('Pipeline: getting minimum control energy')
-        if self.verbose:
-            self._print_settings()
         file_prefix = self._get_file_prefix()
         if self.add_noise:
             file_prefix = 'noise_'+file_prefix
 
-        print('\t' + file_prefix)
+        if self.verbose:
+            print('Pipeline: getting minimum control energy')
+            self._print_settings()
+            print('\t' + file_prefix)
 
         if type(self.B) == DataVector:
             B = self.B.data
@@ -249,7 +249,10 @@ class ComputeMinimumControlEnergy():
         if os.path.exists(self._output_dir()) and \
                 os.path.isfile(os.path.join(self._output_dir(), file_prefix+'E.npy')) and \
                 self.force_rerun == False:
-            print('\toutput already exists...skipping')
+
+            if self.verbose:
+                print('\toutput already exists...skipping')
+
             self.E = np.load(os.path.join(self._output_dir(), file_prefix+'E.npy'))
             if self.control != 'minimum_fast':
                 self.n_err = np.load(os.path.join(self._output_dir(), file_prefix+'n_err.npy'))
