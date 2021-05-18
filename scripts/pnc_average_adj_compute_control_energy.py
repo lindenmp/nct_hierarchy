@@ -37,7 +37,8 @@ filters = {'healthExcludev2': 0, 't1Exclude': 0,
            'b0ProtocolValidationStatus': 1, 'dti64ProtocolValidationStatus': 1, 'dti64Exclude': 0,
            'psychoactiveMedPsychv2': 0, 'restProtocolValidationStatus': 1, 'restExclude': 0}
 environment.load_metadata(filters)
-compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
+n_bins = 40
+compute_gradients = ComputeGradients(environment=environment, Subject=Subject, n_bins=n_bins)
 compute_gradients.run()
 
 # %% Load sc data
@@ -57,10 +58,7 @@ A = load_average_sc.A.copy()
 # %% load mean brain maps
 loaders_dict = {
     'ct': LoadCT(environment=environment, Subject=Subject),
-    # 'rlfp': LoadRLFP(environment=environment, Subject=Subject),
-    'cbf': LoadCBF(environment=environment, Subject=Subject),
-    'reho': LoadREHO(environment=environment, Subject=Subject),
-    'alff': LoadALFF(environment=environment, Subject=Subject)
+    'cbf': LoadCBF(environment=environment, Subject=Subject)
 }
 
 load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
