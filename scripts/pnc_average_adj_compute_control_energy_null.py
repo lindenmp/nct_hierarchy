@@ -99,30 +99,6 @@ for key in load_average_bms.brain_maps:
                                                force_rerun=True, save_outputs=True, verbose=True)
     nct_pipeline.run()
 
-# %% brain map null (random)
-# for key in load_average_bms.brain_maps:
-#     load_average_bms.brain_maps[key].shuffle_data(n_shuffles=10000)
-#
-#     permuted_bm = DataVector(data=load_average_bms.brain_maps[key].data_shuf[:, sge_task_id].copy(),
-#                              name='{0}-rand-{1}'.format(key, sge_task_id))
-#
-#     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
-#                                                states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
-#                                                control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
-#                                                force_rerun=True, save_outputs=True, verbose=True)
-#     nct_pipeline.run()
-
-# %% random b map
-# np.random.seed(sge_task_id)
-# permuted_bm = DataVector(data=np.random.uniform(low=0, high=1, size=environment.n_parcels),
-#                          name='runi-{0}'.format(sge_task_id))
-#
-# nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
-#                                            states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
-#                                            control='minimum_fast', T=1, B=permuted_bm, file_prefix=file_prefix,
-#                                            force_rerun=True, save_outputs=True, verbose=True)
-# nct_pipeline.run()
-
 # %% network null
 A_list = [Wwp, Wsp, Wssp]
 file_prefixes = ['average_adj_n-{0}_s-{1}_null-mni-wwp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
