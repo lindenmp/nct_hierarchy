@@ -6,5 +6,10 @@ rsts = readNPY(rsts_file);
 size(rsts)
 tr = 3;
 te = 0.032;
+
+%cd('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/matlab_functions')
+%spdcm_firstlevel(spmdir, rsts, tr, te, outdir)
 cd('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/matlab_functions')
-spdcm_firstlevel(spmdir, rsts, tr, te, outdir)
+spdcm_firstlevel_loop(spmdir, rsts, tr, te, outdir)
+
+%corr(A(eye(10) ~= 1), DCM.Ep.A(eye(10) ~= 1), 'Type', 'Pearson')
