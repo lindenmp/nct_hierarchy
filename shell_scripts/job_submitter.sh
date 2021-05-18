@@ -1,18 +1,25 @@
 conda activate pfactor_gradients
 
-# average a matrix, null
+# 1) average a matrix, null
+# run first
 qsub -N e_null -l h_vmem=3G,s_vmem=3G -pe threaded 2 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
--t 1:10000 -tc 500 \
+-t 1 \
 /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
 /cbica/home/parkesl/research_projects/pfactor_gradients/scripts/average_adj_control_energy_nulls.py
 
-# pnc subjects, array job
+# run second when above is finished
+qsub -N e_null -l h_vmem=3G,s_vmem=3G -pe threaded 2 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
+-t 2:10000 -tc 500 \
+/cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
+/cbica/home/parkesl/research_projects/pfactor_gradients/scripts/average_adj_control_energy_nulls.py
+
+# 2) pnc subjects, array job
 qsub -N subjects -l h_vmem=3G,s_vmem=3G -pe threaded 1 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
 -t 1:775 \
 /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
 /cbica/home/parkesl/research_projects/pfactor_gradients/scripts/pnc_compute_control_energy.py
 
-# prediction
+# 3) prediction
 X_list=('wb' 'ct' 'cbf' 'reho' 'alff')
 y_list=('Overall_Psychopathology' 'F3_Executive_Efficiency' 'F1_Exec_Comp_Res_Accuracy')
 alg_list=('rr')
