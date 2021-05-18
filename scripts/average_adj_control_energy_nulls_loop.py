@@ -21,7 +21,7 @@ from tqdm import tqdm
 # %% Setup project environment
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set(style='white', context='talk', font_scale=1)
+sns.set(style='white', context='paper', font_scale=1)
 if platform.system() == 'Linux':
     computer = 'cbica'
 elif platform.system() == 'Darwin':
