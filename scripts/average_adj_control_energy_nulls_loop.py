@@ -33,14 +33,14 @@ elif platform.system() == 'Darwin':
     plt.rcParams['font.family'] = prop.get_name()
     plt.rcParams['svg.fonttype'] = 'none'
 
-n_perms = 5
-
 parc = 'schaefer'
 n_parcels = 400
 sc_edge_weight = 'streamlineCount'
 environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_edge_weight=sc_edge_weight)
 environment.make_output_dirs()
 environment.load_parc_data()
+
+n_perms = 5
 
 # %% get clustered gradients
 filters = {'healthExcludev2': 0, 't1Exclude': 0,
