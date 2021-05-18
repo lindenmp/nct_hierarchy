@@ -40,7 +40,7 @@ environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_
 environment.make_output_dirs()
 environment.load_parc_data()
 
-n_perms = 5
+n_perms = 10000
 
 # %% get clustered gradients
 filters = {'healthExcludev2': 0, 't1Exclude': 0,
