@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 from tqdm import tqdm
+from sklearn.linear_model import LinearRegression
 
 # %% Plotting
 import matplotlib.pyplot as plt
@@ -55,7 +56,6 @@ n_subs = environment.df.shape[0]
 # %% get control energy
 B = 'wb'
 n_subsamples = 0
-
 E = np.zeros((compute_gradients.n_states, compute_gradients.n_states, n_subs))
 
 for i in tqdm(np.arange(n_subs)):
@@ -68,36 +68,32 @@ for i in tqdm(np.arange(n_subs)):
     nct_pipeline.run()
     E[:, :, i] = nct_pipeline.E
 
-# %%
-# eu = np.zeros((n_subs, len(indices_upper[0])))
-# el = np.zeros((n_subs, len(indices_lower[0])))
-# ed = np.zeros((n_subs, len(indices_lower[0])))
-#
-# for i in np.arange(n_subs):
-#     eu[i, :] = E[:, :, i][indices_upper]
-#     el[i, :] = E[:, :, i][indices_lower]
-#     ed[i, :] = eu[i, :] - el[i, :]
+# normalize energy
+for i in tqdm(np.arange(n_states)):
+    for j in np.arange(n_states):
+        E[i, j, :] = rank_int(E[i, j, :])
 
-# %% correlate state specific energies with age
-# eu_corr = np.zeros(len(indices_upper[0]))
-# eu_corr_p = np.zeros(len(indices_upper[0]))
-# el_corr = np.zeros(len(indices_lower[0]))
-# el_corr_p = np.zeros(len(indices_lower[0]))
-# ed_corr = np.zeros(len(indices_lower[0]))
-# ed_corr_p = np.zeros(len(indices_lower[0]))
-#
-# for i in np.arange(len(indices_upper[0])):
-#     eu_corr[i], eu_corr_p[i] = sp.stats.spearmanr(environment.df.loc[:, 'ageAtScan1'], eu[:, i])
-#     el_corr[i], el_corr_p[i] = sp.stats.spearmanr(environment.df.loc[:, 'ageAtScan1'], el[:, i])
-#     ed_corr[i], ed_corr_p[i] = sp.stats.spearmanr(environment.df.loc[:, 'ageAtScan1'], ed[:, i])
+# nuisance regression
+covs = environment.df.loc[:, ['sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']]
+covs['sex'] = covs['sex'] - 1
+covs['mprage_antsCT_vol_TBV'] = rank_int(covs['mprage_antsCT_vol_TBV'])
+covs['dti64MeanRelRMS'] = rank_int(covs['dti64MeanRelRMS'])
+covs = covs.values
 
-# %%
+for i in tqdm(np.arange(n_states)):
+    for j in np.arange(n_states):
+        nuis_reg = LinearRegression()
+        nuis_reg.fit(covs, E[i, j, :])
+        y_pred = nuis_reg.predict(covs)
+        E[i, j, :] = E[i, j, :] - y_pred
+
+# %% age correlations
 e_corr = np.zeros((n_states, n_states))
 e_corr_p = np.zeros((n_states, n_states))
 
 for i in np.arange(n_states):
     for j in np.arange(n_states):
-        e_corr[i, j], e_corr_p[i, j] = sp.stats.spearmanr(environment.df.loc[:, 'ageAtScan1'], E[i, j, :])
+        e_corr[i, j], e_corr_p[i, j] = sp.stats.pearsonr(environment.df.loc[:, 'ageAtScan1'], E[i, j, :])
 
 e_corr_p = get_fdr_p(e_corr_p)
 sig_mask = e_corr_p > 0.05
@@ -118,32 +114,3 @@ plt.subplots_adjust(wspace=.25)
 f.savefig(os.path.join(environment.figdir, 'energy_age_corr_corr.png'), dpi=150, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
-
-# %%
-
-# f, ax = plt.subplots(1, 2, figsize=(6, 3))
-# my_regplot(x=environment.df.loc[:, 'ageAtScan1'], y=np.mean(eu, axis=1), xlabel='Age', ylabel='E bottom up (mean)', ax=ax[0])
-# my_regplot(x=environment.df.loc[:, 'ageAtScan1'], y=np.mean(el, axis=1), xlabel='Age', ylabel='E top down (mean)', ax=ax[1])
-# plt.subplots_adjust(wspace=.25)
-# f.savefig(os.path.join(environment.figdir, 'energy_mean_age_corr.png'), dpi=150, bbox_inches='tight',
-#           pad_inches=0.1)
-# plt.close()
-
-# f, ax = plt.subplots(1, 1, figsize=(3, 3))
-# sns.histplot(ed_corr, ax=ax)
-# plt.subplots_adjust(wspace=.25)
-# f.savefig(os.path.join(environment.figdir, 'energy_delta_age_corr.png'), dpi=150, bbox_inches='tight',
-#           pad_inches=0.1)
-# plt.close()
-
-
-
-# f, ax = plt.subplots(2, 2, figsize=(5, 5))
-# my_regplot(x=environment.df.loc[:, 'ageAtScan1'], y=eu[:, np.argmax(el_corr)], xlabel='Age', ylabel='E bottom up', ax=ax[1, 0])
-# my_regplot(x=environment.df.loc[:, 'ageAtScan1'], y=el[:, np.argmax(el_corr)], xlabel='Age', ylabel='E top down', ax=ax[0, 0])
-# my_regplot(x=environment.df.loc[:, 'ageAtScan1'], y=eu[:, np.argmax(eu_corr)], xlabel='Age', ylabel='E bottom up', ax=ax[1, 1])
-# my_regplot(x=environment.df.loc[:, 'ageAtScan1'], y=el[:, np.argmax(eu_corr)], xlabel='Age', ylabel='E top down', ax=ax[0, 1])
-# plt.subplots_adjust(wspace=.25)
-# f.savefig(os.path.join(environment.figdir, 'energy_age_corr_supps.png'), dpi=150, bbox_inches='tight',
-#           pad_inches=0.1)
-# plt.close()
