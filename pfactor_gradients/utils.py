@@ -70,10 +70,9 @@ def get_null_p(E, E_null):
 
 def get_fdr_p(p_vals, alpha=0.05):
     if p_vals.ndim == 2:
-        dims = p_vals.shape
-        p_vals = p_vals.reshape(-1)
-
         do_reshape = True
+        dims = p_vals.shape
+        p_vals = p_vals.flatten()
     else:
         do_reshape = False
 
