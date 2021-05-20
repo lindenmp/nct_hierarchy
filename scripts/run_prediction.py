@@ -119,7 +119,7 @@ if X_name != 'wb':
                             alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
                             force_rerun=False)
     regression.run()
-    # regression.run_perm()
+    regression.run_perm()
 else:
     pass
 
@@ -150,7 +150,7 @@ regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{
                         alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
                         force_rerun=False)
 regression.run()
-# regression.run_perm()
+regression.run_perm()
 
 # # %% prediction from energy bottom-up
 # indices = np.triu_indices(n_states, k=1)
