@@ -33,7 +33,9 @@ environment.make_output_dirs()
 # environment.load_parc_data()
 
 # %% load prediction results
-B_list = ['ct', 'cbf', 'reho', 'alff', 'energy-ct', 'energy-cbf', 'energy-reho', 'energy-alff']
+# B_list = ['ct', 'cbf', 'reho', 'alff', 'energy-ct', 'energy-cbf', 'energy-reho', 'energy-alff']
+# B_list = ['ct', 'cbf', 'reho', 'alff', 'energy-ct-u', 'energy-cbf-u', 'energy-reho-u', 'energy-alff-u']
+B_list = ['ct', 'cbf', 'reho', 'alff', 'energy-ct-l', 'energy-cbf-l', 'energy-reho-l', 'energy-alff-l']
 n_B = len(B_list)
 n_rand_splits = 100
 p_vals = np.zeros(n_B)
@@ -45,7 +47,7 @@ score = 'rmse'
 runpca = '80%'
 
 df_energy = pd.DataFrame(columns=['score', 'B', 'energy'])
-file_prefix = '{0}-{1}-{2}_alg-{3}_score-{4}_pca-{5}_'.format('energy-wb', y_name, c_name,
+file_prefix = '{0}-{1}-{2}_alg-{3}_score-{4}_pca-{5}_'.format('energy-wb-l', y_name, c_name,
                                                               alg, score, runpca)
 accuracy_mean = np.loadtxt(os.path.join(environment.pipelinedir, 'prediction',
                                         '{0}accuracy_mean.txt'.format(file_prefix)))
@@ -55,14 +57,14 @@ df_tmp['B'] = 'wb'
 df_tmp['energy'] = 'yes'
 df_energy = pd.concat((df_energy, df_tmp), axis=0)
 
-df_energy_null = pd.DataFrame(columns=['score', 'B', 'energy'])
-accuracy_perm = np.loadtxt(os.path.join(environment.pipelinedir, 'prediction',
-                                        '{0}accuracy_perm.txt'.format(file_prefix)))
-df_tmp = pd.DataFrame(columns=['score', 'B', 'energy'])
-df_tmp['score'] = accuracy_perm
-df_tmp['B'] = 'wb'
-df_tmp['energy'] = 'yes'
-df_energy_null = pd.concat((df_energy_null, df_tmp), axis=0)
+# df_energy_null = pd.DataFrame(columns=['score', 'B', 'energy'])
+# accuracy_perm = np.loadtxt(os.path.join(environment.pipelinedir, 'prediction',
+#                                         '{0}accuracy_perm.txt'.format(file_prefix)))
+# df_tmp = pd.DataFrame(columns=['score', 'B', 'energy'])
+# df_tmp['score'] = accuracy_perm
+# df_tmp['B'] = 'wb'
+# df_tmp['energy'] = 'yes'
+# df_energy_null = pd.concat((df_energy_null, df_tmp), axis=0)
 
 for i in np.arange(n_B):
     file_prefix = '{0}-{1}-{2}_alg-{3}_score-{4}_pca-{5}_'.format(B_list[i], y_name, c_name,
@@ -71,7 +73,7 @@ for i in np.arange(n_B):
                                             '{0}accuracy_mean.txt'.format(file_prefix)))
     df_tmp = pd.DataFrame(columns=['score', 'B', 'energy'])
     df_tmp['score'] = accuracy_mean
-    if len(B_list[i].split('-')) == 2:
+    if len(B_list[i].split('-')) >= 2:
         df_tmp['B'] = B_list[i].split('-')[1]
         df_tmp['energy'] = 'yes'
     elif len(B_list[i].split('-')) == 1:
@@ -79,29 +81,29 @@ for i in np.arange(n_B):
         df_tmp['energy'] = 'no'
     df_energy = pd.concat((df_energy, df_tmp), axis=0)
 
-    accuracy_perm = np.loadtxt(os.path.join(environment.pipelinedir, 'prediction',
-                                            '{0}accuracy_perm.txt'.format(file_prefix)))
-    df_tmp = pd.DataFrame(columns=['score', 'B', 'energy'])
-    df_tmp['score'] = accuracy_perm
-    if len(B_list[i].split('-')) == 2:
-        df_tmp['B'] = B_list[i].split('-')[1]
-        df_tmp['energy'] = 'yes'
-    elif len(B_list[i].split('-')) == 1:
-        df_tmp['B'] = B_list[i].split('-')[0]
-        df_tmp['energy'] = 'no'
-    df_energy_null = pd.concat((df_energy_null, df_tmp), axis=0)
+    # accuracy_perm = np.loadtxt(os.path.join(environment.pipelinedir, 'prediction',
+    #                                         '{0}accuracy_perm.txt'.format(file_prefix)))
+    # df_tmp = pd.DataFrame(columns=['score', 'B', 'energy'])
+    # df_tmp['score'] = accuracy_perm
+    # if len(B_list[i].split('-')) == 2:
+    #     df_tmp['B'] = B_list[i].split('-')[1]
+    #     df_tmp['energy'] = 'yes'
+    # elif len(B_list[i].split('-')) == 1:
+    #     df_tmp['B'] = B_list[i].split('-')[0]
+    #     df_tmp['energy'] = 'no'
+    # df_energy_null = pd.concat((df_energy_null, df_tmp), axis=0)
 
-# %%
+#
 # cmap = sns.color_palette("Paired", as_cmap=False)
 # cmap = np.array([[255, 105, 97], [97, 168, 255]]) / 255
 cmap = np.array([[124, 230, 199], [255, 169, 132]]) / 255
-f, ax = plt.subplots(1, 1, figsize=(5, 2.5))
+f, ax = plt.subplots(1, 1, figsize=(4, 2))
 
 # nulls
-sns.violinplot(data=df_energy_null, ax=ax, x='B', y='score', hue='energy', split=True, scale='width', palette=cmap,
-               inner=None, linewidth=1)
-for violin in ax.collections:
-    violin.set_alpha(0.2)
+# sns.violinplot(data=df_energy_null, ax=ax, x='B', y='score', hue='energy', split=True, scale='width', palette=cmap,
+#                inner=None, linewidth=1)
+# for violin in ax.collections:
+#     violin.set_alpha(0.2)
 
 # observed
 sns.violinplot(data=df_energy, ax=ax, x='B', y='score', hue='energy', split=True, scale='width', palette=cmap,
@@ -114,9 +116,9 @@ handles, labels = ax.get_legend_handles_labels()
 ax.legend(handles=handles[:2], labels=labels[:2], title="NCT")
 ax.set_title(y_name)
 ax.set_ylabel(score)
-
+ax.set_ylim([-1.1, -1])
 ax.tick_params(pad=-2.5)
 f.savefig(os.path.join(environment.figdir, 'fig-5_prediction_{0}.png'.format(y_name)), dpi=150, bbox_inches='tight',
           pad_inches=0.1)
-plt.show()
+# plt.show()
 plt.close()
