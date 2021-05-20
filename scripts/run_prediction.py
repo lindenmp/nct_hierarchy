@@ -7,6 +7,7 @@ from pfactor_gradients.pnc import Environment, Subject
 from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF
 from pfactor_gradients.pipelines import ComputeGradients
 from pfactor_gradients.pipelines import Regression
+from pfactor_gradients.utils import rank_int
 
 # %% parse input arguments
 import argparse
@@ -80,8 +81,14 @@ if np.any(np.isnan(y)):
 
 if c_name == 'asvm':
     covs = ['ageAtScan1', 'sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
+elif c_name == 'svm':
+    covs = ['sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
+elif c_name == 'vm':
+    covs = ['mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
+
 c = environment.df.loc[:, covs]
-c['sex'] = c['sex'] - 1
+if 'sex' in covs:
+    c['sex'] = c['sex'] - 1
 c = c.values
 
 # %% prediction from brain maps (no NCT)
@@ -99,6 +106,10 @@ if X_name != 'wb':
 
     loader.run()
     X = loader.values
+
+    # normalize
+    for i in np.arange(X.shape[1]):
+        X[:, i] = rank_int(X[:, i])
 
     # ct: 1% = 13 pcs
     # cbf: 1% = 9 pcs
@@ -126,6 +137,10 @@ for i in np.arange(n_subs):
     E = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
     X[i, :] = E[indices]
 
+# normalize energy
+for i in np.arange(X.shape[1]):
+    X[:, i] = rank_int(X[:, i])
+
 # wb: 1% = 37 pcs
 # ct: 1% = 33 pcs
 # cbf: 1% = 24 pcs
@@ -137,38 +152,38 @@ regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{
 regression.run()
 # regression.run_perm()
 
-# %% prediction from energy bottom-up
-indices = np.triu_indices(n_states, k=1)
-n_transitions = len(indices[0])
-
-# load energy
-X = np.zeros((n_subs, n_transitions))
-for i in np.arange(n_subs):
-    subjid = environment.df.index[i]
-    file = '{0}_ns-40-0_c-minimum_fast_T-1_B-{1}_E.npy'.format(subjid, X_name)
-    E = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
-    X[i, :] = E[indices]
-
-regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{0}-u'.format(X_name), y_name=y_name, c_name=c_name,
-                        alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
-                        force_rerun=False)
-regression.run()
-# regression.run_perm()
-
-# %% prediction from energy top-down
-indices = np.tril_indices(n_states, k=-1)
-n_transitions = len(indices[0])
-
-# load energy
-X = np.zeros((n_subs, n_transitions))
-for i in np.arange(n_subs):
-    subjid = environment.df.index[i]
-    file = '{0}_ns-40-0_c-minimum_fast_T-1_B-{1}_E.npy'.format(subjid, X_name)
-    E = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
-    X[i, :] = E[indices]
-
-regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{0}-l'.format(X_name), y_name=y_name, c_name=c_name,
-                        alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
-                        force_rerun=False)
-regression.run()
-# regression.run_perm()
+# # %% prediction from energy bottom-up
+# indices = np.triu_indices(n_states, k=1)
+# n_transitions = len(indices[0])
+#
+# # load energy
+# X = np.zeros((n_subs, n_transitions))
+# for i in np.arange(n_subs):
+#     subjid = environment.df.index[i]
+#     file = '{0}_ns-40-0_c-minimum_fast_T-1_B-{1}_E.npy'.format(subjid, X_name)
+#     E = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+#     X[i, :] = E[indices]
+#
+# regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{0}-u'.format(X_name), y_name=y_name, c_name=c_name,
+#                         alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
+#                         force_rerun=False)
+# regression.run()
+# # regression.run_perm()
+#
+# # %% prediction from energy top-down
+# indices = np.tril_indices(n_states, k=-1)
+# n_transitions = len(indices[0])
+#
+# # load energy
+# X = np.zeros((n_subs, n_transitions))
+# for i in np.arange(n_subs):
+#     subjid = environment.df.index[i]
+#     file = '{0}_ns-40-0_c-minimum_fast_T-1_B-{1}_E.npy'.format(subjid, X_name)
+#     E = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+#     X[i, :] = E[indices]
+#
+# regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{0}-l'.format(X_name), y_name=y_name, c_name=c_name,
+#                         alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
+#                         force_rerun=False)
+# regression.run()
+# # regression.run_perm()
