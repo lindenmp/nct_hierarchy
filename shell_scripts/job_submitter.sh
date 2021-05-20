@@ -1,6 +1,13 @@
 conda activate pfactor_gradients
 
-# 1) average a matrix, null
+# 1) pnc subjects, array job
+qsub -N subjects -l h_vmem=3G,s_vmem=3G -pe threaded 1 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
+-t 1:775 \
+/cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
+/cbica/home/parkesl/research_projects/pfactor_gradients/scripts/subjects_compute_control_energy.py
+########################################################################################################################
+
+# 2) average a matrix, null
 # run first
 qsub -N e_null -l h_vmem=3G,s_vmem=3G -pe threaded 2 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
 -t 1 \
@@ -13,15 +20,15 @@ qsub -N e_null -l h_vmem=3G,s_vmem=3G -pe threaded 2 -j y -b y -o /cbica/home/pa
 /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
 /cbica/home/parkesl/research_projects/pfactor_gradients/scripts/average_adj_control_energy_nulls.py
 
-# 2) pnc subjects, array job
-qsub -N subjects -l h_vmem=3G,s_vmem=3G -pe threaded 1 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
--t 1:775 \
+# then run to collate
+qsub -N e_null_collect -l h_vmem=16G,s_vmem=16G -pe threaded 2 -j y -b y -o /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
 /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
-/cbica/home/parkesl/research_projects/pfactor_gradients/scripts/pnc_compute_control_energy.py
+/cbica/home/parkesl/research_projects/pfactor_gradients/scripts/average_adj_control_energy_nulls_loop.py
+########################################################################################################################
 
 # 3) prediction
-X_list=('wb' 'ct' 'cbf' 'reho' 'alff')
-y_list=('Overall_Psychopathology' 'F3_Executive_Efficiency' 'F1_Exec_Comp_Res_Accuracy')
+X_list=('wb' 'ct' 'cbf')
+y_list=('F1_Exec_Comp_Res_Accuracy' 'F1_Complex_Reasoning_Efficiency' 'F3_Executive_Efficiency')
 alg_list=('rr')
 score_list=('rmse' 'corr')
 runpca_list=('1%' '80%' 50)
@@ -34,10 +41,11 @@ for X_name in "${X_list[@]}"; do
           qsub -N prediction -l h_vmem=3G,s_vmem=3G -pe threaded 8 -j y -b y -o \
           /cbica/home/parkesl/sge/ -e /cbica/home/parkesl/sge/ \
           /cbica/home/parkesl/miniconda3/envs/pfactor_gradients/bin/python \
-          /cbica/home/parkesl/research_projects/pfactor_gradients/scripts/pnc_run_prediction.py \
+          /cbica/home/parkesl/research_projects/pfactor_gradients/scripts/run_prediction.py \
           -X_name $X_name -y_name $y_name -alg $alg -score $score -runpca $runpca
         done
       done
     done
   done
 done
+########################################################################################################################
