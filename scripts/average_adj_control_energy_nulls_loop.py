@@ -98,8 +98,8 @@ for key in load_average_bms.brain_maps:
         E[:, :, sge_task_id] = nct_pipeline.E
 
         # if output file exists, delete it
-        # if os.path.isfile(os.path.join(nct_pipeline._output_dir(), '{0}E.npy'.format(nct_pipeline._get_file_prefix()))):
-        #     os.remove(os.path.join(nct_pipeline._output_dir(), '{0}E.npy'.format(nct_pipeline._get_file_prefix())))
+        if os.path.isfile(os.path.join(nct_pipeline._output_dir(), '{0}E.npy'.format(nct_pipeline._get_file_prefix()))):
+            os.remove(os.path.join(nct_pipeline._output_dir(), '{0}E.npy'.format(nct_pipeline._get_file_prefix())))
 
     # save compiled E
     my_list = nct_pipeline._get_file_prefix().split('_')
@@ -149,8 +149,8 @@ for A_entry in A_list:
             E[:, :, sge_task_id] = nct_pipeline.E
 
             # if output file exists, delete it
-            # if os.path.isfile(os.path.join(nct_pipeline._output_dir(), '{0}E.npy'.format(nct_pipeline._get_file_prefix()))):
-            #     os.remove(os.path.join(nct_pipeline._output_dir(), '{0}E.npy'.format(nct_pipeline._get_file_prefix())))
+            if os.path.isfile(os.path.join(nct_pipeline._output_dir(), '{0}E.npy'.format(nct_pipeline._get_file_prefix()))):
+                os.remove(os.path.join(nct_pipeline._output_dir(), '{0}E.npy'.format(nct_pipeline._get_file_prefix())))
 
         # save compiled E
         my_list = nct_pipeline._get_file_prefix().split('_')
