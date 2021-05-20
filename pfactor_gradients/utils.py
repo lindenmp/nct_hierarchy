@@ -112,3 +112,18 @@ def rank_int(data, c=3.0 / 8):
         transformed = transformed.reshape(dims)
 
     return transformed
+
+
+def pearsonr_permutation(x, y, n_perms=1e4):
+    # for reproducibility
+    np.random.seed(0)
+    observed_r = sp.stats.pearsonr(x, y)[0]
+
+    null_r = np.zeros(n_perms)
+    for i in np.arange(n_perms):
+        x_shuf = np.random.permutation(x)
+        null_r[i] = sp.stats.pearsonr(x_shuf, y)[0]
+
+    p_value = np.sum(np.abs(null_r) >= np.abs(observed_r)) / n_perms
+
+    return observed_r, null_r, p_value
