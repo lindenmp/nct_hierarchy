@@ -15,7 +15,7 @@ from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-sns.set(style='white', context='paper', font_scale=1)
+sns.set(style='whitegrid', context='paper', font_scale=1)
 import matplotlib.font_manager as font_manager
 fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
 prop = font_manager.FontProperties(fname=fontpath)
@@ -63,7 +63,7 @@ for key in loaders_dict:
     loaders_dict[key].run()
 
 # %% get control energy
-B = 'cbf'
+B = 'wb'
 n_subsamples = 0
 E = np.zeros((compute_gradients.n_states, compute_gradients.n_states, n_subs))
 
@@ -87,7 +87,7 @@ for i in tqdm(np.arange(n_subs)):
     nct_pipeline.run()
     E[:, :, i] = nct_pipeline.E
 
-# normalize energy
+# normalize energy over subjects
 for i in tqdm(np.arange(n_states)):
     for j in np.arange(n_states):
         E[i, j, :] = rank_int(E[i, j, :])
@@ -119,17 +119,21 @@ sig_mask = e_corr_p > 0.05
 sig_mask[np.isnan(e_corr_p)] = True
 print(np.sum(sig_mask == False))
 
-# plots
-f, ax = plt.subplots(1, 1, figsize=(3, 3))
-sns.heatmap(e_corr, mask=sig_mask, center=0, square=True, cmap='coolwarm', ax=ax)
-plt.subplots_adjust(wspace=.25)
-f.savefig(os.path.join(environment.figdir, 'energy_age_corr_{0}.png'.format(B)), dpi=150, bbox_inches='tight',
+# %% plots
+f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+cmap = sns.diverging_palette(150, 275, as_cmap=True)
+sns.heatmap(e_corr, mask=sig_mask, center=0, square=True, cmap=cmap, ax=ax,
+            cbar_kws={"shrink": 0.80, "label": "Age effects (Pearson's r)"})
+ax.set_ylabel("Initial states (i)")
+ax.set_xlabel("Target states (j)")
+ax.tick_params(pad=-2.5)
+f.savefig(os.path.join(environment.figdir, 'e_age_corr_{0}.png'.format(B)), dpi=150, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
 
-f, ax = plt.subplots(1, 1, figsize=(3, 3))
-my_regplot(x=e_corr[indices_upper], y=e_corr[indices_lower], xlabel='Age (bottom up)', ylabel='Age (top down)', ax=ax)
-plt.subplots_adjust(wspace=.25)
-f.savefig(os.path.join(environment.figdir, 'energy_age_corr_corr_{0}.png'.format(B)), dpi=150, bbox_inches='tight',
+f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+my_regplot(x=e_corr[indices_upper], y=e_corr[indices_lower],
+           xlabel='Age effects on bottom-up energy', ylabel='Age effects on top-down energy', ax=ax)
+f.savefig(os.path.join(environment.figdir, 'e_age_corr_corr_{0}.png'.format(B)), dpi=150, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
