@@ -280,6 +280,6 @@ f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
 my_regplot(x=ed_norm[indices_lower], y=ecd[indices_lower],
            xlabel='Energy (asymmetry)', ylabel='Effective connectivity (asymmetry)', ax=ax)
 plt.subplots_adjust(wspace=.25)
-f.savefig(os.path.join(environment.figdir, 'ed_ecd_{0}.png'.format(B)), dpi=300, bbox_inches='tight',
+f.savefig(os.path.join(environment.figdir, 'e-ec_asym_{0}.png'.format(B)), dpi=300, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
