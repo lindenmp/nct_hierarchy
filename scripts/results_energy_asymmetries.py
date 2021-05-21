@@ -260,3 +260,26 @@ f.subplots_adjust(hspace=1.25)
 f.savefig(os.path.join(environment.figdir, 'e_asym_hyperplane_network_null_{0}.png'.format(B)), dpi=300,
           bbox_inches='tight', pad_inches=0.1)
 plt.close()
+
+# %% 5) effective connectivity
+
+# load dcm outputs
+file = 'dcm_ns-{0}_A.mat'.format(n_states)
+dcm = sp.io.loadmat(os.path.join(environment.pipelinedir, 'spdcm', file))
+ec = dcm['A']
+ec = np.abs(ec)
+ec = rank_int(ec)
+ecd = ec.transpose() - ec
+# ecd = rank_int(ecd)
+
+# get energy asym
+ed_norm = rank_int(ed)
+
+# energy asymmetry vs effective connectivity asymmetry
+f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+my_regplot(x=ed_norm[indices_lower], y=ecd[indices_lower],
+           xlabel='Energy (asymmetry)', ylabel='Effective connectivity (asymmetry)', ax=ax)
+plt.subplots_adjust(wspace=.25)
+f.savefig(os.path.join(environment.figdir, 'ed_ecd_{0}.png'.format(B)), dpi=300, bbox_inches='tight',
+          pad_inches=0.1)
+plt.close()
