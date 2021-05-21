@@ -233,30 +233,30 @@ f.savefig(os.path.join(environment.figdir, 'e_asym_hyperplane_{0}.png'.format(B)
           bbox_inches='tight', pad_inches=0.1)
 plt.close()
 
-# %% 4) energy asymmetry hyperplane
+# %% 4) energy asymmetry hyperplane null
 asymm_nulls, observed, p_vals = helper_null_hyperplane(e, e_null, indices_lower)
 print(np.mean(asymm_nulls, axis=0))
 print(observed)
 print(p_vals)
 
-# %%
-f, ax = plt.subplots(3, 1, figsize=(2.5, 2.5))
-xlabels = ['r2', 'Initial states (i), slope', 'Target states (j), slope']
-for i, label in enumerate(xlabels):
-    # sns.kdeplot(x=asymm_nulls[:, i], ax=ax[i], bw_adjust=.75, clip_on=False, color='gray', alpha=0.5, linewidth=1.5)
-    sns.histplot(x=asymm_nulls[:, i], ax=ax[i], color='gray')
-    ax[i].axvline(x=observed[i], ymax=1, clip_on=False, linewidth=1, color='red')
-    ax[i].grid(False)
-    sns.despine(left=True, bottom=False, ax=ax[i])
-    ax[i].tick_params(pad=-2.5)
-    ax[i].set_xlabel(label)
-    ax[i].set_ylabel('')
-    ax[i].set_yticklabels('')
-    textstr = 'p = {:.2f}'.format(p_vals[i])
-    ax[i].text(0.725, 1, textstr, transform=ax[i].transAxes,
-            verticalalignment='top', rotation='horizontal', c='r')
+f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+color_blue = sns.color_palette("Set1")[1]
+color_red = sns.color_palette("Set1")[0]
+i=0
+sns.histplot(x=asymm_nulls[:, i], ax=ax, color='gray')
+ax.axvline(x=observed[i], ymax=1, clip_on=False, linewidth=1.5, color=color_blue)
+ax.grid(False)
+sns.despine(right=True, top=True, ax=ax)
+ax.tick_params(pad=-2.5)
+ax.set_xlabel('r2 (null network model)')
+ax.set_ylabel('Counts')
+textstr = 'observed r2 = {:.2f}'.format(observed[i])
+ax.text(0.75, 1, textstr, transform=ax.transAxes,
+        verticalalignment='top', rotation=270, c=color_blue)
+textstr = 'p = {:.2f}'.format(p_vals[i])
+ax.text(0.65, 1, textstr, transform=ax.transAxes,
+        verticalalignment='top', rotation=270, c=color_red)
 f.subplots_adjust(hspace=1.25)
 f.savefig(os.path.join(environment.figdir, 'e_asym_hyperplane_network_null_{0}.png'.format(B)), dpi=300,
           bbox_inches='tight', pad_inches=0.1)
 plt.close()
-
