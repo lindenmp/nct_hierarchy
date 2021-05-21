@@ -141,27 +141,31 @@ def fit_hyperplane(data, type='linear'):
     if type == 'linear':
         # best-fit linear plane
         a = np.c_[data[:, 0], data[:, 1], np.ones(data.shape[0])]
-        c, _, _, _ = sp.linalg.lstsq(a, data[:, 2])  # coefficients
+        c, resids, _, _ = sp.linalg.lstsq(a, data[:, 2])  # coefficients
 
         # evaluate it on grid
         Z = c[0] * X + c[1] * Y + c[2]
     elif type == 'quad':
         a = np.c_[np.ones(data.shape[0]), data[:, :2], np.prod(data[:, :2], axis=1), data[:, :2] ** 2]
-        c, _, _, _ = sp.linalg.lstsq(a, data[:, 2])
+        c, resids, _, _ = sp.linalg.lstsq(a, data[:, 2])
 
         # evaluate it on a grid
         Z = np.dot(np.c_[np.ones(XX.shape), XX, YY, XX * YY, XX ** 2, YY ** 2], c).reshape(X.shape)
     # elif type == 'cubic':
     #     a = np.c_[np.ones(data.shape[0]), data[:, :2], np.prod(data[:, :2], axis=1), data[:, :2] ** 2, data[:, :2] ** 3]
-    #     c, _, _, _ = sp.linalg.lstsq(a, data[:, 2])
+    #     c, resids, _, _ = sp.linalg.lstsq(a, data[:, 2])
     #
     #     # evaluate it on a grid
     #     Z = np.dot(np.c_[np.ones(XX.shape), XX, YY, XX * YY, XX ** 2, YY ** 2, XX ** 3, YY ** 3], c).reshape(X.shape)
 
-    return X, Y, Z
+    # compute coefficient of determination
+    r2 = 1 - resids / np.sum((data[:, 2] - data[:, 2].mean())**2)
+
+    return X, Y, Z, c, r2
 
 
 def get_xyz_slope(X, Y, Z):
+    # this is more a sanity check function than anything else.. can just use values in c from fit_hyperplane
     p1 = np.array([X[0, 0], Y[0, 0], Z[0, 0]]) # corner at lowest x,y position
     p2 = np.array([X[0, -1], Y[0, 0], Z[0, -1]]) # corner at highest x, lowest y
     p3 = np.array([X[0, -1], Y[-1, 0], Z[-1, -1]]) # corner at highest x,y position
