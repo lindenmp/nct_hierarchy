@@ -28,8 +28,10 @@ qsub -N e_null_collect -l h_vmem=16G,s_vmem=16G -pe threaded 2 -j y -b y -o /cbi
 
 # 3) prediction
 X_list=('wb' 'ct' 'cbf')
-y_list=('F1_Exec_Comp_Res_Accuracy') # 'F1_Complex_Reasoning_Efficiency' 'F3_Executive_Efficiency'
-c_list=('asvm' 'svm' 'vm')
+#y_list=('F1_Exec_Comp_Res_Accuracy' 'F1_Complex_Reasoning_Efficiency' 'F3_Executive_Efficiency')
+y_list=('F1_Exec_Comp_Res_Accuracy')
+#c_list=('asvm' 'svm' 'vm')
+c_list=('asvm')
 alg_list=('rr')
 score_list=('r2' 'rmse' 'corr')
 #runpca_list=('1%' '80%' 50)
