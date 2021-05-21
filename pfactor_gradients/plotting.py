@@ -126,7 +126,7 @@ def my_regplot(x, y, xlabel, ylabel, ax, c='gray'):
     ax.text(0.05, 0.975, textstr, transform=ax.transAxes,
             verticalalignment='top')
 
-def my_nullplot(x, x_null, y, xlabel, ax):
+def my_rnullplot(x, x_null, y, xlabel, ax):
     if len(x.shape) > 1 and len(y.shape) > 1:
         if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
             mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
@@ -162,3 +162,23 @@ def my_nullplot(x, x_null, y, xlabel, ax):
     ax.set_xlabel(xlabel)
     ax.set_ylabel('')
     ax.tick_params(pad=-2.5)
+
+def my_nullplot(observed, null, p_val, xlabel, ax):
+    color_blue = sns.color_palette("Set1")[1]
+    color_red = sns.color_palette("Set1")[0]
+    sns.histplot(x=null, ax=ax, color='gray')
+    ax.axvline(x=observed, ymax=1, clip_on=False, linewidth=1.5, color=color_blue)
+    ax.grid(False)
+    sns.despine(right=True, top=True, ax=ax)
+    ax.tick_params(pad=-2.5)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel('Counts')
+
+    textstr = 'observed = {:.2f}'.format(observed)
+    ax.text(observed+observed*.0125, ax.get_ylim()[1], textstr,
+            horizontalalignment='center', verticalalignment='top', rotation=270, c=color_blue)
+
+    textstr = 'p = {:.2f}'.format(p_val)
+    ax.text(observed-observed*.015, ax.get_ylim()[1], textstr,
+            horizontalalignment='center', verticalalignment='top', rotation=270, c=color_red)
+
