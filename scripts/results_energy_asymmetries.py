@@ -192,3 +192,17 @@ ax.text(0.025, 0.95, textstr, transform=ax.transAxes, style='italic',
 f.savefig(os.path.join(environment.figdir, 'energy_{0}.png'.format(B)), dpi=300, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
+
+# %% 2) energy asymmetry matrix
+plot_mask = np.zeros((n_states, n_states))
+plot_mask[indices_upper] = 1
+plot_mask = plot_mask.astype(bool)
+
+f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+sns.heatmap(rank_int(ed), mask=plot_mask, center=0, square=True, cmap='coolwarm', ax=ax, cbar_kws={"shrink": 0.80})
+ax.set_ylabel("Initial states (i)")
+ax.set_xlabel("Target states (j)")
+ax.tick_params(pad=-2.5)
+f.savefig(os.path.join(environment.figdir, 'energy_asymmetry_{0}.png'.format(B)), dpi=300, bbox_inches='tight',
+          pad_inches=0.1)
+plt.close()
