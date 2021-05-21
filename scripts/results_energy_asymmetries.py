@@ -11,6 +11,8 @@ import scipy as sp
 # %% Plotting
 import matplotlib.pyplot as plt
 import seaborn as sns
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.colors import ListedColormap
 
 sns.set(style='whitegrid', context='paper', font_scale=1)
 import matplotlib.font_manager as font_manager
@@ -163,7 +165,7 @@ B = 'wb'
 e = E[B] # energy matrix
 ed = e.transpose() - e # energy asymmetry matrix
 
-network_null = 'wwp'
+network_null = 'wsp'
 file = 'average_adj_n-{0}_s-{1}_null-mni-{2}_ns-{3}-0_c-minimum_fast_T-1_B-{4}_E.npy'.format(n_subs, spars_thresh,
                                                                                              network_null, n_states, B)
 e_null = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
@@ -182,7 +184,7 @@ t, p_val = sp.stats.ttest_rel(a=e_norm[indices_upper], b=e_norm[indices_lower])
 textstr = 't = {:.2f}; p = {:.2f}'.format(t, p_val)
 ax.text(0.025, 0.95, textstr, transform=ax.transAxes, style='italic',
         verticalalignment='top', rotation='horizontal')
-f.savefig(os.path.join(environment.figdir, 'energy_{0}.png'.format(B)), dpi=300, bbox_inches='tight',
+f.savefig(os.path.join(environment.figdir, 'e_{0}.png'.format(B)), dpi=300, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
 
@@ -196,6 +198,65 @@ sns.heatmap(rank_int(ed), mask=plot_mask, center=0, square=True, cmap='coolwarm'
 ax.set_ylabel("Initial states (i)")
 ax.set_xlabel("Target states (j)")
 ax.tick_params(pad=-2.5)
-f.savefig(os.path.join(environment.figdir, 'energy_asymmetry_{0}.png'.format(B)), dpi=300, bbox_inches='tight',
-          pad_inches=0.1)
+f.savefig(os.path.join(environment.figdir, 'e_asym_{0}.png'.format(B)), dpi=300, bbox_inches='tight', pad_inches=0.1)
 plt.close()
+
+# %% 3) energy asymmetry hyperplane
+ed_norm = rank_int(ed)
+plot_data = np.concatenate((indices_lower[0].reshape(-1, 1),
+                            indices_lower[1].reshape(-1, 1),
+                            ed_norm[indices_lower].reshape(-1, 1)), axis=1)
+plot_data = (plot_data - plot_data.mean(axis=0)) / plot_data.std(axis=0)
+# fit hyperplane
+X, Y, Z, c, r2, mse, rmse = fit_hyperplane(plot_data)
+
+f = plt.figure(figsize=(2.5, 2.5))
+ax = Axes3D(f)
+cmap = ListedColormap(sns.color_palette("coolwarm", 256, ).as_hex())
+sc = ax.scatter(plot_data[:, 0], plot_data[:, 1], plot_data[:, 2], marker='o', alpha=1, s=10, c=plot_data[:, 2],
+                cmap=cmap, vmin=-3, vmax=2)
+ax.plot_surface(X, Y, Z, rstride=1, cstride=1, alpha=0.2)
+ax.tick_params(pad=-2.5)
+ax.set_xticklabels('')
+ax.set_yticklabels('')
+ax.set_zticklabels('')
+ax.set_xlabel('Initial states (i) \n slope: {:.2f}'.format(c[0]), labelpad=-10)
+ax.set_ylabel('Target states (j) \n slope: {:.2f}'.format(c[1]), labelpad=-10)
+ax.set_zlabel('Energy asymmetry')
+ax.view_init(20, 45)
+# plt.legend(*sc.legend_elements(), bbox_to_anchor=(1.05, 1), loc=2)
+textstr = 'r2 = {:.0f}%'.format(r2*100)
+ax.text2D(0.65, 0.75, textstr, transform=ax.transAxes, style='italic',
+        verticalalignment='top', rotation='horizontal')
+
+f.savefig(os.path.join(environment.figdir, 'e_asym_hyperplane_{0}.png'.format(B)), dpi=300,
+          bbox_inches='tight', pad_inches=0.1)
+plt.close()
+
+# %% 4) energy asymmetry hyperplane
+asymm_nulls, observed, p_vals = helper_null_hyperplane(e, e_null, indices_lower)
+print(np.mean(asymm_nulls, axis=0))
+print(observed)
+print(p_vals)
+
+# %%
+f, ax = plt.subplots(3, 1, figsize=(2.5, 2.5))
+xlabels = ['r2', 'Initial states (i), slope', 'Target states (j), slope']
+for i, label in enumerate(xlabels):
+    # sns.kdeplot(x=asymm_nulls[:, i], ax=ax[i], bw_adjust=.75, clip_on=False, color='gray', alpha=0.5, linewidth=1.5)
+    sns.histplot(x=asymm_nulls[:, i], ax=ax[i], color='gray')
+    ax[i].axvline(x=observed[i], ymax=1, clip_on=False, linewidth=1, color='red')
+    ax[i].grid(False)
+    sns.despine(left=True, bottom=False, ax=ax[i])
+    ax[i].tick_params(pad=-2.5)
+    ax[i].set_xlabel(label)
+    ax[i].set_ylabel('')
+    ax[i].set_yticklabels('')
+    textstr = 'p = {:.2f}'.format(p_vals[i])
+    ax[i].text(0.725, 1, textstr, transform=ax[i].transAxes,
+            verticalalignment='top', rotation='horizontal', c='r')
+f.subplots_adjust(hspace=1.25)
+f.savefig(os.path.join(environment.figdir, 'e_asym_hyperplane_network_null_{0}.png'.format(B)), dpi=300,
+          bbox_inches='tight', pad_inches=0.1)
+plt.close()
+
