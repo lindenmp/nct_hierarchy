@@ -159,9 +159,11 @@ def fit_hyperplane(data, type='linear'):
     #     Z = np.dot(np.c_[np.ones(XX.shape), XX, YY, XX * YY, XX ** 2, YY ** 2, XX ** 3, YY ** 3], c).reshape(X.shape)
 
     # compute coefficient of determination
-    r2 = 1 - resids / np.sum((data[:, 2] - data[:, 2].mean())**2)
+    r2 = 1 - resids / np.sum(np.square(data[:, 2] - data[:, 2].mean()))
+    mse = resids / data[:, 2].shape[0]
+    rmse = np.sqrt(mse)
 
-    return X, Y, Z, c, r2
+    return X, Y, Z, c, r2, mse, rmse
 
 
 def get_xyz_slope(X, Y, Z):
