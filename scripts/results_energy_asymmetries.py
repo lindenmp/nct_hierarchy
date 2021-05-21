@@ -12,7 +12,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-sns.set(style='white', context='paper', font_scale=1)
+sns.set(style='whitegrid', context='paper', font_scale=1)
 import matplotlib.font_manager as font_manager
 fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
 prop = font_manager.FontProperties(fname=fontpath)
@@ -165,3 +165,30 @@ def helper_null_hyperplane(e, e_null, indices, param='r2'):
 
 # %% plots
 
+# data for plotting
+B = 'wb'
+e = E[B] # energy matrix
+ed = e.transpose() - e # energy asymmetry matrix
+
+network_null = 'wwp'
+file = 'average_adj_n-{0}_s-{1}_null-mni-{2}_ns-{3}-0_c-minimum_fast_T-1_B-{4}_E.npy'.format(n_subs, spars_thresh,
+                                                                                             network_null, n_states, B)
+e_null = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+
+# %% 1) energy dists: top-down vs bottom-up
+e_norm = rank_int(e)
+df_plot = pd.DataFrame(data=np.vstack((e_norm[indices_upper], e_norm[indices_lower])).transpose(),
+                       columns=['Bottom-up', 'Top-down'])
+
+f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+sns.violinplot(data=df_plot, ax=ax, inner="box", palette="pastel", cut=2, linewidth=2)
+sns.despine(left=True, bottom=True)
+ax.set_ylabel("Energy (z-score)")
+ax.tick_params(pad=-2.5)
+t, p_val = sp.stats.ttest_rel(a=e_norm[indices_upper], b=e_norm[indices_lower])
+textstr = 't = {:.2f}; p = {:.2f}'.format(t, p_val)
+ax.text(0.025, 0.95, textstr, transform=ax.transAxes, style='italic',
+        verticalalignment='top', rotation='horizontal')
+f.savefig(os.path.join(environment.figdir, 'energy_{0}.png'.format(B)), dpi=300, bbox_inches='tight',
+          pad_inches=0.1)
+plt.close()
