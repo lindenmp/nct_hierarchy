@@ -117,51 +117,44 @@ def helper_null_mean(e, e_null, indices):
 
     return asymm_null, observed, p_val
 
-def helper_null_hyperplane(e, e_null, indices, param='r2'):
+def helper_null_hyperplane(e, e_null, indices):
     n_perms = e_null.shape[2]
     # compute energy asymmetry
     ed = e.transpose() - e
+    ed = rank_int(ed)
 
     # containers
-    ed_null = np.zeros(e_null.shape)
-    asymm_null = np.zeros(n_perms)
+    asymm_nulls = np.zeros((n_perms, 3))
 
     for i in np.arange(e_null.shape[2]):
         # compute null asymmetry matrix
-        ed_null[:, :, i] = e_null[:, :, i].transpose() - e_null[:, :, i]
+        ed_null = e_null[:, :, i].transpose() - e_null[:, :, i]
+        ed_null = rank_int(ed_null)
 
         data = np.concatenate((indices[0].reshape(-1, 1),
                                indices[1].reshape(-1, 1),
-                               ed_null[:, :, i][indices].reshape(-1, 1)), axis=1)
+                               ed_null[indices].reshape(-1, 1)), axis=1)
         data = (data - data.mean(axis=0)) / data.std(axis=0)
-        _, _, _, c, r2 = fit_hyperplane(data)
-        if param == 'r2':
-            asymm_null[i] = r2
-        elif param == 'cx':
-            asymm_null[i] = c[0]
-        elif param == 'cy':
-            asymm_null[i] = c[1]
+        _, _, _, c, r2, _, _ = fit_hyperplane(data)
+        asymm_nulls[i, 0] = r2
+        asymm_nulls[i, 1] = c[0]
+        asymm_nulls[i, 2] = c[1]
 
     # get observed
-    data = np.concatenate((indices[0].reshape(-1, 1), indices[1].reshape(-1, 1), ed[indices].reshape(-1, 1)), axis=1)
+    data = np.concatenate((indices[0].reshape(-1, 1),
+                           indices[1].reshape(-1, 1),
+                           ed[indices].reshape(-1, 1)), axis=1)
     data = (data - data.mean(axis=0)) / data.std(axis=0)
-    _, _, _, c, r2 = fit_hyperplane(data)
+    _, _, _, c, r2, _, _ = fit_hyperplane(data)
+    observed = list([r2, c[0], c[1]])
 
     # get p val
-    if param == 'r2':
-        observed = r2
-        p_val = np.min([np.sum(asymm_null >= observed) / n_perms,
-                        np.sum(asymm_null <= observed) / n_perms])
-    elif param == 'cx':
-        observed = c[0]
-        p_val = np.min([np.sum(np.abs(asymm_null) >= np.abs(observed)) / n_perms,
-                        np.sum(np.abs(asymm_null) <= np.abs(observed)) / n_perms])
-    elif param == 'cy':
-        observed = c[1]
-        p_val = np.min([np.sum(np.abs(asymm_null) >= np.abs(observed)) / n_perms,
-                        np.sum(np.abs(asymm_null) <= np.abs(observed)) / n_perms])
+    p_vals = []
+    p_vals.append(np.sum(asymm_nulls[:, 0] >= observed[0]) / n_perms)
+    p_vals.append(np.sum(np.abs(asymm_nulls[:, 1]) >= np.abs(observed[1])) / n_perms)
+    p_vals.append(np.sum(np.abs(asymm_nulls[:, 2]) >= np.abs(observed[2])) / n_perms)
 
-    return asymm_null, observed, p_val
+    return asymm_nulls, observed, p_vals
 
 # %% plots
 
