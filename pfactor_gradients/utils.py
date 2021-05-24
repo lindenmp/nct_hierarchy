@@ -59,13 +59,22 @@ def mean_over_clusters(x, cluster_labels):
 
 
 def get_exact_p(x, y):
-    pval = 2 * np.min([np.mean(x - y >= 0), np.mean(x - y <= 0)])
+    p_val = 2 * np.min([np.mean(x - y >= 0),
+                        np.mean(x - y <= 0)])
 
-    return pval
+    return p_val
 
 
-def get_null_p(E, E_null):
-    return np.sum(E >= E_null) / len(E_null)
+def get_null_p(x, null, version='standard'):
+    if version == 'standard':
+        p_val = np.sum(null >= x) / len(null)
+    elif version == 'reverse':
+        p_val = np.sum(x >= null) / len(null)
+    elif version == 'smallest':
+        p_val = np.min([np.sum(null >= x) / len(null),
+                        np.sum(x >= null) / len(null)])
+
+    return p_val
 
 
 def get_fdr_p(p_vals, alpha=0.05):
