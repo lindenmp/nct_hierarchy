@@ -175,10 +175,10 @@ def my_nullplot(observed, null, p_val, xlabel, ax):
     ax.set_ylabel('Counts')
 
     textstr = 'observed = {:.2f}'.format(observed)
-    ax.text(observed+observed*.0125, ax.get_ylim()[1], textstr,
-            horizontalalignment='center', verticalalignment='top', rotation=270, c=color_blue)
+    ax.text(observed, ax.get_ylim()[1], textstr,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
 
     textstr = 'p = {:.2f}'.format(p_val)
-    ax.text(observed-observed*.015, ax.get_ylim()[1], textstr,
-            horizontalalignment='center', verticalalignment='top', rotation=270, c=color_red)
+    ax.text(observed, ax.get_ylim()[1], textstr,
+            horizontalalignment='right', verticalalignment='top', rotation=270, c=color_red)
 
