@@ -65,7 +65,11 @@ def get_exact_p(x, y):
     return p_val
 
 
-def get_null_p(x, null, version='standard'):
+def get_null_p(x, null, version='standard', abs=False):
+    if abs:
+        x = np.abs(x)
+        null = np.abs(null)
+
     if version == 'standard':
         p_val = np.sum(null >= x) / len(null)
     elif version == 'reverse':
@@ -205,8 +209,7 @@ def helper_null_mean(e, e_null, indices):
     # get observed
     observed = np.mean(ed[indices])
     # get p val
-    p_val = np.min([np.sum(asymm_null >= observed) / n_perms,
-                    np.sum(asymm_null <= observed) / n_perms])
+    p_val = get_null_p(observed, asymm_null, version='smallest')
 
     return asymm_null, observed, p_val
 
@@ -244,8 +247,8 @@ def helper_null_hyperplane(e, e_null, indices):
 
     # get p val
     p_vals = []
-    p_vals.append(np.sum(asymm_nulls[:, 0] >= observed[0]) / n_perms)
-    p_vals.append(np.sum(np.abs(asymm_nulls[:, 1]) >= np.abs(observed[1])) / n_perms)
-    p_vals.append(np.sum(np.abs(asymm_nulls[:, 2]) >= np.abs(observed[2])) / n_perms)
+    p_vals.append(get_null_p(observed[0], asymm_nulls[:, 0]))
+    p_vals.append(get_null_p(observed[1], asymm_nulls[:, 1], abs=True))
+    p_vals.append(get_null_p(observed[2], asymm_nulls[:, 2], abs=True))
 
     return asymm_nulls, observed, p_vals
