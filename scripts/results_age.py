@@ -127,13 +127,13 @@ sns.heatmap(e_corr, mask=sig_mask, center=0, square=True, cmap=cmap, ax=ax,
 ax.set_ylabel("Initial states (i)")
 ax.set_xlabel("Target states (j)")
 ax.tick_params(pad=-2.5)
-f.savefig(os.path.join(environment.figdir, 'e_age_corr_{0}.png'.format(B)), dpi=150, bbox_inches='tight',
+f.savefig(os.path.join(environment.figdir, 'corr(e_{0},age).png'.format(B)), dpi=150, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
 
 f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
 my_regplot(x=e_corr[indices_upper], y=e_corr[indices_lower],
            xlabel='Age effects on bottom-up energy', ylabel='Age effects on top-down energy', ax=ax)
-f.savefig(os.path.join(environment.figdir, 'e_age_corr_corr_{0}.png'.format(B)), dpi=150, bbox_inches='tight',
+f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0},age)).png'.format(B)), dpi=150, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
