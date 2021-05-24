@@ -211,3 +211,63 @@ plt.subplots_adjust(wspace=.25)
 f.savefig(os.path.join(environment.figdir, 'corr(e_asym_{0},ec_asym).png'.format(B)), dpi=300, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
+
+# %% note: the following section only runs for weighted control
+if B != 'wb':
+    # %% 6) brain map
+    cmap = 'viridis'
+    figwidth = 2
+    figratio = 0.60
+    figheight = figwidth * figratio
+
+    vtx_data, plot_min, plot_max = roi_to_vtx(load_average_bms.brain_maps[B].data + 1e-5,
+                                              environment.parcel_names, environment.lh_annot_file)
+    vtx_data = vtx_data.astype(float)
+
+    f = plotting.plot_surf_roi(environment.fsaverage['infl_left'], roi_map=vtx_data,
+                               hemi='left', view='lateral', vmin=0, vmax=1,
+                               bg_map=environment.fsaverage['sulc_left'], bg_on_data=True,
+                               darkness=.5, cmap=cmap, colorbar=False)
+    f.set_figwidth(figwidth)
+    f.set_figheight(figheight)
+    f.savefig(os.path.join(environment.figdir, '{0}_lat.png'.format(B)), dpi=300, bbox_inches='tight',
+              pad_inches=0)
+    plt.close()
+
+    f = plotting.plot_surf_roi(environment.fsaverage['infl_left'], roi_map=vtx_data,
+                               hemi='left', view='medial', vmin=0, vmax=1,
+                               bg_map=environment.fsaverage['sulc_left'], bg_on_data=True,
+                               darkness=.5, cmap=cmap, colorbar=False)
+    f.set_figwidth(figwidth)
+    f.set_figheight(figheight)
+    f.savefig(os.path.join(environment.figdir, '{0}_med.png'.format(B)), dpi=300, bbox_inches='tight',
+              pad_inches=0)
+    plt.close()
+
+    # %% 7) correlations between control set weights and energy
+    load_average_bms.brain_maps[B].mean_between_states(compute_gradients.grad_bins) # across all regions for state pairs
+    # load_average_bms.brain_maps[B].mean_within_states(compute_gradients.grad_bins) # across regions within target states
+    # load_average_bms.brain_maps[B].data_mean = load_average_bms.brain_maps[B].data_mean.transpose() # across regions within initial states
+
+    f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+    my_regplot(load_average_bms.brain_maps[B].data_mean[indices], E[B][indices],
+               '{0} (averaged within state pairs)'.format(B.upper()), '{0}-weighted energy'.format(B.upper()), ax)
+    f.savefig(os.path.join(environment.figdir, 'corr({0},energy_{0}).png'.format(B)), dpi=300, bbox_inches='tight',
+              pad_inches=0.1)
+    plt.close()
+
+    # %% 8) spin test null
+    asymm_null, observed, p_val = helper_null_mean(e, e_spin_null, indices_lower)
+    f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+    my_nullplot(observed=observed, null=asymm_null, p_val=p_val, xlabel='Mean energy asymmetry (spin-test null)', ax=ax)
+    f.savefig(os.path.join(environment.figdir, 'e_asym_mean_spin_null_{0}.png'.format(B)), dpi=150,
+              bbox_inches='tight', pad_inches=0.1)
+    plt.close()
+
+    # %% 9) null network model
+    asymm_null, observed, p_val = helper_null_mean(e, e_network_null, indices_lower)
+    f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+    my_nullplot(observed=observed, null=asymm_null, p_val=p_val, xlabel='Mean energy asymmetry (null network)', ax=ax)
+    f.savefig(os.path.join(environment.figdir, 'e_asym_mean_network_null_{0}.png'.format(B)), dpi=150,
+              bbox_inches='tight', pad_inches=0.1)
+    plt.close()
