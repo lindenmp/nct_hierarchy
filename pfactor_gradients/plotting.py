@@ -172,7 +172,7 @@ def my_nullplot(observed, null, p_val, xlabel, ax):
     sns.despine(right=True, top=True, ax=ax)
     ax.tick_params(pad=-2.5)
     ax.set_xlabel(xlabel)
-    ax.set_ylabel('Counts')
+    ax.set_ylabel('counts')
 
     textstr = 'observed = {:.2f}'.format(observed)
     ax.text(observed, ax.get_ylim()[1], textstr,
