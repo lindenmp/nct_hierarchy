@@ -13,9 +13,12 @@ import seaborn as sns
 
 sns.set(style='whitegrid', context='paper', font_scale=1)
 import matplotlib.font_manager as font_manager
-fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
+fontpath = '/System/Library/Fonts/HelveticaNeue.ttc'
 prop = font_manager.FontProperties(fname=fontpath)
-plt.rcParams['font.family'] = prop.get_name()
+prop.set_weight = 'thin'
+plt.rcParams['font.family'] = prop.get_family()
+plt.rcParams['font.sans-serif'] = prop.get_name()
+# plt.rcParams['font.weight'] = 'thin'
 plt.rcParams['svg.fonttype'] = 'none'
 
 # %% Setup project environment
