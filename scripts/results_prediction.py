@@ -154,7 +154,6 @@ for violin in ax.collections[int(n_violins/2):]:
     violin.set_alpha(1)
 
 handles, labels = ax.get_legend_handles_labels()
-# ax.legend(handles=handles[:2], labels=labels[:2], title='NCT', bbox_to_anchor=(1.05, 1.0), loc='upper left')
 ax.legend(handles=handles[:2], labels=['energy', 'neurobiology'], title='', bbox_to_anchor=(1, 1.15), loc='upper right')
 ax.set_title('')
 # ax.set_title(y_label)
@@ -170,9 +169,14 @@ for i, B in enumerate(['wb', 'ct', 'cbf']):
     null = df_prediction_null.loc[np.logical_and(df_prediction_null['B'] == B,
                                                  df_prediction_null['energy'] == 'yes'), 'score']
     p_val = get_null_p(x, null)
-    textstr = 'p = {:.2f}'.format(p_val)
-    ax.text(i - 0.2, np.mean([x, np.mean(null)]), textstr, rotation=90,
-            horizontalalignment='center', verticalalignment='center')
+    if p_val < 0.05:
+        textstr = '*'
+        ax.text(i - 0.1, x, textstr, rotation=90, fontweight='bold',
+                horizontalalignment='center', verticalalignment='center')
+    else:
+        textstr = 'n.s.'
+        ax.text(i - 0.1, x, textstr, rotation=90,
+                horizontalalignment='center', verticalalignment='center')
 
     if B != 'wb':
         x = np.mean(df_prediction.loc[np.logical_and(df_prediction['B'] == B,
@@ -180,12 +184,16 @@ for i, B in enumerate(['wb', 'ct', 'cbf']):
         null = df_prediction_null.loc[np.logical_and(df_prediction_null['B'] == B,
                                                      df_prediction_null['energy'] == 'no'), 'score']
         p_val = get_null_p(x, null)
-        textstr = 'p = {:.2f}'.format(p_val)
-        ax.text(i + 0.2, np.mean([x, np.mean(null)]), textstr, rotation=90,
-                horizontalalignment='center', verticalalignment='center')
+        if p_val < 0.05:
+            textstr = '*'
+            ax.text(i + 0.1, x, textstr, rotation=270, fontweight='bold',
+                    horizontalalignment='center', verticalalignment='center')
+        else:
+            textstr = 'n.s.'
+            ax.text(i + 0.1, x, textstr, rotation=270,
+                    horizontalalignment='center', verticalalignment='center')
 
 
 f.savefig(os.path.join(environment.figdir, 'prediction_{0}.png'.format(y_name)), dpi=300, bbox_inches='tight',
           pad_inches=0.1)
-# plt.show()
 plt.close()
