@@ -17,9 +17,12 @@ import seaborn as sns
 
 sns.set(style='whitegrid', context='paper', font_scale=1)
 import matplotlib.font_manager as font_manager
-fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
+fontpath = '/System/Library/Fonts/HelveticaNeue.ttc'
 prop = font_manager.FontProperties(fname=fontpath)
-plt.rcParams['font.family'] = prop.get_name()
+prop.set_weight = 'thin'
+plt.rcParams['font.family'] = prop.get_family()
+plt.rcParams['font.sans-serif'] = prop.get_name()
+# plt.rcParams['font.weight'] = 'thin'
 plt.rcParams['svg.fonttype'] = 'none'
 
 # %% Setup project environment
@@ -120,20 +123,34 @@ sig_mask[np.isnan(e_corr_p)] = True
 print(np.sum(sig_mask == False))
 
 # %% plots
-f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+figsize = 1.5
+
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 cmap = sns.diverging_palette(150, 275, as_cmap=True)
 sns.heatmap(e_corr, mask=sig_mask, center=0, square=True, cmap=cmap, ax=ax,
-            cbar_kws={"shrink": 0.80, "label": "Age effects (Pearson's r)"})
-ax.set_ylabel("Initial states (i)")
-ax.set_xlabel("Target states (j)")
+            # cbar_kws={"shrink": 0.80, "label": "age effects (Pearson's r)"})
+            cbar_kws={"shrink": 0.80})
+ax.set_title("age effects\n(Pearson's r)")
+ax.set_ylabel("initial states")
+ax.set_xlabel("target states")
+ax.set_yticklabels('')
+ax.set_xticklabels('')
 ax.tick_params(pad=-2.5)
-f.savefig(os.path.join(environment.figdir, 'corr(e_{0},age).png'.format(B)), dpi=150, bbox_inches='tight',
+f.savefig(os.path.join(environment.figdir, 'corr(e_{0},age).svg'.format(B)), dpi=150, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
 
-f, ax = plt.subplots(1, 1, figsize=(2.5, 2.5))
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+ed_mean = np.load(os.path.join(environment.pipelinedir, 'ed_{0}.npy'.format(B)))
+my_regplot(x=e_corr[indices_lower], y=ed_mean[indices_lower],
+           xlabel='age effects\n(bottom-up energy)', ylabel='energy asymmetry', ax=ax)
+f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0},ed)).svg'.format(B)), dpi=150, bbox_inches='tight',
+          pad_inches=0.1)
+plt.close()
+
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 my_regplot(x=e_corr[indices_upper], y=e_corr[indices_lower],
-           xlabel='Age effects on bottom-up energy', ylabel='Age effects on top-down energy', ax=ax)
-f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0},age)).png'.format(B)), dpi=150, bbox_inches='tight',
+           xlabel='age effects\n(bottom-up energy)', ylabel='age effects\n(top-down energy)', ax=ax)
+f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0},age)).svg'.format(B)), dpi=150, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
