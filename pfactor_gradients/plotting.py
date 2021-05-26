@@ -2,9 +2,10 @@ import os
 from pfactor_gradients.utils import get_p_val_string
 
 import numpy as np
+import pandas as pd
+import scipy as sp
 import nibabel as nib
 import math
-import scipy as sp
 from scipy import stats
 
 import seaborn as sns
@@ -99,7 +100,7 @@ def roi_to_vtx(roi_data, parcel_names, parc_file):
     return vtx_data, vtx_data_min, vtx_data_max
 
 
-def my_regplot(x, y, xlabel, ylabel, ax, c='gray', add_spearman=False):
+def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', add_spearman=False):
     if len(x.shape) > 1 and len(y.shape) > 1:
         if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
             mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
@@ -155,7 +156,7 @@ def my_regplot(x, y, xlabel, ylabel, ax, c='gray', add_spearman=False):
         ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=7,
                 verticalalignment='top')
 
-def my_rnullplot(x, x_null, y, xlabel, ax):
+def my_rnull_plot(x, x_null, y, xlabel, ax):
     if len(x.shape) > 1 and len(y.shape) > 1:
         if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
             mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
@@ -192,11 +193,11 @@ def my_rnullplot(x, x_null, y, xlabel, ax):
     ax.set_ylabel('')
     ax.tick_params(pad=-2.5)
 
-def my_nullplot(observed, null, p_val, xlabel, ax):
+def my_null_plot(observed, null, p_val, xlabel, ax):
     color_blue = sns.color_palette("Set1")[1]
     color_red = sns.color_palette("Set1")[0]
     sns.histplot(x=null, ax=ax, color='gray')
-    ax.axvline(x=observed, ymax=1, clip_on=False, linewidth=1.5, color=color_blue)
+    ax.axvline(x=observed, ymax=1, clip_on=False, linewidth=1, color=color_blue)
     ax.grid(False)
     sns.despine(right=True, top=True, ax=ax)
     ax.tick_params(pad=-2.5)
@@ -204,10 +205,20 @@ def my_nullplot(observed, null, p_val, xlabel, ax):
     ax.set_ylabel('counts')
 
     textstr = 'observed = {:.2f}'.format(observed)
-    ax.text(observed, ax.get_ylim()[1], textstr,
+    ax.text(observed, ax.get_ylim()[1], textstr, fontsize=7,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
 
-    textstr = 'p = {:.2f}'.format(p_val)
-    ax.text(observed, ax.get_ylim()[1], textstr,
+    textstr = '{:}'.format(get_p_val_string(p_val))
+    ax.text(observed, ax.get_ylim()[1], textstr, fontsize=7,
             horizontalalignment='right', verticalalignment='top', rotation=270, c=color_red)
 
+def my_distpair_plot(df, ylabel, ax):
+    sns.violinplot(data=df, ax=ax, inner="box", palette="pastel", cut=2, linewidth=1.5)
+    sns.despine(left=True, bottom=True)
+    ax.set_ylabel(ylabel)
+    ax.tick_params(pad=-2.5)
+    t, p_val = sp.stats.ttest_rel(a=df.iloc[:, 0], b=df.iloc[:, 1])
+    textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{t}', np.abs(t), get_p_val_string(p_val))
+    ax.text(0.5, ax.get_ylim()[1] + ax.get_ylim()[1] * 0.1, textstr, fontsize=7,
+            horizontalalignment='center', verticalalignment='top')
+    ax.axhline(y=ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05, xmin=0.25, xmax=0.75, color='k', linewidth=1)
