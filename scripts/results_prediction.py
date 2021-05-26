@@ -8,18 +8,10 @@ import pandas as pd
 import scipy as sp
 
 # %% Plotting
-import matplotlib.pyplot as plt
 import seaborn as sns
-
-sns.set(style='whitegrid', context='paper', font_scale=1)
-import matplotlib.font_manager as font_manager
-fontpath = '/System/Library/Fonts/HelveticaNeue.ttc'
-prop = font_manager.FontProperties(fname=fontpath)
-prop.set_weight = 'thin'
-plt.rcParams['font.family'] = prop.get_family()
-plt.rcParams['font.sans-serif'] = prop.get_name()
-# plt.rcParams['font.weight'] = 'thin'
-plt.rcParams['svg.fonttype'] = 'none'
+import matplotlib.pyplot as plt
+from pfactor_gradients.plotting import set_plotting_params
+set_plotting_params(format='png')
 
 # %% Setup project environment
 computer = 'macbook'
@@ -196,7 +188,6 @@ for i, B in enumerate(['wb', 'ct', 'cbf']):
             ax.text(i + 0.1, x, textstr, rotation=270,
                     horizontalalignment='center', verticalalignment='center')
 
-
-f.savefig(os.path.join(environment.figdir, 'prediction_{0}.png'.format(y_name)), dpi=300, bbox_inches='tight',
+f.savefig(os.path.join(environment.figdir, 'prediction_{0}'.format(y_name)), dpi=300, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
