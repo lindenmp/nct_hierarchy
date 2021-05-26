@@ -3,7 +3,7 @@ from pfactor_gradients.pnc import Environment, Subject
 from pfactor_gradients.routines import LoadSC, LoadCT, LoadCBF
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.utils import rank_int, get_fdr_p
-from pfactor_gradients.plotting import my_regplot
+from pfactor_gradients.plotting import my_reg_plot
 from pfactor_gradients.imaging_derivs import DataVector
 import numpy as np
 import pandas as pd
@@ -123,8 +123,8 @@ sns.heatmap(e_corr, mask=sig_mask, center=0, square=True, cmap=cmap, ax=ax,
             # cbar_kws={"shrink": 0.80, "label": "age effects (Pearson's r)"})
             cbar_kws={"shrink": 0.80})
 ax.set_title("age effects\n(Pearson's $\mathit{r}$)")
-ax.set_ylabel("initial states")
-ax.set_xlabel("target states")
+ax.set_ylabel("initial states", labelpad=-1)
+ax.set_xlabel("target states", labelpad=-1)
 ax.set_yticklabels('')
 ax.set_xticklabels('')
 ax.tick_params(pad=-2.5)
@@ -134,14 +134,14 @@ plt.close()
 
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 ed_mean = np.load(os.path.join(environment.pipelinedir, 'ed_{0}.npy'.format(B)))
-my_regplot(x=e_corr[indices_lower], y=ed_mean[indices_lower],
+my_reg_plot(x=e_corr[indices_lower], y=ed_mean[indices_lower],
            xlabel='age effects\n(bottom-up energy)', ylabel='energy asymmetry', ax=ax)
 f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0},ed))'.format(B)), dpi=300, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
 
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_regplot(x=e_corr[indices_upper], y=e_corr[indices_lower],
+my_reg_plot(x=e_corr[indices_upper], y=e_corr[indices_lower],
            xlabel='age effects\n(bottom-up energy)', ylabel='age effects\n(top-down energy)', ax=ax)
 f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0},age))'.format(B)), dpi=300, bbox_inches='tight',
           pad_inches=0.01)
