@@ -99,7 +99,7 @@ def roi_to_vtx(roi_data, parcel_names, parc_file):
     return vtx_data, vtx_data_min, vtx_data_max
 
 
-def my_regplot(x, y, xlabel, ylabel, ax, c='gray'):
+def my_regplot(x, y, xlabel, ylabel, ax, c='gray', add_spearman=False):
     if len(x.shape) > 1 and len(y.shape) > 1:
         if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
             mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
@@ -142,12 +142,18 @@ def my_regplot(x, y, xlabel, ylabel, ax, c='gray'):
     ax.tick_params(pad=-2.5)
     ax.grid(False)
     sns.despine(right=True, top=True, ax=ax)
-    pearson_stats = sp.stats.pearsonr(x, y)
-    spearman_stats = sp.stats.spearmanr(x, y)
-    textstr = 'r = {:.2f}, p = {:.2f} \nrho = {:.2f}, p = {:.2f}'.format(pearson_stats[0], pearson_stats[1],
-                                                                         spearman_stats[0], spearman_stats[1])
-    ax.text(0.05, 0.975, textstr, transform=ax.transAxes,
-            verticalalignment='top')
+    r, r_p = sp.stats.pearsonr(x, y)
+    if add_spearman:
+        rho, rho_p = sp.stats.spearmanr(x, y)
+        textstr = '$\mathit{:}$ = {:.2f}, {:}\n$\\rho$ = {:.2f}, {:}' \
+            .format('{r}', r, get_p_val_string(r_p), rho, get_p_val_string(rho_p))
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=7,
+                verticalalignment='top')
+    else:
+        textstr = '$\mathit{:}$ = {:.2f}, {:}' \
+            .format('{r}', r, get_p_val_string(r_p))
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=7,
+                verticalalignment='top')
 
 def my_rnullplot(x, x_null, y, xlabel, ax):
     if len(x.shape) > 1 and len(y.shape) > 1:
