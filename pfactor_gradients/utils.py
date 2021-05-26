@@ -218,7 +218,6 @@ def helper_null_hyperplane(e, e_null, indices):
     n_perms = e_null.shape[2]
     # compute energy asymmetry
     ed = e.transpose() - e
-    ed = rank_int(ed)
 
     # containers
     asymm_nulls = np.zeros((n_perms, 3))
@@ -226,7 +225,6 @@ def helper_null_hyperplane(e, e_null, indices):
     for i in np.arange(e_null.shape[2]):
         # compute null asymmetry matrix
         ed_null = e_null[:, :, i].transpose() - e_null[:, :, i]
-        ed_null = rank_int(ed_null)
 
         data = np.concatenate((indices[0].reshape(-1, 1),
                                indices[1].reshape(-1, 1),
@@ -252,3 +250,16 @@ def helper_null_hyperplane(e, e_null, indices):
     p_vals.append(get_null_p(observed[2], asymm_nulls[:, 2], abs=True))
 
     return asymm_nulls, observed, p_vals
+
+
+def get_p_val_string(p_val):
+    if p_val == 0.0:
+        p_str = "-log10($\mathit{:}$)>25".format('{p}')
+    elif p_val < 0.001:
+        p_str = '$\mathit{:}$ < 0.001'.format('{p}')
+    elif p_val >= 0.001 and p_val < 0.05:
+        p_str = '$\mathit{:}$ < 0.05'.format('{p}')
+    else:
+        p_str = "$\mathit{:}$ = {:.3f}".format('{p}', p_val)
+
+    return p_str
