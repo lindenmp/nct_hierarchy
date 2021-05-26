@@ -1,12 +1,35 @@
 import os
+from pfactor_gradients.utils import get_p_val_string
+
 import numpy as np
 import nibabel as nib
 import math
-
 import scipy as sp
 from scipy import stats
 
 import seaborn as sns
+import pkg_resources
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+def set_plotting_params(format='png'):
+    os.system('rm -rf ~/.cache/matplotlib')
+    plt.rcParams['pdf.fonttype'] = 42
+    plt.rcParams['ps.fonttype'] = 42
+    plt.rcParams['savefig.format'] = format
+
+    path = pkg_resources.resource_stream('pfactor_gradients', 'PublicSans-Thin.ttf')
+    prop = mpl.font_manager.FontProperties(fname=path.name)
+    plt.rcParams['font.sans-serif'] = prop.get_name()
+    plt.rcParams['font.serif'] = prop.get_name()
+    plt.rcParams['font.family'] = prop.get_family()
+    plt.rcParams['mathtext.fontset'] = 'custom'
+    plt.rcParams['mathtext.it'] = 'Public Sans:italic'
+    plt.rcParams['mathtext.bf'] = 'Public Sans:bold'
+    plt.rcParams['mathtext.cal'] = 'Public Sans'
+
+    plt.rcParams['svg.fonttype'] = 'none'
+    sns.set(style='whitegrid', context='paper', font_scale=1, font='Public Sans')
 
 def roi_to_vtx(roi_data, parcel_names, parc_file):
     """
