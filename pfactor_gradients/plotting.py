@@ -13,6 +13,7 @@ import pkg_resources
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+
 def set_plotting_params(format='png'):
     os.system('rm -rf ~/.cache/matplotlib')
     plt.rcParams['pdf.fonttype'] = 42
@@ -31,6 +32,7 @@ def set_plotting_params(format='png'):
 
     plt.rcParams['svg.fonttype'] = 'none'
     sns.set(style='whitegrid', context='paper', font_scale=1, font='Public Sans')
+
 
 def roi_to_vtx(roi_data, parcel_names, parc_file):
     """
@@ -137,9 +139,12 @@ def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', add_spearman=False):
     except:
         pass
     sns.regplot(x=x, y=y, ax=ax, scatter=False, color=color_blue)
-    ax.scatter(x=x, y=y, c=c, s=5, alpha=0.5)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel, labelpad=-1)
+    if type(c) == str:
+        ax.scatter(x=x, y=y, c=c, s=5, alpha=0.5)
+    else:
+        ax.scatter(x=x, y=y, c=c, cmap='viridis', s=5, alpha=0.5)
+    ax.set_xlabel(xlabel, labelpad=-0.5)
+    ax.set_ylabel(ylabel, labelpad=-0.5)
     ax.tick_params(pad=-2.5)
     ax.grid(False)
     sns.despine(right=True, top=True, ax=ax)
@@ -148,13 +153,14 @@ def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', add_spearman=False):
         rho, rho_p = sp.stats.spearmanr(x, y)
         textstr = '$\mathit{:}$ = {:.2f}, {:}\n$\\rho$ = {:.2f}, {:}' \
             .format('{r}', r, get_p_val_string(r_p), rho, get_p_val_string(rho_p))
-        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=7,
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=8,
                 verticalalignment='top')
     else:
         textstr = '$\mathit{:}$ = {:.2f}, {:}' \
             .format('{r}', r, get_p_val_string(r_p))
-        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=7,
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=8,
                 verticalalignment='top')
+
 
 def my_rnull_plot(x, x_null, y, xlabel, ax):
     if len(x.shape) > 1 and len(y.shape) > 1:
@@ -193,6 +199,7 @@ def my_rnull_plot(x, x_null, y, xlabel, ax):
     ax.set_ylabel('')
     ax.tick_params(pad=-2.5)
 
+
 def my_null_plot(observed, null, p_val, xlabel, ax):
     color_blue = sns.color_palette("Set1")[1]
     color_red = sns.color_palette("Set1")[0]
@@ -201,24 +208,25 @@ def my_null_plot(observed, null, p_val, xlabel, ax):
     ax.grid(False)
     sns.despine(right=True, top=True, ax=ax)
     ax.tick_params(pad=-2.5)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel('counts')
+    ax.set_xlabel(xlabel, labelpad=-0.5)
+    ax.set_ylabel('counts', labelpad=-0.5)
 
-    textstr = 'observed = {:.2f}'.format(observed)
-    ax.text(observed, ax.get_ylim()[1], textstr, fontsize=7,
+    textstr = 'obs. = {:.2f}'.format(observed)
+    ax.text(observed, ax.get_ylim()[1], textstr, fontsize=8,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
 
     textstr = '{:}'.format(get_p_val_string(p_val))
-    ax.text(observed, ax.get_ylim()[1], textstr, fontsize=7,
+    ax.text(observed - (np.abs(observed)*0.0025), ax.get_ylim()[1], textstr, fontsize=8,
             horizontalalignment='right', verticalalignment='top', rotation=270, c=color_red)
+
 
 def my_distpair_plot(df, ylabel, ax):
     sns.violinplot(data=df, ax=ax, inner="box", palette="pastel", cut=2, linewidth=1.5)
     sns.despine(left=True, bottom=True)
-    ax.set_ylabel(ylabel)
+    ax.set_ylabel(ylabel, labelpad=-0.5)
     ax.tick_params(pad=-2.5)
     t, p_val = sp.stats.ttest_rel(a=df.iloc[:, 0], b=df.iloc[:, 1])
     textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{t}', np.abs(t), get_p_val_string(p_val))
-    ax.text(0.5, ax.get_ylim()[1] + ax.get_ylim()[1] * 0.1, textstr, fontsize=7,
+    ax.text(0.5, ax.get_ylim()[1] + (ax.get_ylim()[1] * 0.15), textstr, fontsize=8,
             horizontalalignment='center', verticalalignment='top')
     ax.axhline(y=ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05, xmin=0.25, xmax=0.75, color='k', linewidth=1)
