@@ -109,8 +109,10 @@ class Environment():
         # filter dataframe
         if len(filters) > 0:
             for filter in filters:
+                n_excluded = df.shape[0] - df[df[filter] == filters[filter]].shape[0]
                 df = df[df[filter] == filters[filter]]
-                print('\tN after initial {0} exclusion: {1}'.format(filter, df.shape[0]))
+                n_retained = df.shape[0]
+                print('\tN after initial {0} exclusion: {1} ({2} excluded)'.format(filter, n_retained, n_excluded))
 
         print('\tFinal sample: {0} subjects with {1} columns'.format(df.shape[0], df.shape[1]))
 
