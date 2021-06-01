@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 from statsmodels.stats import multitest
+import nibabel as nib
 
 def get_pdist_clusters(coords, labels, method='mean'):
     unique, counts = np.unique(labels, return_counts=True)
@@ -263,3 +264,20 @@ def get_p_val_string(p_val):
         p_str = "$\mathit{:}$ = {:.3f}".format('{p}', p_val)
 
     return p_str
+
+
+def get_parcelwise_average_gii(gifti_file, annot_file):
+    # load parcellation
+    labels, ctab, surf_names = nib.freesurfer.read_annot(annot_file)
+    unique_labels = np.unique(labels)
+
+    # load gifti file
+    gifti = nib.load(gifti_file)
+    data = gifti.darrays[0].data
+
+    # mean over labels
+    data_mean = []
+    for i in unique_labels:
+        data_mean.append(np.mean(data[labels == i]))
+
+    return np.asarray(data_mean)
