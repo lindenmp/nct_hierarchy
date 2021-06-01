@@ -32,7 +32,7 @@ class Environment():
 
         self.pipelinedir = os.path.join(self.outputdir, 'pipelines')
         self.figdir = os.path.join(self.outputdir, 'figures')
-        self.datadir = os.path.join(self.research_data, 'PNC')
+        self.datadir = os.path.join(self.research_data, 'pnc')
         self.freezedir = os.path.join(self.datadir, 'pncDataFreeze20170905', 'n1601_dataFreeze')
         if self.parc == 'schaefer':
             self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
@@ -120,42 +120,42 @@ class Environment():
 
     def load_parc_data(self):
         if self.parc == 'schaefer':
-            self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'support_files',
+            self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'support_files',
                                                            'schaefer{0}NodeNames.txt'.format(self.n_parcels)),
                                                    dtype='str'))
             self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
-            self.lh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
+            self.lh_annot_file = os.path.join(self.research_data, 'parcellations', 'FreeSurfer5.3',
                                               'fsaverage5', 'label',
                                               'lh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
-            self.rh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
+            self.rh_annot_file = os.path.join(self.research_data, 'parcellations', 'FreeSurfer5.3',
                                               'fsaverage5', 'label',
                                               'rh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
-            self.centroids = pd.read_csv(os.path.join(self.research_data, 'Parcellations', 'MNI', 'Centroid_coordinates',
+            self.centroids = pd.read_csv(os.path.join(self.research_data, 'parcellations', 'MNI', 'Centroid_coordinates',
                                                       'Schaefer2018_{0}Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'.format(self.n_parcels)))
             self.centroids.drop('ROI Index', axis=1, inplace=True)
             self.centroids.set_index('Label Name', inplace=True)
             self.centroids.drop('NONE', axis=0, inplace=True)
-            self.spun_indices = np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'spin_test',
+            self.spun_indices = np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'spin_test',
                                                         'rotated_ind_schaefer{0}.csv'.format(self.n_parcels)),
                                               delimiter=',', dtype=int)
             self.spun_indices = self.spun_indices - 1
 
         elif self.parc == 'glasser':
-            self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'support_files',
+            self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'support_files',
                                                            'glasser{0}NodeNames.txt'.format(self.n_parcels)),
                                                    dtype='str'))
             self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage')
-            self.lh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
+            self.lh_annot_file = os.path.join(self.research_data, 'parcellations', 'FreeSurfer5.3',
                                               'fsaverage', 'label', 'lh.HCP-MMP1.annot')
-            self.rh_annot_file = os.path.join(self.research_data, 'Parcellations', 'FreeSurfer5.3',
+            self.rh_annot_file = os.path.join(self.research_data, 'parcellations', 'FreeSurfer5.3',
                                               'fsaverage', 'label', 'rh.HCP-MMP1.annot')
 
-            self.centroids = pd.read_csv(os.path.join(self.research_data, 'Parcellations', 'support_files',
+            self.centroids = pd.read_csv(os.path.join(self.research_data, 'parcellations', 'support_files',
                                                     'HCP-MMP1_UniqueRegionList.csv'))
             self.centroids = pd.concat((self.centroids.iloc[180:, :], self.centroids.iloc[0:180, :]), axis=0)
             self.centroids.reset_index(inplace=True, drop=True)
             self.centroids = self.centroids.loc[:, ['x-cog', 'y-cog', 'z-cog']]
-            self.spun_indices = np.genfromtxt(os.path.join(self.research_data, 'Parcellations', 'spin_test',
+            self.spun_indices = np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'spin_test',
                                                         'rotated_ind_glasser{0}.csv'.format(self.n_parcels)),
                                               delimiter=',', dtype=int)
             self.spun_indices = self.spun_indices - 1
