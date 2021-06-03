@@ -19,9 +19,9 @@ class BrainMapLoader:
         data_lh = get_parcelwise_average_gii(lh_gifti_file, lh_annot_file)
         data_rh = get_parcelwise_average_gii(rh_gifti_file, rh_annot_file)
 
-        if 'schaefer' in lh_annot_file.lower() and 'schaefer' in rh_annot_file.lower():
-            data_lh = data_lh[1:]
-            data_rh = data_rh[1:]
+        # drop first entry (corresponds to 0)
+        data_lh = data_lh[1:]
+        data_rh = data_rh[1:]
 
         if order == 'lhrh':
             self.ct = np.hstack((data_lh, data_rh))
@@ -40,9 +40,9 @@ class BrainMapLoader:
         data_lh = get_parcelwise_average_gii(lh_gifti_file, lh_annot_file)
         data_rh = get_parcelwise_average_gii(rh_gifti_file, rh_annot_file)
 
-        if 'schaefer' in lh_annot_file.lower() and 'schaefer' in rh_annot_file.lower():
-            data_lh = data_lh[1:]
-            data_rh = data_rh[1:]
+        # drop first entry (corresponds to 0)
+        data_lh = data_lh[1:]
+        data_rh = data_rh[1:]
 
         if order == 'lhrh':
             self.myelin = np.hstack((data_lh, data_rh))
@@ -61,9 +61,9 @@ class BrainMapLoader:
         data_lh = get_parcelwise_average_gii(lh_gifti_file, lh_annot_file)
         data_rh = get_parcelwise_average_gii(rh_gifti_file, rh_annot_file)
 
-        if 'schaefer' in lh_annot_file.lower() and 'schaefer' in rh_annot_file.lower():
-            data_lh = data_lh[1:]
-            data_rh = data_rh[1:]
+        # drop first entry (corresponds to 0)
+        data_lh = data_lh[1:]
+        data_rh = data_rh[1:]
 
         if order == 'lhrh':
             self.ndi = np.hstack((data_lh, data_rh))
@@ -82,9 +82,9 @@ class BrainMapLoader:
         data_lh = get_parcelwise_average_gii(lh_gifti_file, lh_annot_file)
         data_rh = get_parcelwise_average_gii(rh_gifti_file, rh_annot_file)
 
-        if 'schaefer' in lh_annot_file.lower() and 'schaefer' in rh_annot_file.lower():
-            data_lh = data_lh[1:]
-            data_rh = data_rh[1:]
+        # drop first entry (corresponds to 0)
+        data_lh = data_lh[1:]
+        data_rh = data_rh[1:]
 
         if order == 'lhrh':
             self.odi = np.hstack((data_lh, data_rh))
