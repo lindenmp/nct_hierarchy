@@ -156,7 +156,7 @@ class Environment():
             self.centroids.reset_index(inplace=True, drop=True)
             self.centroids = self.centroids.loc[:, ['x-cog', 'y-cog', 'z-cog']]
             self.spun_indices = np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'spin_test',
-                                                        'rotated_ind_glasser{0}_fsaverage5.csv'.format(self.n_parcels)),
+                                                        'rotated_ind_glasser{0}.csv'.format(self.n_parcels)),
                                               delimiter=',', dtype=int)
             self.spun_indices = self.spun_indices - 1
 
