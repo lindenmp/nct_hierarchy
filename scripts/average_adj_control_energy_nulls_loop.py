@@ -14,6 +14,7 @@ from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadRE
     LoadAverageSC, LoadAverageBrainMaps
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
+from pfactor_gradients.hcp import BrainMapLoader
 import scipy as sp
 import numpy as np
 from tqdm import tqdm
@@ -75,6 +76,18 @@ loaders_dict = {
 
 load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
 load_average_bms.run(return_descending=False)
+
+# append hcp myelin map
+hcp_brain_maps = BrainMapLoader()
+hcp_brain_maps.load_myelin(lh_annot_file=environment.lh_annot_file, rh_annot_file=environment.rh_annot_file)
+
+data = DataVector(data=hcp_brain_maps.myelin, name='myelin')
+data.rankdata()
+data.rescale_unit_interval()
+load_average_bms.brain_maps['myelin'] = data
+
+load_average_bms.brain_maps.pop('ct')
+load_average_bms.brain_maps.pop('cbf')
 
 # %% get control energy
 file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
