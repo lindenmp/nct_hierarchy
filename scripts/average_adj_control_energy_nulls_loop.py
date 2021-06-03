@@ -86,9 +86,6 @@ data.rankdata()
 data.rescale_unit_interval()
 load_average_bms.brain_maps['myelin'] = data
 
-load_average_bms.brain_maps.pop('ct')
-load_average_bms.brain_maps.pop('cbf')
-
 # %% get control energy
 file_prefix = 'average_adj_n-{0}_s-{1}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh)
 n_subsamples = 0
