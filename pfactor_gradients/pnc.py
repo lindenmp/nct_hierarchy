@@ -144,11 +144,11 @@ class Environment():
             self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'support_files',
                                                            'glasser{0}NodeNames.txt'.format(self.n_parcels)),
                                                    dtype='str'))
-            self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage')
-            self.lh_annot_file = os.path.join(self.research_data, 'parcellations', 'FreeSurfer5.3',
-                                              'fsaverage', 'label', 'lh.HCP-MMP1.annot')
-            self.rh_annot_file = os.path.join(self.research_data, 'parcellations', 'FreeSurfer5.3',
-                                              'fsaverage', 'label', 'rh.HCP-MMP1.annot')
+            self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
+            self.lh_annot_file = os.path.join(self.research_data, 'parcellations',
+                                              'Glasser_et_al_2016_HCP_MMP1.0_qN_RVVG', 'HCP-MMP1.L.annot')
+            self.rh_annot_file = os.path.join(self.research_data, 'parcellations',
+                                              'Glasser_et_al_2016_HCP_MMP1.0_qN_RVVG', 'HCP-MMP1.R.annot')
 
             self.centroids = pd.read_csv(os.path.join(self.research_data, 'parcellations', 'support_files',
                                                     'HCP-MMP1_UniqueRegionList.csv'))
