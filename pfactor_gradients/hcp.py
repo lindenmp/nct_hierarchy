@@ -3,9 +3,22 @@ import numpy as np
 from pfactor_gradients.utils import get_parcelwise_average_gii
 
 class BrainMapLoader:
-    def __init__(self):
-        self.description = 'simple class for loading precomputed HCP brain maps taken from Fukutomi et al. 2018 NeuroImage'
-        self.brainmap_dir = '/Volumes/T7/research_data/fukutomi_2018ni_brain_maps'
+    def __init__(self, computer='macbook'):
+        # analysis parameters
+        self.computer = computer
+
+        # directories
+        if self.computer == 'macbook':
+            self.userdir = '/Users/lindenmp'
+            self.projdir = os.path.join(self.userdir, 'Google-Drive-Penn', 'work', 'research_projects', 'pfactor_gradients')
+            self.rootdir = '/Volumes'
+            self.research_data = os.path.join(self.rootdir, 'T7', 'research_data')
+        elif self.computer == 'cbica':
+            self.userdir = '/cbica/home/parkesl'
+            self.projdir = os.path.join(self.userdir, 'research_projects', 'pfactor_gradients')
+            self.research_data = os.path.join(self.userdir, 'research_data')
+
+        self.brainmap_dir = os.path.join(self.research_data, 'fukutomi_2018ni_brain_maps')
 
 
     def load_ct(self, lh_annot_file, rh_annot_file, order='lhrh'):
