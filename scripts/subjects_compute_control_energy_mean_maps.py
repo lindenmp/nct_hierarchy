@@ -3,9 +3,10 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF
+from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF, LoadAverageBrainMaps
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.imaging_derivs import DataVector
+from pfactor_gradients.hcp import BrainMapLoader
 
 # %% Setup project environment
 if platform.system() == 'Linux':
@@ -34,15 +35,8 @@ compute_gradients.run()
 # %% Load sc data
 load_sc = LoadSC(environment=environment, Subject=Subject)
 load_sc.run()
-# get subject A matrix out
-A = load_sc.A[:, :, sge_task_id].copy()
-print(load_sc.df.index[sge_task_id])
-
 # refilter environment due to LoadSC excluding on disconnected nodes
 environment.df = load_sc.df.copy()
-# retain ith subject
-environment.df = environment.df.iloc[sge_task_id, :].to_frame().transpose()
-print(environment.df.index[0])
 
 # %% load mean brain maps
 loaders_dict = {
@@ -50,11 +44,28 @@ loaders_dict = {
     'cbf': LoadCBF(environment=environment, Subject=Subject)
 }
 
-for key in loaders_dict:
-    loaders_dict[key].run()
+load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
+load_average_bms.run(return_descending=False)
+
+# append hcp myelin map
+hcp_brain_maps = BrainMapLoader()
+hcp_brain_maps.load_myelin(lh_annot_file=environment.lh_annot_file, rh_annot_file=environment.rh_annot_file)
+
+data = DataVector(data=hcp_brain_maps.myelin, name='myelin')
+data.rankdata()
+data.rescale_unit_interval()
+load_average_bms.brain_maps['myelin'] = data
+
+# rename brain maps to append '_mean'
+for key in load_average_bms.brain_maps:
+    load_average_bms.brain_maps[key].name = '{0}-mean'.format(key)
 
 # %% compute minimum energy
-file_prefix = '{0}_'.format(environment.df.index[0])
+
+# get subject A matrix out
+A = load_sc.A[:, :, sge_task_id].copy()
+file_prefix = '{0}_'.format(load_sc.df.index[sge_task_id])
+print(load_sc.df.index[sge_task_id])
 n_subsamples = 0
 
 nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
@@ -63,13 +74,9 @@ nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                            force_rerun=False, save_outputs=True, verbose=True)
 nct_pipeline.run()
 
-for key in loaders_dict:
-    bm = DataVector(data=loaders_dict[key].values[0, :].copy(), name=key)
-    bm.rankdata()
-    bm.rescale_unit_interval()
-
+for key in load_average_bms.brain_maps:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                                states=compute_gradients.grad_bins, n_subsamples=n_subsamples,
-                                               control='minimum_fast', T=1, B=bm, file_prefix=file_prefix,
+                                               control='minimum_fast', T=1, B=load_average_bms.brain_maps[key], file_prefix=file_prefix,
                                                force_rerun=False, save_outputs=True, verbose=True)
     nct_pipeline.run()
