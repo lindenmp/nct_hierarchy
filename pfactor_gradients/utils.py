@@ -210,7 +210,7 @@ def helper_null_mean(e, e_null, indices):
     # get observed
     observed = np.mean(ed[indices])
     # get p val
-    p_val = get_null_p(observed, asymm_null, version='smallest')
+    p_val = get_null_p(observed, asymm_null, abs=True)
 
     return asymm_null, observed, p_val
 
