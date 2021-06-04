@@ -48,7 +48,7 @@ load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
 load_average_bms.run(return_descending=False)
 
 # append hcp myelin map
-hcp_brain_maps = BrainMapLoader()
+hcp_brain_maps = BrainMapLoader(computer=computer)
 hcp_brain_maps.load_myelin(lh_annot_file=environment.lh_annot_file, rh_annot_file=environment.rh_annot_file)
 
 data = DataVector(data=hcp_brain_maps.myelin, name='myelin')
