@@ -92,7 +92,7 @@ if 'sex' in covs:
 c = c.values
 
 # %% prediction from brain maps (no NCT)
-if X_name != 'wb':
+if X_name != 'wb' and '-mean' not in X_name:
     if X_name == 'ct':
         loader = LoadCT(environment=environment, Subject=Subject)
     elif X_name == 'cbf':
