@@ -17,6 +17,7 @@ from pfactor_gradients.imaging_derivs import DataVector
 from pfactor_gradients.hcp import BrainMapLoader
 import scipy as sp
 import numpy as np
+from bct.algorithms.reference import randmio_und
 
 # %% Setup project environment
 import matplotlib.pyplot as plt
@@ -68,11 +69,19 @@ load_average_sc = LoadAverageSC(load_sc=load_sc, spars_thresh=spars_thresh)
 load_average_sc.run()
 A = load_average_sc.A.copy()
 
-# rewire mean adjacency matrix
+# rewire mean adjacency matrix with spatial constraints
 D = sp.spatial.distance.pdist(environment.centroids, 'euclidean')
 D = sp.spatial.distance.squareform(D)
 octave.eval("rand('state',%i)" % sge_task_id)
 Wwp, Wsp, Wssp = octave.geomsurr(A, D, 3, 2, nout=3)
+
+# rewire mean adjacency matrix without spatial constraints
+n_parcels = A.shape[0]
+n_connections = n_parcels * n_parcels - n_parcels
+n_edge_swaps = int(5 * 10e4)
+n_iter = int(n_edge_swaps / n_connections)
+np.random.seed(sge_task_id)
+R, eff = randmio_und(A, itr=n_iter)
 
 # %% load mean brain maps
 loaders_dict = {
@@ -134,10 +143,11 @@ for key in load_average_bms.brain_maps:
 # nct_pipeline.run()
 
 # %% network null
-A_list = [Wwp, Wsp, Wssp]
+A_list = [Wwp, Wsp, Wssp, R]
 file_prefixes = ['average_adj_n-{0}_s-{1}_null-mni-wwp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
                  'average_adj_n-{0}_s-{1}_null-mni-wsp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
-                 'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id)]
+                 'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
+                 'average_adj_n-{0}_s-{1}_null-nospat-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id)]
 
 for A_idx, A_entry in enumerate(A_list):
     file_prefix = file_prefixes[A_idx]
