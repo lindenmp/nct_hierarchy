@@ -18,6 +18,7 @@ from pfactor_gradients.hcp import BrainMapLoader
 import scipy as sp
 import numpy as np
 from tqdm import tqdm
+from bct.algorithms.reference import randmio_und
 
 # %% Setup project environment
 import matplotlib.pyplot as plt
@@ -118,7 +119,7 @@ for key in load_average_bms.brain_maps:
     np.save(os.path.join(nct_pipeline._output_dir(), '{0}E.npy'.format(out_prefix)), E)
 
 # %% network null
-A_list = ['wwp', 'wsp', 'wssp']
+A_list = ['wwp', 'wsp', 'wssp', 'nospat']
 B_list = ['wb',] + list(load_average_bms.brain_maps.keys())
 
 for A_entry in A_list:
@@ -129,6 +130,7 @@ for A_entry in A_list:
             D = sp.spatial.distance.pdist(environment.centroids, 'euclidean')
             D = sp.spatial.distance.squareform(D)
             octave.eval("rand('state',%i)" % sge_task_id)
+            np.random.seed(sge_task_id)
 
             if A_entry == 'wwp':
                 file_prefix = 'average_adj_n-{0}_s-{1}_null-mni-wwp-{2}_'.format(load_average_sc.load_sc.df.shape[0],
@@ -142,6 +144,14 @@ for A_entry in A_list:
                 file_prefix = 'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0],
                                                                                   spars_thresh, sge_task_id)
                 _, _, A_null = octave.geomsurr(A, D, 3, 2, nout=3)
+            elif A_entry == 'nospat':
+                file_prefix = 'average_adj_n-{0}_s-{1}_null-nospat-{2}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                                spars_thresh, sge_task_id)
+                n_parcels = A.shape[0]
+                n_connections = n_parcels * n_parcels - n_parcels
+                n_edge_swaps = int(5 * 10e4)
+                n_iter = int(n_edge_swaps / n_connections)
+                A_null, eff = randmio_und(A, itr=n_iter)
 
             # compute energy
             if B == 'wb':
