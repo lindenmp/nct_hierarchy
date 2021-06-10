@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -266,14 +267,18 @@ def get_p_val_string(p_val):
     return p_str
 
 
-def get_parcelwise_average_gii(gifti_file, annot_file):
+def get_parcelwise_average_surface(data_file, annot_file):
     # load parcellation
     labels, ctab, surf_names = nib.freesurfer.read_annot(annot_file)
     unique_labels = np.unique(labels)
 
     # load gifti file
-    gifti = nib.load(gifti_file)
-    data = gifti.darrays[0].data
+    data = nib.load(data_file)
+    file_name, file_extension = os.path.splitext(data_file)
+    if file_extension == '.gii':
+        data = data.darrays[0].data
+    elif file_extension == '.mgh':
+        data = data.get_fdata().squeeze()
 
     # mean over labels
     data_mean = []
@@ -281,3 +286,21 @@ def get_parcelwise_average_gii(gifti_file, annot_file):
         data_mean.append(np.mean(data[labels == i]))
 
     return np.asarray(data_mean)
+
+
+def get_offset_diag(n, version='lower', return_indices=False):
+
+    a = np.zeros((n, n))
+    b = np.ones(n-1)
+
+    if version == 'upper':
+        np.fill_diagonal(a[:, 1:], b)
+    elif version == 'lower':
+        np.fill_diagonal(a[1:], b)
+
+    if return_indices == True:
+        a = np.where(a)
+    else:
+        a = a.astype(np.bool)
+
+    return a
