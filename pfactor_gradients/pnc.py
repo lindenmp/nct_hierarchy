@@ -39,6 +39,8 @@ class Environment():
         elif self.parc == 'glasser':
             self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_dec2016')
         self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCt', 'parcelwise_antsCt')
+        # self.ctdir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
+        self.sadir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
         self.rstsdir = os.path.join(self.datadir, 'processedData', 'restbold', 'restbold_201607151621')
         self.cbfdir = os.path.join(self.datadir, 'processedData', 'asl', 'parcelwise_cbf')
 
@@ -178,7 +180,17 @@ class Subject():
 
             ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_schaefer{1}_17.txt' \
                                        .format(self.scanid, self.environment.n_parcels))
+            # ct_filename = os.path.join('{0}'.format(self.bblid),
+            #                            '*x{0}'.format(self.scanid),
+            #                            'surf', 'thickness_Schaefer2018_{0}Parcels_17Networks.txt' \
+            #                            .format(self.environment.n_parcels))
             ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
+
+            sa_filename = os.path.join('{0}'.format(self.bblid),
+                                       '*x{0}'.format(self.scanid),
+                                       'surf', 'area_pial_Schaefer2018_{0}Parcels_17Networks.txt' \
+                                       .format(self.environment.n_parcels))
+            sa_filename = glob.glob(os.path.join(self.environment.sadir, sa_filename))
 
             cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_schaefer{1}_17.txt' \
                                        .format(self.scanid, self.environment.n_parcels))
@@ -264,11 +276,14 @@ class Subject():
         try: self.ct_filename = ct_filename[0]
         except: self.ct_filename = []
 
-        try: self.rsts_filename = rsts_filename[0]
-        except: self.rsts_filename = []
+        try: self.sa_filename = sa_filename[0]
+        except: self.sa_filename = []
 
         try: self.cbf_filename = cbf_filename[0]
         except: self.cbf_filename = []
+
+        try: self.rsts_filename = rsts_filename[0]
+        except: self.rsts_filename = []
 
         try: self.reho_filename = reho_filename[0]
         except: self.reho_filename = []
@@ -296,6 +311,13 @@ class Subject():
             self.ct[:] = np.nan
         else:
             self.ct = np.loadtxt(self.ct_filename)
+
+    def load_sa(self):
+        if not self.sa_filename:
+            self.sa = np.zeros((self.environment.n_parcels,))
+            self.sa[:] = np.nan
+        else:
+            self.sa = np.loadtxt(self.sa_filename)
 
     def load_rsts(self):
         if not self.rsts_filename:
