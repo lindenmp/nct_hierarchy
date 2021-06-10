@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from pfactor_gradients.utils import get_parcelwise_average_gii
+from pfactor_gradients.utils import get_parcelwise_average_surface
 
 class BrainMapLoader:
     def __init__(self, computer='macbook'):
@@ -29,8 +29,8 @@ class BrainMapLoader:
         rh_gifti_file = os.path.join(indir, 'ave_corrThickness_MSMAll.fsaverage5.R.func.gii')
 
         # get average values over parcels
-        data_lh = get_parcelwise_average_gii(lh_gifti_file, lh_annot_file)
-        data_rh = get_parcelwise_average_gii(rh_gifti_file, rh_annot_file)
+        data_lh = get_parcelwise_average_surface(lh_gifti_file, lh_annot_file)
+        data_rh = get_parcelwise_average_surface(rh_gifti_file, rh_annot_file)
 
         # drop first entry (corresponds to 0)
         data_lh = data_lh[1:]
@@ -50,8 +50,8 @@ class BrainMapLoader:
         rh_gifti_file = os.path.join(indir, 'ave_MyelinMap_BC_MSMAll.fsaverage5.R.func.gii')
 
         # get average values over parcels
-        data_lh = get_parcelwise_average_gii(lh_gifti_file, lh_annot_file)
-        data_rh = get_parcelwise_average_gii(rh_gifti_file, rh_annot_file)
+        data_lh = get_parcelwise_average_surface(lh_gifti_file, lh_annot_file)
+        data_rh = get_parcelwise_average_surface(rh_gifti_file, rh_annot_file)
 
         # drop first entry (corresponds to 0)
         data_lh = data_lh[1:]
@@ -71,8 +71,8 @@ class BrainMapLoader:
         rh_gifti_file = os.path.join(indir, 'ave_ficvf_MSMAll.fsaverage5.R.func.gii')
 
         # get average values over parcels
-        data_lh = get_parcelwise_average_gii(lh_gifti_file, lh_annot_file)
-        data_rh = get_parcelwise_average_gii(rh_gifti_file, rh_annot_file)
+        data_lh = get_parcelwise_average_surface(lh_gifti_file, lh_annot_file)
+        data_rh = get_parcelwise_average_surface(rh_gifti_file, rh_annot_file)
 
         # drop first entry (corresponds to 0)
         data_lh = data_lh[1:]
@@ -92,8 +92,8 @@ class BrainMapLoader:
         rh_gifti_file = os.path.join(indir, 'ave_odifromkappa_MSMAll.fsaverage5.R.func.gii')
 
         # get average values over parcels
-        data_lh = get_parcelwise_average_gii(lh_gifti_file, lh_annot_file)
-        data_rh = get_parcelwise_average_gii(rh_gifti_file, rh_annot_file)
+        data_lh = get_parcelwise_average_surface(lh_gifti_file, lh_annot_file)
+        data_rh = get_parcelwise_average_surface(rh_gifti_file, rh_annot_file)
 
         # drop first entry (corresponds to 0)
         data_lh = data_lh[1:]
