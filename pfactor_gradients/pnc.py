@@ -291,31 +291,60 @@ class Subject():
             self.sc = DataMatrix(data=sc)
 
     def load_ct(self):
-        self.ct = np.loadtxt(self.ct_filename)
+        if not self.ct_filename:
+            self.ct = np.zeros((self.environment.n_parcels,))
+            self.ct[:] = np.nan
+        else:
+            self.ct = np.loadtxt(self.ct_filename)
 
     def load_rsts(self):
-        self.rsts = np.loadtxt(self.rsts_filename)
+        if not self.rsts_filename:
+            self.rsts = np.zeros((self.environment.n_trs, self.environment.n_parcels))
+            self.rsts[:] = np.nan
+        else:
+            self.rsts = np.loadtxt(self.rsts_filename)
 
     def load_rsfc(self):
         self.load_rsts()
 
-        self.rsfc = DataMatrix(data=compute_fc(self.rsts))
+        if np.all(np.isnan(self.rsts)):
+            rsfc = np.zeros((self.environment.n_parcels, self.environment.n_parcels))
+            rsfc[:] = np.nan
+            self.rsfc = DataMatrix(data=rsfc)
+        else:
+            self.rsfc = DataMatrix(data=compute_fc(self.rsts))
 
     def load_rlfp(self):
-        rsts = np.loadtxt(self.rsts_filename)
-        n_parcels = rsts.shape[1]
+        if not self.rsts_filename:
+            self.rlfp = np.zeros((self.environment.n_parcels,))
+            self.rlfp[:] = np.nan
+        else:
+            rsts = np.loadtxt(self.rsts_filename)
+            n_parcels = rsts.shape[1]
 
-        rlfp = np.zeros((n_parcels,))
-        for i in np.arange(n_parcels):
-            rlfp[i] = compute_rlfp(rsts[:, i], tr=self.environment.rsfmri_tr, num_bands=5, band_of_interest=1)
+            rlfp = np.zeros((n_parcels,))
+            for i in np.arange(n_parcels):
+                rlfp[i] = compute_rlfp(rsts[:, i], tr=self.environment.rsfmri_tr, num_bands=5, band_of_interest=1)
 
-        self.rlfp = rlfp
+            self.rlfp = rlfp
 
     def load_cbf(self):
-        self.cbf = np.loadtxt(self.cbf_filename)
+        if not self.cbf_filename:
+            self.cbf = np.zeros((self.environment.n_parcels,))
+            self.cbf[:] = np.nan
+        else:
+            self.cbf = np.loadtxt(self.cbf_filename)
 
     def load_reho(self):
-        self.reho = np.genfromtxt(self.reho_filename, skip_header=1)[2:]
+        if not self.reho_filename:
+            self.reho = np.zeros((self.environment.n_parcels,))
+            self.reho[:] = np.nan
+        else:
+            self.reho = np.genfromtxt(self.reho_filename, skip_header=1)[2:]
 
     def load_alff(self):
-        self.alff = np.genfromtxt(self.alff_filename, skip_header=1)[2:]
+        if not self.alff_filename:
+            self.alff = np.zeros((self.environment.n_parcels,))
+            self.alff[:] = np.nan
+        else:
+            self.alff = np.genfromtxt(self.alff_filename, skip_header=1)[2:]
