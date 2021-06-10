@@ -164,13 +164,59 @@ class LoadCT():
         self.df = self.environment.df.copy()
         self.values = np.zeros((n_subs, self.environment.n_parcels))
 
+        # subject filter
+        subj_filt = np.zeros((n_subs,)).astype(bool)
+
         for i in np.arange(n_subs):
             subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
             subject.get_file_names()
             subject.load_ct()
             self.values[i, :] = subject.ct.copy()
 
+            if np.all(np.isnan(subject.ct)):
+                subj_filt[i] = True
         print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
+
+        # filter subjects if needed
+        if np.any(subj_filt):
+            print('\t{0} subjects had missing ct data'.format(np.sum(subj_filt)))
+            self.df = self.df.loc[~subj_filt]
+            self.values = self.values[~subj_filt, :]
+
+        print('\tFinal sample: {0} subjects with {1} columns'.format(self.df.shape[0], self.df.shape[1]))
+
+class LoadSA():
+    def __init__(self, environment, Subject):
+        self.environment = environment
+        self.Subject = Subject
+
+    def run(self):
+        print('Routine: loading surface area data')
+        start_time = time.time()
+        n_subs = self.environment.df.shape[0]
+        self.df = self.environment.df.copy()
+        self.values = np.zeros((n_subs, self.environment.n_parcels))
+
+        # subject filter
+        subj_filt = np.zeros((n_subs,)).astype(bool)
+
+        for i in np.arange(n_subs):
+            subject = self.Subject(environment=self.environment, subjid=self.df.index[i])
+            subject.get_file_names()
+            subject.load_sa()
+            self.values[i, :] = subject.sa.copy()
+
+            if np.all(np.isnan(subject.sa)):
+                subj_filt[i] = True
+        print("\t --- finished in {:.0f} seconds ---".format((time.time() - start_time)))
+
+        # filter subjects if needed
+        if np.any(subj_filt):
+            print('\t{0} subjects had missing sa data'.format(np.sum(subj_filt)))
+            self.df = self.df.loc[~subj_filt]
+            self.values = self.values[~subj_filt, :]
+
+        print('\tFinal sample: {0} subjects with {1} columns'.format(self.df.shape[0], self.df.shape[1]))
 
 class LoadCBF():
     def __init__(self, environment, Subject):
