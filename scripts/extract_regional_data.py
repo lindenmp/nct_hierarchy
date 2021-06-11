@@ -23,7 +23,52 @@ def get_parcelwise_average_surface(data_file, annot_file):
 
     return np.asarray(data_mean)
 
-# %%
+# %% BigBrainWarp maps
+workdir='/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage'
+
+# schaefer 400
+lh_annot_file = '/Volumes/T7/research_data/parcellations/FreeSurfer5.3/fsaverage/label/lh.Schaefer2018_400Parcels_17Networks_order.annot'
+rh_annot_file = '/Volumes/T7/research_data/parcellations/FreeSurfer5.3/fsaverage/label/rh.Schaefer2018_400Parcels_17Networks_order.annot'
+
+data_lh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G1_lh_fsaverage.shape.gii'), lh_annot_file)
+data_rh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G1_rh_fsaverage.shape.gii'), rh_annot_file)
+data = np.hstack((data_lh[1:], data_rh[1:]))
+np.savetxt(os.path.join(workdir, 'Hist_G1_Schaefer2018_400Parcels_17Networks.txt'), data)
+
+data_lh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G2_lh_fsaverage.shape.gii'), lh_annot_file)
+data_rh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G2_rh_fsaverage.shape.gii'), rh_annot_file)
+data = np.hstack((data_lh[1:], data_rh[1:]))
+np.savetxt(os.path.join(workdir, 'Hist_G2_Schaefer2018_400Parcels_17Networks.txt'), data)
+
+# schaefer 200
+lh_annot_file = '/Volumes/T7/research_data/parcellations/FreeSurfer5.3/fsaverage/label/lh.Schaefer2018_200Parcels_17Networks_order.annot'
+rh_annot_file = '/Volumes/T7/research_data/parcellations/FreeSurfer5.3/fsaverage/label/rh.Schaefer2018_200Parcels_17Networks_order.annot'
+
+data_lh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G1_lh_fsaverage.shape.gii'), lh_annot_file)
+data_rh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G1_rh_fsaverage.shape.gii'), rh_annot_file)
+data = np.hstack((data_lh[1:], data_rh[1:]))
+np.savetxt(os.path.join(workdir, 'Hist_G1_Schaefer2018_200Parcels_17Networks.txt'), data)
+
+data_lh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G2_lh_fsaverage.shape.gii'), lh_annot_file)
+data_rh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G2_rh_fsaverage.shape.gii'), rh_annot_file)
+data = np.hstack((data_lh[1:], data_rh[1:]))
+np.savetxt(os.path.join(workdir, 'Hist_G2_Schaefer2018_200Parcels_17Networks.txt'), data)
+
+# glasser 360
+lh_annot_file = '/Volumes/T7/research_data/parcellations/Glasser_et_al_2016_HCP_MMP1.0_qN_RVVG/HCP-MMP1.fsaverage.L.annot'
+rh_annot_file = '/Volumes/T7/research_data/parcellations/Glasser_et_al_2016_HCP_MMP1.0_qN_RVVG/HCP-MMP1.fsaverage.R.annot'
+
+data_lh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G1_lh_fsaverage.shape.gii'), lh_annot_file)
+data_rh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G1_rh_fsaverage.shape.gii'), rh_annot_file)
+data = np.hstack((data_rh[1:], data_lh[1:]))
+np.savetxt(os.path.join(workdir, 'Hist_G1_HCP-MMP1.txt'), data)
+
+data_lh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G2_lh_fsaverage.shape.gii'), lh_annot_file)
+data_rh = get_parcelwise_average_surface(os.path.join(workdir, 'Hist_G2_rh_fsaverage.shape.gii'), rh_annot_file)
+data = np.hstack((data_rh[1:], data_lh[1:]))
+np.savetxt(os.path.join(workdir, 'Hist_G2_HCP-MMP1.txt'), data)
+
+# %% pnc freesurfer files
 workdir='/Volumes/T7/research_data/pnc/processedData/structural/freesurfer53'
 subjs = os.listdir(workdir)
 
@@ -53,7 +98,7 @@ for subj in tqdm(subjs):
         except FileNotFoundError:
             pass
 
-# %% schaefer 200
+# schaefer 200
 print('schaefer 200')
 for subj in tqdm(subjs):
     subjdir = os.path.join(workdir, subj)
