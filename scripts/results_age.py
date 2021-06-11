@@ -134,9 +134,17 @@ plt.close()
 
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 ed_mean = np.load(os.path.join(environment.pipelinedir, 'ed_{0}.npy'.format(B)))
-my_reg_plot(x=e_corr[indices_lower], y=ed_mean[indices_lower],
+my_reg_plot(x=e_corr[indices_upper], y=ed_mean[indices_upper],
            xlabel='age effects\n(bottom-up energy)', ylabel='energy asymmetry', ax=ax)
-f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0},ed))'.format(B)), dpi=300, bbox_inches='tight',
+f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0}_bu,ed))'.format(B)), dpi=300, bbox_inches='tight',
+          pad_inches=0.01)
+plt.close()
+
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+ed_mean = np.load(os.path.join(environment.pipelinedir, 'ed_{0}.npy'.format(B)))
+my_reg_plot(x=e_corr[indices_lower], y=ed_mean[indices_lower],
+           xlabel='age effects\n(top-down energy)', ylabel='energy asymmetry', ax=ax)
+f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0}_td,ed))'.format(B)), dpi=300, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
 
