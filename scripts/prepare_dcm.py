@@ -12,6 +12,7 @@ elif platform.system() == 'Darwin':
 from pfactor_gradients.pnc import Environment, Subject
 from pfactor_gradients.routines import LoadSC
 from pfactor_gradients.pipelines import ComputeGradients, DCM
+from pfactor_gradients.utils import get_states_from_gradient
 
 from tqdm import tqdm
 import numpy as np
@@ -40,16 +41,32 @@ environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_
 environment.make_output_dirs()
 environment.load_parc_data()
 
-# %% get clustered gradients
-filters = {'healthExcludev2': 0, 't1Exclude': 0,
+# filter subjects
+filters = {'healthExcludev2': 0, 'psychoactiveMedPsychv2': 0,
+           't1Exclude': 0, 'fsFinalExclude': 0,
            'b0ProtocolValidationStatus': 1, 'dti64ProtocolValidationStatus': 1, 'dti64Exclude': 0,
-           'psychoactiveMedPsychv2': 0, 'restProtocolValidationStatus': 1, 'restExclude': 0}
+           'restProtocolValidationStatus': 1, 'restExclude': 0} # need to add these filters in if doing funcg1 below
 environment.load_metadata(filters)
-n_bins = int(n_parcels/10)
-compute_gradients = ComputeGradients(environment=environment, Subject=Subject, n_bins=n_bins)
-compute_gradients.run()
 
-n_states = len(np.unique(compute_gradients.grad_bins))
+# %% get states
+which_grad = 'histg2'
+
+if which_grad == 'histg2':
+    if computer == 'macbook':
+        gradient = np.loadtxt('/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/Hist_G2_Schaefer2018_400Parcels_17Networks.txt')
+    elif computer == 'cbica':
+        gradient = np.loadtxt('/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/Hist_G2_Schaefer2018_400Parcels_17Networks.txt')
+    gradient = gradient * -1
+elif which_grad == 'funcg1':
+    # compute function gradient
+    compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
+    compute_gradients.run()
+    gradient = compute_gradients.gradients[:, 0]
+
+n_bins = int(n_parcels/10)
+states = get_states_from_gradient(gradient=gradient, n_bins=n_bins)
+n_states = len(np.unique(states))
+
 mask = ~np.eye(n_states, dtype=bool)
 indices = np.where(mask)
 indices_upper = np.triu_indices(n_states, k=1)
@@ -64,8 +81,7 @@ environment.df = load_sc.df.copy()
 n_subs = environment.df.shape[0]
 
 # %% DCM
-dcm = DCM(environment=environment, Subject=Subject, states=compute_gradients.grad_bins,
-          force_rerun=True)
+dcm = DCM(environment=environment, Subject=Subject, states=states, force_rerun=True)
 # dcm.run_mean_ts()
 # dcm.run_concat_ts()
 dcm.run_concat_mean_ts()
