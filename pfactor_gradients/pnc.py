@@ -38,8 +38,8 @@ class Environment():
             self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
         elif self.parc == 'glasser':
             self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_dec2016')
-        self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCt', 'parcelwise_antsCt')
-        # self.ctdir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
+        # self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCt', 'parcelwise_antsCt')
+        self.ctdir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
         self.sadir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
         self.rstsdir = os.path.join(self.datadir, 'processedData', 'restbold', 'restbold_201607151621')
         self.cbfdir = os.path.join(self.datadir, 'processedData', 'asl', 'parcelwise_cbf')
@@ -178,12 +178,12 @@ class Subject():
                                        .format(self.bblid, self.scanid, self.environment.n_parcels, self.environment.sc_edge_weight))
             sc_filename = glob.glob(os.path.join(self.environment.scdir, sc_filename))
 
-            ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_schaefer{1}_17.txt' \
-                                       .format(self.scanid, self.environment.n_parcels))
-            # ct_filename = os.path.join('{0}'.format(self.bblid),
-            #                            '*x{0}'.format(self.scanid),
-            #                            'surf', 'thickness_Schaefer2018_{0}Parcels_17Networks.txt' \
-            #                            .format(self.environment.n_parcels))
+            # ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_schaefer{1}_17.txt' \
+            #                            .format(self.scanid, self.environment.n_parcels))
+            ct_filename = os.path.join('{0}'.format(self.bblid),
+                                       '*x{0}'.format(self.scanid),
+                                       'surf', 'thickness_Schaefer2018_{0}Parcels_17Networks.txt' \
+                                       .format(self.environment.n_parcels))
             ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
 
             sa_filename = os.path.join('{0}'.format(self.bblid),
