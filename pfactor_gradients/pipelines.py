@@ -33,10 +33,9 @@ except:
 
 # %% pipeline classes
 class ComputeGradients():
-    def __init__(self, environment, Subject, n_bins=40):
+    def __init__(self, environment, Subject):
         self.environment = environment
         self.Subject = Subject
-        self.n_bins = n_bins
 
     def _output_dir(self):
         return os.path.join(self.environment.pipelinedir, 'gradients')
@@ -106,47 +105,6 @@ class ComputeGradients():
                 gradient = DataVector(data=self.gradients[:, g], name='gradient_{0}'.format(g))
                 gradient.brain_surface_plot(self.environment)
 
-        # # Cluster gradient
-        # self.n_clusters = int(self.environment.n_parcels * .05)
-        # self.kmeans = KMeans(n_clusters=self.n_clusters, random_state=0).fit(self.gradients)
-        # self.unique, self.counts = np.unique(self.kmeans.labels_, return_counts=True)
-        #
-        # # Plot clustered gradient
-        # f, ax = plt.subplots(figsize=(5, 5))
-        # ax.scatter(self.gradients[:, 1], self.gradients[:, 0], c=self.kmeans.labels_, cmap='Set3')
-        # for i, txt in enumerate(np.arange(self.n_clusters)):
-        #     ax.annotate(txt, (self.kmeans.cluster_centers_[i, 1], self.kmeans.cluster_centers_[i, 0]),
-        #                 ha="center", va="center", size=15)
-        # ax.set_xlabel('Gradient 2')
-        # ax.set_ylabel('Gradient 1')
-        # ax.tick_params(pad=-2.5)
-        # f.savefig(os.path.join(self.environment.figdir, 'gradient_clusters.png'), dpi=150, bbox_inches='tight',
-        #           pad_inches=0.1)
-
-        # equally sized bins based on principal gradient
-        # n_bins = int(self.environment.n_parcels * self.bin_frac)
-        # bin_size = int(self.environment.n_parcels / n_bins)
-        bin_size = int(self.environment.n_parcels / self.n_bins)
-
-        grad_bins = np.array([])
-        for i in np.arange(self.n_bins):
-            grad_bins = np.append(grad_bins, np.ones(bin_size) * i)
-
-        if len(grad_bins) < self.environment.n_parcels:
-            grad_bins = np.append(grad_bins, np.ones(bin_size) * (self.n_bins - 1))
-
-        if len(grad_bins) > self.environment.n_parcels:
-            grad_bins = grad_bins[:self.environment.n_parcels]
-
-        grad_bins = grad_bins.astype(int)
-        sort_idx = np.argsort(self.gradients[:, 0])
-        unsorted_idx = np.argsort(sort_idx)
-        grad_bins = grad_bins[unsorted_idx]
-        # DataVector(data=grad_bins+1, name='grad_bins').brain_surface_plot(self.environment, cmap='coolwarm')
-
-        self.grad_bins = grad_bins
-        self.unique, self.counts = np.unique(self.grad_bins, return_counts=True)
-        self.n_states = len(self.unique)
 
 class LoadGeneExpression():
     def __init__(self, environment):
