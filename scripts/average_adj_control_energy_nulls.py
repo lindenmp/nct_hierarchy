@@ -163,8 +163,8 @@ for key in load_average_bms.brain_maps:
 A_list = [Wwp, Wsp, Wssp, R]
 file_prefixes = ['average_adj_n-{0}_s-{1}_null-mni-wwp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
                  'average_adj_n-{0}_s-{1}_null-mni-wsp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
-                 'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
                  'average_adj_n-{0}_s-{1}_null-nospat-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id)]
+# 'average_adj_n-{0}_s-{1}_null-mni-wssp-{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, sge_task_id),
 
 for A_idx, A_entry in enumerate(A_list):
     file_prefix = file_prefixes[A_idx]
