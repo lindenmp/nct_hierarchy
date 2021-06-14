@@ -304,3 +304,26 @@ def get_offset_diag(n, version='lower', return_indices=False):
         a = a.astype(np.bool)
 
     return a
+
+
+def get_states_from_gradient(gradient, n_bins):
+    n_parcels = len(gradient)
+    bin_size = int(n_parcels / n_bins)
+
+    states = np.array([])
+    for i in np.arange(n_bins):
+        states = np.append(states, np.ones(bin_size) * i)
+
+    if len(states) < n_parcels:
+        states = np.append(states, np.ones(bin_size) * (n_bins - 1))
+
+    if len(states) > n_parcels:
+        states = states[:n_parcels]
+
+    states = states.astype(int)
+    sort_idx = np.argsort(gradient)
+    unsorted_idx = np.argsort(sort_idx)
+    states = states[unsorted_idx]
+
+    return states
+
