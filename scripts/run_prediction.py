@@ -4,10 +4,10 @@ import numpy as np
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF
+from pfactor_gradients.routines import LoadSC, LoadCT, LoadRLFP, LoadCBF, LoadREHO, LoadALFF, LoadSA
 from pfactor_gradients.pipelines import ComputeGradients
 from pfactor_gradients.pipelines import Regression
-from pfactor_gradients.utils import rank_int
+from pfactor_gradients.utils import rank_int, get_states_from_gradient
 
 # %% parse input arguments
 import argparse
@@ -59,13 +59,31 @@ environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_
 environment.make_output_dirs()
 environment.load_parc_data()
 
-# %% get clustered gradients
-filters = {'healthExcludev2': 0, 't1Exclude': 0,
-           'b0ProtocolValidationStatus': 1, 'dti64ProtocolValidationStatus': 1, 'dti64Exclude': 0,
-           'psychoactiveMedPsychv2': 0, 'restProtocolValidationStatus': 1, 'restExclude': 0}
+# filter subjects
+filters = {'healthExcludev2': 0, 'psychoactiveMedPsychv2': 0,
+           't1Exclude': 0, 'fsFinalExclude': 0,
+           'b0ProtocolValidationStatus': 1, 'dti64ProtocolValidationStatus': 1, 'dti64Exclude': 0}
+           # 'restProtocolValidationStatus': 1, 'restExclude': 0} # need to add these filters in if doing funcg1 below
 environment.load_metadata(filters)
-compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
-compute_gradients.run()
+
+# %% get states
+which_grad = 'histg2'
+
+if which_grad == 'histg2':
+    if computer == 'macbook':
+        gradient = np.loadtxt('/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/Hist_G2_Schaefer2018_400Parcels_17Networks.txt')
+    elif computer == 'cbica':
+        gradient = np.loadtxt('/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/Hist_G2_Schaefer2018_400Parcels_17Networks.txt')
+    gradient = gradient * -1
+elif which_grad == 'funcg1':
+    # compute function gradient
+    compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
+    compute_gradients.run()
+    gradient = compute_gradients.gradients[:, 0]
+
+n_bins = int(n_parcels/10)
+states = get_states_from_gradient(gradient=gradient, n_bins=n_bins)
+n_states = len(np.unique(states))
 
 # %% Load sc data
 load_sc = LoadSC(environment=environment, Subject=Subject)
@@ -73,7 +91,18 @@ load_sc.run()
 # refilter environment due to LoadSC excluding on disconnected nodes
 environment.df = load_sc.df.copy()
 n_subs = environment.df.shape[0]
+del load_sc
 
+# %% load ct data
+load_ct = LoadCT(environment=environment, Subject=Subject)
+load_ct.run()
+
+# refilter environment due to some missing FS subjects
+environment.df = load_ct.df.copy()
+n_subs = environment.df.shape[0]
+del load_ct
+
+# %%
 y = environment.df.loc[:, y_name].values
 
 if np.any(np.isnan(y)):
@@ -103,6 +132,8 @@ if X_name != 'wb' and '-mean' not in X_name:
         loader = LoadREHO(environment=environment, Subject=Subject)
     elif X_name == 'alff':
         loader = LoadALFF(environment=environment, Subject=Subject)
+    elif X_name == 'sa':
+        loader = LoadSA(environment=environment, Subject=Subject)
 
     loader.run()
     X = loader.values
@@ -115,16 +146,15 @@ if X_name != 'wb' and '-mean' not in X_name:
     # cbf: 1% = 9 pcs
     # reho: 1% = 10 pcs
     # alff: 1% = 8 pcs
-    regression = Regression(environment=environment, X=X, y=y, c=c, X_name=X_name, y_name=y_name, c_name=c_name,
-                            alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
-                            force_rerun=False)
+    regression = Regression(environment=environment, X=X, y=y, c=c, X_name='{0}_{1}'.format(which_grad, X_name),
+                            y_name=y_name, c_name=c_name, alg=alg, score=score, n_splits=n_splits, runpca=runpca,
+                            n_rand_splits=n_rand_splits, force_rerun=False)
     regression.run()
     regression.run_perm()
 else:
     pass
 
 # %% prediction from energy
-n_states = len(np.unique(compute_gradients.grad_bins))
 mask = ~np.eye(n_states, dtype=bool)
 indices = np.where(mask)
 n_transitions = len(indices[0])
@@ -133,7 +163,7 @@ n_transitions = len(indices[0])
 X = np.zeros((n_subs, n_transitions))
 for i in np.arange(n_subs):
     subjid = environment.df.index[i]
-    file = '{0}_ns-40-0_c-minimum_fast_T-1_B-{1}_E.npy'.format(subjid, X_name)
+    file = '{0}_{1}_ns-40-0_c-minimum_fast_T-1_B-{2}_E.npy'.format(subjid, which_grad, X_name)
     E = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
     X[i, :] = E[indices]
 
@@ -146,9 +176,9 @@ for i in np.arange(X.shape[1]):
 # cbf: 1% = 24 pcs
 # reho: 1% = 21 pcs
 # alff: 1% = 19 pcs
-regression = Regression(environment=environment, X=X, y=y, c=c, X_name='energy-{0}'.format(X_name), y_name=y_name, c_name=c_name,
-                        alg=alg, score=score, n_splits=n_splits, runpca=runpca, n_rand_splits=n_rand_splits,
-                        force_rerun=False)
+regression = Regression(environment=environment, X=X, y=y, c=c, X_name='{0}_energy-{1}'.format(which_grad, X_name),
+                        y_name=y_name, c_name=c_name, alg=alg, score=score, n_splits=n_splits, runpca=runpca,
+                        n_rand_splits=n_rand_splits, force_rerun=False)
 regression.run()
 regression.run_perm()
 
