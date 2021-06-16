@@ -102,7 +102,7 @@ def roi_to_vtx(roi_data, parcel_names, parc_file):
     return vtx_data, vtx_data_min, vtx_data_max
 
 
-def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', add_spearman=False):
+def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson'):
     if len(x.shape) > 1 and len(y.shape) > 1:
         if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
             mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
@@ -149,17 +149,22 @@ def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', add_spearman=False):
     ax.grid(False)
     sns.despine(right=True, top=True, ax=ax)
     r, r_p = sp.stats.pearsonr(x, y)
-    if add_spearman:
-        rho, rho_p = sp.stats.spearmanr(x, y)
-        textstr = '$\mathit{:}$ = {:.2f}, {:}\n$\\rho$ = {:.2f}, {:}' \
-            .format('{r}', r, get_p_val_string(r_p), rho, get_p_val_string(rho_p))
+    rho, rho_p = sp.stats.spearmanr(x, y)
+    if annotate == 'pearson':
+        textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{r}', r, get_p_val_string(r_p))
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=8,
+                verticalalignment='top')
+    elif annotate == 'spearman':
+        textstr = '$\\rho$ = {:.2f}, {:}'.format(rho, get_p_val_string(rho_p))
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=8,
+                verticalalignment='top')
+    elif annotate == 'both':
+        textstr = '$\mathit{:}$ = {:.2f}, {:}\n$\\rho$ = {:.2f}, {:}'.format('{r}', r, get_p_val_string(r_p),
+                                                                             rho, get_p_val_string(rho_p))
         ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=8,
                 verticalalignment='top')
     else:
-        textstr = '$\mathit{:}$ = {:.2f}, {:}' \
-            .format('{r}', r, get_p_val_string(r_p))
-        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=8,
-                verticalalignment='top')
+        pass
 
 
 def my_rnull_plot(x, x_null, y, xlabel, ax):
