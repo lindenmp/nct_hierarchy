@@ -94,5 +94,16 @@ for key in loaders_dict:
                                                    control='minimum_fast', T=1, B=bm, file_prefix=file_prefix,
                                                    force_rerun=False, save_outputs=True, verbose=True)
         nct_pipeline.run()
+
+        # with flipped brain map
+        bm = DataVector(data=loaders_dict[key].values[0, :].copy(), name=key+'_flip')
+        bm.rankdata(descending=True)
+        bm.rescale_unit_interval()
+
+        nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
+                                                   states=states, n_subsamples=n_subsamples,
+                                                   control='minimum_fast', T=1, B=bm, file_prefix=file_prefix,
+                                                   force_rerun=False, save_outputs=True, verbose=True)
+        nct_pipeline.run()
     except IndexError:
         pass
