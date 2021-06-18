@@ -167,7 +167,7 @@ handles, labels = ax.get_legend_handles_labels()
 ax.legend(handles=handles[:2], labels=['neurobiology only', 'energy'], title='', bbox_to_anchor=(1, 1.15), loc='upper right')
 ax.set_ylabel('negative {0} (higher = better)'.format(score.upper()))
 ax.set_xlabel('')
-# ax.set_xticklabels(['unweighted', 'CT', 'SA'])
+ax.set_xticklabels(['unweighted', 'CT', 'SA'])
 if score == 'rmse':
     ax.set_ylim([-0.975, -0.895])
 
@@ -182,5 +182,63 @@ for i, B in enumerate(B_list):
 
 
 f.savefig(os.path.join(environment.figdir, 'prediction_{0}'.format(y_name)), dpi=600, bbox_inches='tight',
+          pad_inches=0.1)
+plt.close()
+
+# %%
+B_list = ['energy-ct', 'energy-sa', 'energy-ct_flip', 'energy-sa_flip']
+
+df_pred = pd.DataFrame(columns=['score', 'B', 'energy'])
+df_null = pd.DataFrame(columns=['score', 'B', 'energy'])
+
+for B in B_list:
+    # observed prediction performance
+    file_prefix = 'histg2_{0}-{1}-{2}_alg-{3}_score-{4}_pca-{5}_'.format(B, y_name, c_name, alg, score, runpca)
+    df_pred_tmp, df_null_tmp = load_data(B, file_prefix, environment)
+    df_pred = pd.concat((df_pred, df_pred_tmp), axis=0)
+    df_null = pd.concat((df_null, df_null_tmp), axis=0)
+
+# comparisons
+x = df_pred.loc[df_pred['B'] == B_list[0], 'score']
+y = df_pred.loc[df_pred['B'] == B_list[2], 'score']
+print(get_exact_p(x, y))
+print(sp.stats.wilcoxon(x, y))
+
+x = df_pred.loc[df_pred['B'] == B_list[1], 'score']
+y = df_pred.loc[df_pred['B'] == B_list[3], 'score']
+print(get_exact_p(x, y))
+print(sp.stats.wilcoxon(x, y))
+
+df_pred['flip'] = df_pred['B'].str.contains('_flip')
+df_pred['B_strip'] = df_pred['B'].map(lambda x: x.rstrip('_flip'))
+df_null['flip'] = df_null['B'].str.contains('_flip')
+df_null['B_strip'] = df_null['B'].map(lambda x: x.rstrip('_flip'))
+
+f, ax = plt.subplots(1, 1, figsize=(2.5, 4))
+sns.despine(left=True, bottom=True)
+ax.tick_params(pad=-2.5)
+
+# nulls (background)
+sns.violinplot(data=df_null, ax=ax, x='B_strip', y='score', hue='flip', split=True, scale='width', palette=cmap,
+               inner=None, linewidth=0.5)
+for violin in ax.collections:
+    violin.set_alpha(0.2)
+
+# observed (foreground)
+sns.violinplot(data=df_pred, ax=ax, x='B_strip', y='score', hue='flip', split=True, scale='width', palette=cmap,
+               inner=None, linewidth=1.5)
+n_violins = len(ax.collections)
+for violin in ax.collections[int(n_violins/2):]:
+    violin.set_alpha(1)
+
+handles, labels = ax.get_legend_handles_labels()
+ax.legend(handles=handles[:2], labels=['standard', 'flipped'], title='', bbox_to_anchor=(1, 1.15), loc='upper right')
+ax.set_ylabel('negative {0} (higher = better)'.format(score.upper()))
+ax.set_xlabel('')
+ax.set_xticklabels(['CT', 'SA'])
+# if score == 'rmse':
+#     ax.set_ylim([-0.975, -0.895])
+
+f.savefig(os.path.join(environment.figdir, 'prediction_flip_compare'), dpi=600, bbox_inches='tight',
           pad_inches=0.1)
 plt.close()
