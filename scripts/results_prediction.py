@@ -32,12 +32,12 @@ def helper_func(x_pos, y_pos, p_val, energy):
         textstr = 'n.s.'
         fontweight = 'normal'
 
-    if energy == 'yes':
-        rotation = 90
-        offset = -0.1
-    else:
+    if energy == True:
         rotation = 270
         offset = 0.1
+    else:
+        rotation = 90
+        offset = -0.1
 
     ax.text(x_pos + offset, y_pos, textstr, rotation=rotation, fontweight=fontweight, fontsize=8,
             horizontalalignment='center', verticalalignment='center')
@@ -49,32 +49,22 @@ def load_data(B, file_prefix, environment):
                                             '{0}accuracy_mean.txt'.format(file_prefix)))
     df_pred = pd.DataFrame(columns=['score', 'B', 'energy'])
     df_pred['score'] = accuracy_mean
-    if len(B.split('-')) >= 2:
-        if 'flip' in B.split('-')[1]:
-            df_pred['B'] = B.split('-')[1].split('_')[0]
-        else:
-            df_pred['B'] = B.split('-')[1]
-        df_pred['energy'] = 'yes'
-    elif len(B.split('-')) == 1:
-        df_pred['B'] = B.split('-')[0]
-        df_pred['energy'] = 'no'
     df_pred['B'] = B
+    if 'energy' in B:
+        df_pred['energy'] = True
+    else:
+        df_pred['energy'] = False
 
     # load null
     accuracy_perm = np.loadtxt(os.path.join(environment.pipelinedir, 'prediction',
                                             '{0}accuracy_perm.txt'.format(file_prefix)))
     df_null = pd.DataFrame(columns=['score', 'B', 'energy'])
     df_null['score'] = accuracy_perm
-    if len(B.split('-')) >= 2:
-        if 'flip' in B.split('-')[1]:
-            df_null['B'] = B.split('-')[1].split('_')[0]
-        else:
-            df_null['B'] = B.split('-')[1]
-        df_null['energy'] = 'yes'
-    elif len(B.split('-')) == 1:
-        df_null['B'] = B.split('-')[0]
-        df_null['energy'] = 'no'
     df_null['B'] = B
+    if 'energy' in B:
+        df_null['energy'] = True
+    else:
+        df_null['energy'] = False
 
     return df_pred, df_null
 
@@ -174,7 +164,7 @@ for violin in ax.collections[int(n_violins/2):]:
     violin.set_alpha(1)
 
 handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles=handles[:2], labels=['energy', 'neurobiology only'], title='', bbox_to_anchor=(1, 1.15), loc='upper right')
+ax.legend(handles=handles[:2], labels=['neurobiology only', 'energy'], title='', bbox_to_anchor=(1, 1.15), loc='upper right')
 ax.set_ylabel('negative {0} (higher = better)'.format(score.upper()))
 ax.set_xlabel('')
 # ax.set_xticklabels(['unweighted', 'CT', 'SA'])
@@ -186,9 +176,9 @@ for i, B in enumerate(B_list):
     x_pos = my_list[i]
     y_pos = np.mean(df_pred.loc[df_pred['B'] == B, 'score'])
     if 'energy' in B:
-        helper_func(x_pos, y_pos, p_vals_perm[i], 'yes')
+        helper_func(x_pos, y_pos, p_vals_perm[i], True)
     else:
-        helper_func(x_pos, y_pos, p_vals_perm[i], 'no')
+        helper_func(x_pos, y_pos, p_vals_perm[i], False)
 
 
 f.savefig(os.path.join(environment.figdir, 'prediction_{0}'.format(y_name)), dpi=600, bbox_inches='tight',
