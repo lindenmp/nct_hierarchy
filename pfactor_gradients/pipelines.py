@@ -130,14 +130,22 @@ class LoadGeneExpression():
             self.expression = pd.read_csv(os.path.join(self._output_dir(), self._output_file()))
             self.expression.set_index('label', inplace=True)
         else:
-            self.expression = abagen.get_expression_data(os.path.join(self.environment.projdir, 'figs_support', 'labels',
-                                                                      'schaefer{0}'.format(self.environment.n_parcels),
-                                                                      'schaefer{0}MNI.nii.gz'.format(self.environment.n_parcels)),
-                                                         data_dir=os.path.join(self.environment.external_ssd, 'abagen'), verbose=2)
+            if self.environment.parc == 'schaefer':
+                parc_file = os.path.join(self.environment.research_data, 'parcellations', 'MNI',
+                                         'Schaefer2018_{0}Parcels_17Networks_order_FSLMNI152_1mm.nii.gz' \
+                                         .format(self.environment.n_parcels))
+            elif self.environment.parc == 'glasser':
+                pass
 
-            # save outputs
-            if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
-            self.expression.to_csv(os.path.join(self._output_dir(), self._output_file()))
+            if self.environment.parc == 'schaefer':
+                self.expression = abagen.get_expression_data(parc_file,
+                                                             data_dir=os.path.join(self.environment.research_data,
+                                                                                   'abagen'),
+                                                             verbose=2)
+
+                # save outputs
+                if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
+                self.expression.to_csv(os.path.join(self._output_dir(), self._output_file()))
 
 
 class ComputeMinimumControlEnergy():
