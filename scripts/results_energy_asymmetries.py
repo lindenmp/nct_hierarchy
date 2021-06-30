@@ -127,23 +127,40 @@ ed = e.transpose() - e # energy asymmetry matrix
 np.save(os.path.join(environment.pipelinedir, 'ed_{0}.npy'.format(B)), ed)
 
 try:
+    n_perms = 10000
     network_null = 'mni-wsp'
-    file = 'average_adj_n-{0}_s-{1}_null-{2}_ns-{3}-0_c-minimum_fast_T-1_B-{4}_E.npy'.format(n_subs, spars_thresh,
-                                                                                                 network_null, n_states, B)
-    e_network_null = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
-    # normalize nulls
-    for i in np.arange(e_network_null.shape[2]):
+    # file = 'average_adj_n-{0}_s-{1}_null-{2}_ns-{3}-0_c-minimum_fast_T-1_B-{4}_E.npy'.format(n_subs, spars_thresh,
+    #                                                                                              network_null, n_states, B)
+    # e_network_null = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+    e_network_null = np.zeros((n_states, n_states, n_perms))
+    for i in tqdm(np.arange(n_perms)):
+        file = 'average_adj_n-{0}_s-{1}_{2}_null-{3}-{4}_ns-{5}-0_c-minimum_fast_T-1_B-{6}_E.npy'.format(n_subs,
+                                                                                                         spars_thresh,
+                                                                                                         which_grad,
+                                                                                                         network_null,
+                                                                                                         i, n_states, B)
+        e_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+
+        # normalize
         e_network_null[:, :, i] = rank_int(e_network_null[:, :, i])
 
     if B != 'wb':
-        file = 'average_adj_n-{0}_s-{1}_ns-{2}-0_c-minimum_fast_T-1_B-{3}-spin_E.npy'.format(n_subs, spars_thresh, n_states, B)
-        e_spin_null = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+        # file = 'average_adj_n-{0}_s-{1}_ns-{2}-0_c-minimum_fast_T-1_B-{3}-spin_E.npy'.format(n_subs, spars_thresh, n_states, B)
+        # e_spin_null = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+        e_spin_null = np.zeros((n_states, n_states, n_perms))
+        for i in tqdm(np.arange(n_perms)):
+            file = 'average_adj_n-{0}_s-{1}_{2}_ns-{3}-0_c-minimum_fast_T-1_B-{4}-spin-{5}_E.npy'.format(n_subs,
+                                                                                                         spars_thresh,
+                                                                                                         which_grad,
+                                                                                                         n_states, B, i)
+            e_spin_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
 
-        # normalize nulls
-        for i in np.arange(e_spin_null.shape[2]):
+            # normalize nulls
             e_spin_null[:, :, i] = rank_int(e_spin_null[:, :, i])
+
 except FileNotFoundError:
     print('Requisite files not found...')
+    del e_network_null
 
 # %% 1) energy dists: top-down vs bottom-up
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
