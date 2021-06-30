@@ -306,8 +306,8 @@ def get_offset_diag(n, version='lower', return_indices=False):
     return a
 
 
-def get_states_from_gradient(gradient, n_bins):
-    n_parcels = len(gradient)
+def get_states_from_brain_map(brain_map, n_bins):
+    n_parcels = len(brain_map)
     bin_size = int(n_parcels / n_bins)
 
     states = np.array([])
@@ -321,7 +321,7 @@ def get_states_from_gradient(gradient, n_bins):
         states = states[:n_parcels]
 
     states = states.astype(int)
-    sort_idx = np.argsort(gradient)
+    sort_idx = np.argsort(brain_map)
     unsorted_idx = np.argsort(sort_idx)
     states = states[unsorted_idx]
 
