@@ -41,9 +41,14 @@ which_grad = 'histg2'
 
 if which_grad == 'histg2':
     if computer == 'macbook':
-        gradient = np.loadtxt('/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/Hist_G2_Schaefer2018_400Parcels_17Networks.txt')
+        bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
     elif computer == 'cbica':
-        gradient = np.loadtxt('/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/Hist_G2_Schaefer2018_400Parcels_17Networks.txt')
+        bbw_dir = '/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/'
+
+    if parc == 'schaefer':
+        gradient = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_Schaefer2018_{0}Parcels_17Networks.txt'.format(n_parcels)))
+    elif parc == 'glasser':
+        gradient = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_HCP-MMP1.txt'))
     gradient = gradient * -1
 elif which_grad == 'funcg1':
     # compute function gradient
