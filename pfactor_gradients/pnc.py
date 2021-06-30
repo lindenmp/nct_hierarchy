@@ -243,8 +243,16 @@ class Subject():
                                        '{0}_{1}_GlasserPNC.mat'.format(self.scanid, self.environment.sc_edge_weight))
             sc_filename = glob.glob(os.path.join(self.environment.scdir, sc_filename))
 
-            ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_glasser.txt'.format(self.scanid))
+            # ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_glasser.txt'.format(self.scanid))
+            ct_filename = os.path.join('{0}'.format(self.bblid),
+                                       '*x{0}'.format(self.scanid),
+                                       'surf', 'thickness_HCP-MMP1.txt')
             ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
+
+            sa_filename = os.path.join('{0}'.format(self.bblid),
+                                       '*x{0}'.format(self.scanid),
+                                       'surf', 'area_pial_HCP-MMP1.txt')
+            sa_filename = glob.glob(os.path.join(self.environment.sadir, sa_filename))
 
             cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_glasser.txt'.format(self.scanid))
             cbf_filename = glob.glob(os.path.join(self.environment.cbfdir, cbf_filename))
