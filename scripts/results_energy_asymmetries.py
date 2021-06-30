@@ -10,6 +10,7 @@ from pfactor_gradients.hcp import BrainMapLoader
 import numpy as np
 import pandas as pd
 import scipy as sp
+from tqdm import tqdm
 
 # %% Plotting
 import seaborn as sns
