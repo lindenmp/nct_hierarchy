@@ -231,7 +231,7 @@ def my_distpair_plot(df, ylabel, ax):
     ax.set_ylabel(ylabel, labelpad=-0.5)
     ax.tick_params(pad=-2.5)
     t, p_val = sp.stats.ttest_rel(a=df.iloc[:, 0], b=df.iloc[:, 1])
-    textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{t}', np.abs(t), get_p_val_string(p_val))
+    textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{t}', t, get_p_val_string(p_val))
     ax.text(0.5, ax.get_ylim()[1] + (ax.get_ylim()[1] * 0.15), textstr, fontsize=8,
             horizontalalignment='center', verticalalignment='top')
     ax.axhline(y=ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05, xmin=0.25, xmax=0.75, color='k', linewidth=1)
