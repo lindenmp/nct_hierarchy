@@ -38,11 +38,9 @@ class Environment():
             self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
         elif self.parc == 'glasser':
             self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_dec2016')
-        # self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCt', 'parcelwise_antsCt')
         self.ctdir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
         self.sadir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
         self.rstsdir = os.path.join(self.datadir, 'processedData', 'restbold', 'restbold_201607151621')
-        self.cbfdir = os.path.join(self.datadir, 'processedData', 'asl', 'parcelwise_cbf')
 
         # imaging parameters
         self.rsfmri_tr = 3
@@ -178,105 +176,61 @@ class Subject():
                                        .format(self.bblid, self.scanid, self.environment.n_parcels, self.environment.sc_edge_weight))
             sc_filename = glob.glob(os.path.join(self.environment.scdir, sc_filename))
 
-            # ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_schaefer{1}_17.txt' \
-            #                            .format(self.scanid, self.environment.n_parcels))
             ct_filename = os.path.join('{0}'.format(self.bblid),
                                        '*x{0}'.format(self.scanid),
-                                       'surf', 'thickness_Schaefer2018_{0}Parcels_17Networks.txt' \
+                                       'surf',
+                                       'thickness_Schaefer2018_{0}Parcels_17Networks.txt' \
                                        .format(self.environment.n_parcels))
             ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
 
             sa_filename = os.path.join('{0}'.format(self.bblid),
                                        '*x{0}'.format(self.scanid),
-                                       'surf', 'area_pial_Schaefer2018_{0}Parcels_17Networks.txt' \
+                                       'surf',
+                                       'area_pial_Schaefer2018_{0}Parcels_17Networks.txt' \
                                        .format(self.environment.n_parcels))
             sa_filename = glob.glob(os.path.join(self.environment.sadir, sa_filename))
-
-            cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_schaefer{1}_17.txt' \
-                                       .format(self.scanid, self.environment.n_parcels))
-            cbf_filename = glob.glob(os.path.join(self.environment.cbfdir, cbf_filename))
 
             if self.environment.n_parcels == 200:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
-                                             'net', 'Schaefer{0}PNC'.format(self.environment.n_parcels),
+                                             'net',
+                                             'Schaefer{0}PNC'.format(self.environment.n_parcels),
                                              '{0}_*x{1}_Schaefer{2}PNC_ts.1D' \
                                              .format(self.bblid, self.scanid, self.environment.n_parcels))
                 rsts_filename = glob.glob(os.path.join(self.environment.rstsdir, rsts_filename))
-
-                reho_filename = os.path.join('{0}'.format(self.bblid),
-                                             '*x{0}'.format(self.scanid),
-                                             'reho', 'roi', 'Schaefer{0}PNC'.format(self.environment.n_parcels),
-                                             '{0}_*x{1}_Schaefer{2}PNC_val_reho.1D' \
-                                             .format(self.bblid, self.scanid, self.environment.n_parcels))
-                reho_filename = glob.glob(os.path.join(self.environment.rstsdir, reho_filename))
-
-                alff_filename = os.path.join('{0}'.format(self.bblid),
-                                             '*x{0}'.format(self.scanid),
-                                             'alff', 'roi', 'Schaefer{0}PNC'.format(self.environment.n_parcels),
-                                             '{0}_*x{1}_Schaefer{2}PNC_val_alff.1D' \
-                                             .format(self.bblid, self.scanid, self.environment.n_parcels))
-                alff_filename = glob.glob(os.path.join(self.environment.rstsdir, alff_filename))
             elif self.environment.n_parcels == 400:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
-                                             'net', 'SchaeferPNC',
+                                             'net',
+                                             'SchaeferPNC',
                                              '{0}_*x{1}_SchaeferPNC_ts.1D' \
                                              .format(self.bblid, self.scanid))
                 rsts_filename = glob.glob(os.path.join(self.environment.rstsdir, rsts_filename))
-
-                reho_filename = os.path.join('{0}'.format(self.bblid),
-                                             '*x{0}'.format(self.scanid),
-                                             'reho', 'roi', 'SchaeferPNC',
-                                             '{0}_*x{1}_SchaeferPNC_val_reho.1D' \
-                                             .format(self.bblid, self.scanid))
-                reho_filename = glob.glob(os.path.join(self.environment.rstsdir, reho_filename))
-
-                alff_filename = os.path.join('{0}'.format(self.bblid),
-                                             '*x{0}'.format(self.scanid),
-                                             'alff', 'roi', 'SchaeferPNC',
-                                             '{0}_*x{1}_SchaeferPNC_val_alff.1D' \
-                                             .format(self.bblid, self.scanid))
-                alff_filename = glob.glob(os.path.join(self.environment.rstsdir, alff_filename))
         elif self.environment.parc == 'glasser':
             sc_filename = os.path.join('{0}'.format(self.environment.sc_edge_weight), 'GlasserPNC',
-                                       '{0}_{1}_GlasserPNC.mat'.format(self.scanid, self.environment.sc_edge_weight))
+                                       '{0}_{1}_GlasserPNC.mat' \
+                                       .format(self.scanid, self.environment.sc_edge_weight))
             sc_filename = glob.glob(os.path.join(self.environment.scdir, sc_filename))
 
-            # ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_glasser.txt'.format(self.scanid))
             ct_filename = os.path.join('{0}'.format(self.bblid),
                                        '*x{0}'.format(self.scanid),
-                                       'surf', 'thickness_HCP-MMP1.txt')
+                                       'surf',
+                                       'thickness_HCP-MMP1.txt')
             ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
 
             sa_filename = os.path.join('{0}'.format(self.bblid),
                                        '*x{0}'.format(self.scanid),
-                                       'surf', 'area_pial_HCP-MMP1.txt')
+                                       'surf',
+                                       'area_pial_HCP-MMP1.txt')
             sa_filename = glob.glob(os.path.join(self.environment.sadir, sa_filename))
-
-            cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_glasser.txt'.format(self.scanid))
-            cbf_filename = glob.glob(os.path.join(self.environment.cbfdir, cbf_filename))
 
             rsts_filename = os.path.join('{0}'.format(self.bblid),
                                          '*x{0}'.format(self.scanid),
-                                         'net', 'GlasserPNC',
+                                         'net',
+                                         'GlasserPNC',
                                          '{0}_*x{1}_GlasserPNC_ts.1D' \
                                          .format(self.bblid, self.scanid))
             rsts_filename = glob.glob(os.path.join(self.environment.rstsdir, rsts_filename))
-
-            reho_filename = os.path.join('{0}'.format(self.bblid),
-                                         '*x{0}'.format(self.scanid),
-                                         'reho', 'roi', 'GlasserPNC',
-                                         '{0}_*x{1}_GlasserPNC_val_reho.1D' \
-                                         .format(self.bblid, self.scanid))
-            reho_filename = glob.glob(os.path.join(self.environment.rstsdir, reho_filename))
-
-            alff_filename = os.path.join('{0}'.format(self.bblid),
-                                         '*x{0}'.format(self.scanid),
-                                         'alff', 'roi', 'GlasserPNC',
-                                         '{0}_*x{1}_GlasserPNC_val_alff.1D' \
-                                         .format(self.bblid, self.scanid))
-            alff_filename = glob.glob(os.path.join(self.environment.rstsdir, alff_filename))
 
         try: self.sc_filename = sc_filename[0]
         except: self.sc_filename = []
@@ -287,17 +241,8 @@ class Subject():
         try: self.sa_filename = sa_filename[0]
         except: self.sa_filename = []
 
-        try: self.cbf_filename = cbf_filename[0]
-        except: self.cbf_filename = []
-
         try: self.rsts_filename = rsts_filename[0]
         except: self.rsts_filename = []
-
-        try: self.reho_filename = reho_filename[0]
-        except: self.reho_filename = []
-
-        try: self.alff_filename = alff_filename[0]
-        except: self.alff_filename = []
 
     def load_sc(self):
         try:
@@ -343,38 +288,3 @@ class Subject():
             self.rsfc = DataMatrix(data=rsfc)
         else:
             self.rsfc = DataMatrix(data=compute_fc(self.rsts))
-
-    def load_rlfp(self):
-        if not self.rsts_filename:
-            self.rlfp = np.zeros((self.environment.n_parcels,))
-            self.rlfp[:] = np.nan
-        else:
-            rsts = np.loadtxt(self.rsts_filename)
-            n_parcels = rsts.shape[1]
-
-            rlfp = np.zeros((n_parcels,))
-            for i in np.arange(n_parcels):
-                rlfp[i] = compute_rlfp(rsts[:, i], tr=self.environment.rsfmri_tr, num_bands=5, band_of_interest=1)
-
-            self.rlfp = rlfp
-
-    def load_cbf(self):
-        if not self.cbf_filename:
-            self.cbf = np.zeros((self.environment.n_parcels,))
-            self.cbf[:] = np.nan
-        else:
-            self.cbf = np.loadtxt(self.cbf_filename)
-
-    def load_reho(self):
-        if not self.reho_filename:
-            self.reho = np.zeros((self.environment.n_parcels,))
-            self.reho[:] = np.nan
-        else:
-            self.reho = np.genfromtxt(self.reho_filename, skip_header=1)[2:]
-
-    def load_alff(self):
-        if not self.alff_filename:
-            self.alff = np.zeros((self.environment.n_parcels,))
-            self.alff[:] = np.nan
-        else:
-            self.alff = np.genfromtxt(self.alff_filename, skip_header=1)[2:]
