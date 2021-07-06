@@ -17,7 +17,8 @@ class Environment():
         # directories
         if self.computer == 'macbook':
             self.userdir = '/Users/lindenmp'
-            self.projdir = os.path.join(self.userdir, 'Google-Drive-Penn', 'work', 'research_projects', 'pfactor_gradients')
+            # self.projdir = os.path.join(self.userdir, 'Google-Drive-Penn', 'work', 'research_projects', 'pfactor_gradients')
+            self.projdir = os.path.join(self.userdir, 'research_projects', 'pfactor_gradients')
             self.rootdir = '/Volumes'
             self.research_data = os.path.join(self.rootdir, 'T7', 'research_data')
 
@@ -38,6 +39,7 @@ class Environment():
             self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_20171118')
         elif self.parc == 'glasser':
             self.scdir = os.path.join(self.datadir, 'processedData', 'diffusion', 'deterministic_dec2016')
+        # self.ctdir = os.path.join(self.datadir, 'processedData', 'antsCt', 'parcelwise_antsCt')
         self.ctdir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
         self.sadir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
         self.rstsdir = os.path.join(self.datadir, 'processedData', 'restbold', 'restbold_201607151621')
@@ -181,6 +183,8 @@ class Subject():
                                        'surf',
                                        'thickness_Schaefer2018_{0}Parcels_17Networks.txt' \
                                        .format(self.environment.n_parcels))
+            # ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_schaefer{1}_17.txt' \
+            #                            .format(self.scanid, self.environment.n_parcels))
             ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
 
             sa_filename = os.path.join('{0}'.format(self.bblid),
@@ -216,6 +220,7 @@ class Subject():
                                        '*x{0}'.format(self.scanid),
                                        'surf',
                                        'thickness_HCP-MMP1.txt')
+            # ct_filename = os.path.join('{0}_CorticalThicknessNormalizedToTemplate2mm_glasser.txt'.format(self.scanid))
             ct_filename = glob.glob(os.path.join(self.environment.ctdir, ct_filename))
 
             sa_filename = os.path.join('{0}'.format(self.bblid),
