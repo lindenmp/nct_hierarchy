@@ -1,5 +1,7 @@
 # %% import
 import sys, os, platform
+if platform.system() == 'Linux':
+    sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
 from pfactor_gradients.routines import LoadSC, LoadCT, LoadSA, LoadAverageSC, LoadAverageBrainMaps
 from pfactor_gradients.pipelines import ComputeGradients
@@ -11,7 +13,6 @@ import numpy as np
 # %% Setup project environment
 if platform.system() == 'Linux':
     computer = 'cbica'
-    sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 elif platform.system() == 'Darwin':
     computer = 'macbook'
 parc = 'glasser'
