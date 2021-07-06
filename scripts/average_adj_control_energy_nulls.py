@@ -160,11 +160,15 @@ for key in load_average_bms.brain_maps:
 # nct_pipeline.run()
 
 # %% network null
-A_list = [Wwp, Wsp, R] # Wssp
-file_prefixes = ['average_adj_n-{0}_s-{1}_{2}_null-mni-wwp-{3}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, which_grad, sge_task_id),
-                 'average_adj_n-{0}_s-{1}_{2}_null-mni-wsp-{3}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, which_grad, sge_task_id),
-                 'average_adj_n-{0}_s-{1}_{2}_null-nospat-{3}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, which_grad, sge_task_id)]
-# 'average_adj_n-{0}_s-{1}_{2}_null-mni-wssp-{3}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, which_grad, sge_task_id),
+A_list = [Wwp, Wsp, Wssp, R] # Wssp
+file_prefixes = ['average_adj_n-{0}_s-{1}_{2}_null-mni-wwp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                        spars_thresh, which_grad, sge_task_id),
+                 'average_adj_n-{0}_s-{1}_{2}_null-mni-wsp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                        spars_thresh, which_grad, sge_task_id),
+                 'average_adj_n-{0}_s-{1}_{2}_null-mni-wssp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                         spars_thresh, which_grad, sge_task_id),
+                 'average_adj_n-{0}_s-{1}_{2}_null-nospat-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                       spars_thresh, which_grad, sge_task_id)]
 
 for A_idx, A_entry in enumerate(A_list):
     file_prefix = file_prefixes[A_idx]
@@ -178,6 +182,7 @@ for A_idx, A_entry in enumerate(A_list):
     for key in load_average_bms.brain_maps:
         nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A_entry,
                                                    states=states, n_subsamples=n_subsamples,
-                                                   control='minimum_fast', T=1, B=load_average_bms.brain_maps[key], file_prefix=file_prefix,
+                                                   control='minimum_fast', T=1, B=load_average_bms.brain_maps[key],
+                                                   file_prefix=file_prefix,
                                                    force_rerun=True, save_outputs=True, verbose=True)
         nct_pipeline.run()
