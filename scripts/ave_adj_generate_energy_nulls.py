@@ -95,7 +95,7 @@ for A_idx, A_entry in enumerate(A_list):
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A_entry,
                                                states=states, n_subsamples=n_subsamples,
                                                control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
-                                               force_rerun=True, save_outputs=True, verbose=True)
+                                               force_rerun=False, save_outputs=True, verbose=True)
     nct_pipeline.run()
 
     # for key in load_average_bms.brain_maps:
