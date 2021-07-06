@@ -1,7 +1,14 @@
 # %% import
 import sys, os, platform
 if platform.system() == 'Linux':
+    computer = 'cbica'
+    sge_task_id = int(os.getenv("SGE_TASK_ID"))-1
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
+elif platform.system() == 'Darwin':
+    computer = 'macbook'
+    sge_task_id = 0
+print(sge_task_id)
+
 from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
 
 import scipy as sp
@@ -17,24 +24,6 @@ elif platform.system() == 'Darwin':
 
 # %% import workspace
 from setup_workspace_ave_adj import *
-
-# %% plotting and task id
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set(style='white', context='talk', font_scale=1)
-if platform.system() == 'Linux':
-    computer = 'cbica'
-    sge_task_id = int(os.getenv("SGE_TASK_ID"))-1
-elif platform.system() == 'Darwin':
-    computer = 'macbook'
-    sge_task_id = 0
-
-    import matplotlib.font_manager as font_manager
-    fontpath = '/Users/lindenmp/Library/Fonts/PublicSans-Thin.ttf'
-    prop = font_manager.FontProperties(fname=fontpath)
-    plt.rcParams['font.family'] = prop.get_name()
-    plt.rcParams['svg.fonttype'] = 'none'
-print(sge_task_id)
 
 # %% rewire mean adjacency matrix with spatial constraints
 D = sp.spatial.distance.pdist(environment.centroids, 'euclidean')
