@@ -9,7 +9,11 @@ from pfactor_gradients.imaging_derivs import DataVector
 import numpy as np
 
 # %% Setup project environment
-computer = 'macbook'
+if platform.system() == 'Linux':
+    computer = 'cbica'
+    sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
+elif platform.system() == 'Darwin':
+    computer = 'macbook'
 parc = 'glasser'
 n_parcels = 360
 sc_edge_weight = 'streamlineCount'

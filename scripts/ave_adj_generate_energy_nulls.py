@@ -1,11 +1,9 @@
 # %% import
 import sys, os, platform
 if platform.system() == 'Linux':
-    computer = 'cbica'
     sge_task_id = int(os.getenv("SGE_TASK_ID"))-1
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 elif platform.system() == 'Darwin':
-    computer = 'macbook'
     sge_task_id = 0
 print(sge_task_id)
 
