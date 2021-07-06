@@ -377,6 +377,7 @@ def minimum_energy_fast(A, T, B, x0, xf, c=1, return_regional=False):
     # Divide by integration step
     E = sp.linalg.expm(A * T)
     G = (G + np.matmul(B, B.transpose()) + np.matmul(np.matmul(E, B), np.matmul(E, B).transpose())) * dt / 3
+    # G = np.eye(n_parcels)
 
     delx = xf - np.matmul(E, x0)
     if return_regional:
@@ -482,6 +483,8 @@ def control_energy_brainmap(A, states, T=1, B='wb'):
 
     # create state space by expanding state vector to matrices
     x0_mat, xf_mat = expand_states(states=states)
+    # x0_mat[:] = False
+    # xf_mat[:] = False
 
     if type(B_store) == str and B_store != 'wb':
         B_store = 'wb'
