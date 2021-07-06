@@ -30,6 +30,9 @@ class DataMatrix():
     def get_distance_matrix(self):
         self.D, self.hops, self.Pmat = distance_wei_floyd(self.data, transform='inv')
 
+    def get_strength(self):
+        self.S = np.sum(self.data, axis=0)
+
     def regress_nuisance(self, c, mask=[]):
         if len(mask) == 0:
             # if no indices are given, filter out identity and nans
