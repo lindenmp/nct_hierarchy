@@ -42,14 +42,14 @@ for B in B_list:
         nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                                    states=states, n_subsamples=n_subsamples,
                                                    control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
-                                                   force_rerun=True, save_outputs=True, verbose=True)
+                                                   force_rerun=True, save_outputs=False, verbose=True)
         nct_pipeline.run()
     else:
         nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                                    states=states, n_subsamples=n_subsamples,
                                                    control='minimum_fast', T=1, B=load_average_bms.brain_maps[B],
                                                    file_prefix=file_prefix,
-                                                   force_rerun=True, save_outputs=True, verbose=True)
+                                                   force_rerun=True, save_outputs=False, verbose=True)
         nct_pipeline.run()
 
     E[B] = nct_pipeline.E
