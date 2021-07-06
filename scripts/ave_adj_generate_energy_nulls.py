@@ -1,5 +1,7 @@
 # %% import
 import sys, os, platform
+if platform.system() == 'Linux':
+    sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
 
 import scipy as sp
@@ -7,7 +9,6 @@ from bct.algorithms.reference import randmio_und
 
 from oct2py import octave
 if platform.system() == 'Linux':
-    sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
     sys.path.append('/usr/bin/octave') # octave install path
     octave.addpath('/gpfs/fs001/cbica/home/parkesl/research_projects/pfactor_gradients/geomsurr') # path to matlab functions
 elif platform.system() == 'Darwin':
