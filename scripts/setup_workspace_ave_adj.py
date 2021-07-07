@@ -15,8 +15,8 @@ if platform.system() == 'Linux':
     computer = 'cbica'
 elif platform.system() == 'Darwin':
     computer = 'macbook'
-parc = 'glasser'
-n_parcels = 360
+parc = 'schaefer'
+n_parcels = 400
 sc_edge_weight = 'streamlineCount'
 environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_edge_weight=sc_edge_weight)
 environment.make_output_dirs()
@@ -37,14 +37,9 @@ load_sc.run()
 environment.df = load_sc.df.copy()
 n_subs = environment.df.shape[0]
 
-if parc == 'schaefer' and n_parcels == 400:
-    spars_thresh = 0.06
-elif parc == 'schaefer' and n_parcels == 200:
-    spars_thresh = 0.12
-elif parc == 'glasser' and n_parcels == 360:
-    spars_thresh = 0.07
+consist_thresh = 0.6
 
-load_average_sc = LoadAverageSC(load_sc=load_sc, spars_thresh=spars_thresh)
+load_average_sc = LoadAverageSC(load_sc=load_sc, consist_thresh=consist_thresh)
 load_average_sc.run()
 A = load_average_sc.A.copy()
 
