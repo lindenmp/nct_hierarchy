@@ -38,7 +38,7 @@ np.random.seed(sge_task_id)
 R, eff = randmio_und(A, itr=n_iter)
 
 # %% get control energy
-file_prefix = 'average_adj_n-{0}_s-{1}_{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, which_brain_map)
+file_prefix = 'average_adj_n-{0}_s-{1}_{2}_'.format(load_average_sc.load_sc.df.shape[0], consist_thresh, which_brain_map)
 n_subsamples = 0
 
 # %% brain map null (spin test)
@@ -81,13 +81,13 @@ n_subsamples = 0
 # %% network null
 A_list = [Wwp, Wsp, Wssp, R] # Wssp
 file_prefixes = ['average_adj_n-{0}_s-{1}_{2}_null-mni-wwp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                        spars_thresh, which_brain_map, sge_task_id),
+                                                                        consist_thresh, which_brain_map, sge_task_id),
                  'average_adj_n-{0}_s-{1}_{2}_null-mni-wsp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                        spars_thresh, which_brain_map, sge_task_id),
+                                                                        consist_thresh, which_brain_map, sge_task_id),
                  'average_adj_n-{0}_s-{1}_{2}_null-mni-wssp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                         spars_thresh, which_brain_map, sge_task_id),
+                                                                         consist_thresh, which_brain_map, sge_task_id),
                  'average_adj_n-{0}_s-{1}_{2}_null-nospat-{3}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                       spars_thresh, which_brain_map, sge_task_id)]
+                                                                       consist_thresh, which_brain_map, sge_task_id)]
 
 for A_idx, A_entry in enumerate(A_list):
     file_prefix = file_prefixes[A_idx]
