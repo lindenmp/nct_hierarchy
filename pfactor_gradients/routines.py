@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 import time
 from pfactor_gradients.imaging_derivs import DataVector, compute_transition_probs_updown, compute_fc
+from pfactor_gradients.utils import threshold_consistency
 
 class LoadSC():
     def __init__(self, environment, Subject):
@@ -42,9 +43,9 @@ class LoadSC():
 
 
 class LoadAverageSC():
-    def __init__(self, load_sc, spars_thresh=0.06):
+    def __init__(self, load_sc, consist_thresh=0.6):
         self.load_sc = load_sc
-        self.spars_thresh = spars_thresh
+        self.consist_thresh = consist_thresh
 
     def _check_inputs(self):
         try:
@@ -54,7 +55,7 @@ class LoadAverageSC():
 
     def _print_settings(self):
         print('\tsettings:')
-        print('\t\tsparsity: {0}'.format(self.spars_thresh))
+        print('\t\tconsistency: {0}'.format(self.consist_thresh))
 
     def run(self):
         print('Routine: loading average SC matrix')
@@ -73,9 +74,7 @@ class LoadAverageSC():
         print('\tmean sample sparsity = {:.2f}'.format(np.mean(A_d)))
 
         # Get group average adj. matrix
-        A = np.mean(A, 2)
-        thresh = np.percentile(A, 100 - (self.spars_thresh * 100))
-        A[A < thresh] = 0
+        A = threshold_consistency(A, thr=self.consist_thresh)
 
         print('\tactual matrix sparsity = {:.2f}'.format(
             np.count_nonzero(np.triu(A)) / ((A.shape[0] ** 2 - A.shape[0]) / 2)))
