@@ -187,7 +187,8 @@ class ComputeMinimumControlEnergy():
 
     def _get_file_prefix(self):
         unique = np.unique(self.states, return_counts=False)
-        file_prefix = self.file_prefix+'ns-{0}-{1}_c-{2}_T-{3}'.format(len(unique), self.n_subsamples, self.control, self.T)
+        file_prefix = self.file_prefix+'ns-{0}-{1}_ctrl-{2}_T-{3}'.format(len(unique),
+                                                                          self.n_subsamples, self.control, self.T)
         if type(self.B) == str:
             file_prefix = file_prefix+'_B-{0}_'.format(self.B)
         elif type(self.B) == DataVector:
