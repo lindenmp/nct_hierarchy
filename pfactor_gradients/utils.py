@@ -327,3 +327,39 @@ def get_states_from_brain_map(brain_map, n_bins):
 
     return states
 
+
+def threshold_consistency(A, thr=0.60):
+    """
+    Thresholds edges from a group averaged adjacency matrix by retaining edges that are non-zero in some proportion of
+    subjects (defined by thr)
+
+    Args:
+        A: n x n x m structural adjacency matrix with subjects along m
+        thr: proportion of subjects that an edge needs to exist in order to be retained
+
+    Returns:
+        Am: thresholded mean adjacency matrix
+
+    """
+    n_parcels = A.shape[0]
+    n_subs = A.shape[2]
+
+    # get group averaged A matrix
+    Am = np.mean(A, axis=2)
+
+    # find non-zero elements in A
+    Ab = A > 0
+
+    # get count of non-zero elements along subject dimension
+    Ab = np.sum(Ab, axis=2)
+
+    # compute fraction of non-zero elements over subjects
+    Ab = Ab / n_subs
+
+    # define mask using threshold
+    mask = Ab < thr
+
+    # set elements within mask in mean A matrix to zero
+    Am[mask] = 0
+
+    return Am
