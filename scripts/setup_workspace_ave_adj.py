@@ -76,7 +76,8 @@ which_brain_map = 'hist-g2'
 
 if which_brain_map == 'hist-g2':
     if computer == 'macbook':
-        bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
+        # bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
+        bbw_dir = '/Users/lindenmp/research_data/BigBrainWarp/spaces/fsaverage/'
     elif computer == 'cbica':
         bbw_dir = '/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/'
 
