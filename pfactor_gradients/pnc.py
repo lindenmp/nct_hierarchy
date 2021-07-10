@@ -20,7 +20,8 @@ class Environment():
             # self.projdir = os.path.join(self.userdir, 'Google-Drive-Penn', 'work', 'research_projects', 'pfactor_gradients')
             self.projdir = os.path.join(self.userdir, 'research_projects', 'pfactor_gradients')
             self.rootdir = '/Volumes'
-            self.research_data = os.path.join(self.rootdir, 'T7', 'research_data')
+            # self.research_data = os.path.join(self.rootdir, 'T7', 'research_data')
+            self.research_data = os.path.join(self.userdir, 'research_data')
 
             self.outputdir = os.path.join(self.projdir, 'output_local', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         elif self.computer == 'cbica':
