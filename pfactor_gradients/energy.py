@@ -199,8 +199,13 @@ def minimum_energy(A, T, B, x0, xf, c=1):
 
     if type(x0[0]) == np.bool_:
         x0 = x0.astype(float)
+    if x0.ndim == 1:
+        x0 = x0.reshape(-1, 1)
+
     if type(xf[0]) == np.bool_:
         xf = xf.astype(float)
+    if xf.ndim == 1:
+        xf = xf.reshape(-1, 1)
 
     # Compute Matrix Exponential
     AT = np.concatenate((np.concatenate((A, -.5 * (B.dot(B.T))), axis=1),
@@ -501,3 +506,78 @@ def control_energy_brainmap(A, states, T=1, B='wb'):
     E = np.moveaxis(E, 0, -1)
 
     return E
+
+
+def get_gmat(A, T=1, c=1):
+    # System Size
+    n_parcels = A.shape[0]
+
+    # singluar value decomposition
+    u, s, vt = svd(A)
+    # Matrix normalization
+    A = A / (c + s[0]) - np.eye(n_parcels)
+
+    # Gradient precalculations
+    gmat = np.zeros((n_parcels, n_parcels, n_parcels))
+
+    # Simpson's integration
+    nt = 1000
+    dt = T / nt
+    dE = sp.linalg.expm(A * dt)
+    dEA = np.zeros((n_parcels, n_parcels, nt+1))
+    dEA[:, :, 0] = np.eye(n_parcels)
+
+    for i in np.arange(1, nt+1):
+        dEA[:, :, i] = np.matmul(dEA[:, :, i-1], dE)
+
+    # Compute Gradient
+    end = dEA.shape[2]
+    for i in tqdm(np.arange(0, n_parcels)):
+        dEAOdd = np.multiply(dEA[:, :, np.arange(1, end, 2)],
+                             np.repeat(dEA[i, :, :][:, np.arange(1, end, 2)][np.newaxis, :, :], n_parcels, axis=0))
+
+        dEAEven = np.multiply(dEA[:, :, np.arange(2, end - 1, 2)],
+                              np.repeat(dEA[i, :, :][:, np.arange(2, end - 1, 2)][np.newaxis, :, :], n_parcels, axis=0))
+
+        dEAOdd = np.sum(dEAOdd, axis=2)
+        dEAEven = np.sum(dEAEven, axis=2)
+        gmat[:, i, :] = 4 * dEAOdd \
+                        + 2 * dEAEven \
+                        + np.multiply(dEA[:, :, 0], dEA[i, :, 0]) \
+                        + np.multiply(dEA[:, :, -1], dEA[i, :, -1])
+        gmat[:, i, :] = gmat[:, i, :] * dt / 3
+
+    return gmat
+
+
+def grad_descent_B(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.01, T=1, c=1):
+    # System Size
+    n_parcels = A.shape[0]
+    k = x0_mat.shape[1]
+
+    # singluar value decomposition
+    u, s, vt = svd(A)
+    # Matrix normalization
+    A = A / (c + s[0]) - np.eye(n_parcels)
+
+    V = np.matmul(sp.linalg.expm(A * T), x0_mat.astype(float)) - xf_mat.astype(float)
+    B_opt = B0.copy()
+
+    # Iterate across state transitions
+    for i in tqdm(np.arange(k)):
+        # Iterate across gradient steps
+        for j in np.arange(n):
+            BM = B_opt[:, i].copy().reshape(1, 1, n_parcels)
+            # Compute Gramian
+            # BM = np.repeat(np.repeat(BM, n_parcels, axis=0), n_parcels, axis=1)
+            Wc = np.sum(np.multiply(gmat, BM ** 2), axis=2)
+            vWcI = sp.linalg.solve(Wc, V[:, i].reshape(-1, 1))
+            x1 = np.multiply(gmat, BM)
+            x2 = np.multiply(x1, np.repeat(np.repeat(vWcI.transpose(), n_parcels, axis=0)[:, :, np.newaxis],
+                                           n_parcels, axis=2))
+            x3 = np.multiply(x2, np.repeat(np.repeat(vWcI, n_parcels, axis=1)[:, :, np.newaxis], n_parcels, axis=2))
+            grad = np.sum(np.sum(x3, axis=0), axis=0)
+
+            B_opt[:, i] = B_opt[:, i] + grad / sp.linalg.norm(grad) * ds
+
+    return B_opt
