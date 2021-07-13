@@ -5,6 +5,46 @@ from scipy.linalg import svd
 from tqdm import tqdm
 
 # %% functions
+def matrix_normalization(A, version=None, c=1):
+    '''
+
+    Args:
+        A: np.array (n_parcels, n_parcels)
+            adjacency matrix from structural connectome
+        version: str
+            options: 'continuous' or 'discrete'. default=None
+            string variable that determines whether A is normalized for a continuous-time system or a discrete-time
+            system. If normalizing for a continuous-time system, the identity matrix is subtracted.
+        c: int
+            normalization constant, default=1
+    Returns:
+        A_norm: np.array (n_parcels, n_parcels)
+            normalized adjacency matrix
+
+    '''
+
+    if version == 'continuous':
+        print("Normalizing A for a continuous-time system")
+    elif version == 'discrete':
+        print("Normalizing A for a discrete-time system")
+    elif version == None:
+        raise Exception("Time system not specified. "
+                        "Please nominate whether you are normalizing A for a continuous-time or a discrete-time system "
+                        "(see function help).")
+
+    # singluar value decomposition
+    u, s, vt = svd(A)
+
+    # Matrix normalization for discrete-time systems
+    A_norm = A / (c + s[0])
+
+    if version == 'continuous':
+        # for continuous-time systems
+        A_norm = A_norm - np.eye(A.shape[0])
+
+    return A_norm
+
+
 def minimum_energy(A, T, B, x0, xf, c=1):
     """
     :param A:
@@ -30,9 +70,6 @@ def minimum_energy(A, T, B, x0, xf, c=1):
 
     # System Size
     n = A.shape[0]  # Number of nodes
-
-    u, s, vt = svd(A)  # singluar value decomposition
-    A = A / (c + s[0]) - np.eye(A.shape[0])  # Matrix normalization
 
     if type(x0[0]) == np.bool_:
         x0 = x0.astype(float)
@@ -107,11 +144,6 @@ def expand_states(states):
 def minimum_energy_fast(A, T, B, x0, xf, c=1, return_regional=False):
     # System Size
     n_parcels = A.shape[0]
-
-    # singluar value decomposition
-    u, s, vt = svd(A)
-    # Matrix normalization
-    A = A / (c + s[0]) - np.eye(n_parcels)
 
     if type(x0[0][0]) == np.bool_:
         x0 = x0.astype(float)
@@ -220,11 +252,6 @@ def get_gmat(A, T=1, c=1):
     # System Size
     n_parcels = A.shape[0]
 
-    # singluar value decomposition
-    u, s, vt = svd(A)
-    # Matrix normalization
-    A = A / (c + s[0]) - np.eye(n_parcels)
-
     # Gradient precalculations
     gmat = np.zeros((n_parcels, n_parcels, n_parcels))
 
@@ -262,11 +289,6 @@ def grad_descent_B(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.01, T=1, c=1):
     # System Size
     n_parcels = A.shape[0]
     k = x0_mat.shape[1]
-
-    # singluar value decomposition
-    u, s, vt = svd(A)
-    # Matrix normalization
-    A = A / (c + s[0]) - np.eye(n_parcels)
 
     V = np.matmul(sp.linalg.expm(A * T), x0_mat.astype(float)) - xf_mat.astype(float)
     B_opt = B0.copy()
