@@ -393,88 +393,31 @@ def minimum_energy_fast(A, T, B, x0, xf, c=1, return_regional=False):
     return E
 
 
-def control_energy_helper(A, states, n_subsamples=0, control='minimum_fast', T=1, B='wb', add_noise=False):
-    n_parcels = A.shape[0]
-    B_store = B
+def control_energy_helper(A, states, B, T=1, control='minimum_fast'):
 
     unique, counts = np.unique(states, return_counts=True)
     n_states = len(unique)
-    subsample_size = np.min(counts)
 
-    if n_subsamples > 0:
-        E = np.zeros((n_states, n_states, n_subsamples))
-        n_err = np.zeros((n_states, n_states, n_subsamples))
-    else:
-        E = np.zeros((n_states, n_states))
-        n_err = np.zeros((n_states, n_states))
-
-    np.random.seed(0)
-    if add_noise:
-        noise = np.random.rand(n_parcels) * 0.1
+    E = np.zeros((n_states, n_states))
+    n_err = np.zeros((n_states, n_states))
 
     # create state space by expanding state vector to matrices
     x0_mat, xf_mat = expand_states(states=states)
-    if n_subsamples > 0:
-        x0_sub = np.zeros((x0_mat.shape[0], x0_mat.shape[1], n_subsamples)).astype(bool)
-        xf_sub = np.zeros((xf_mat.shape[0], xf_mat.shape[1], n_subsamples)).astype(bool)
-
-        for j in np.arange(x0_mat.shape[1]):
-            np.random.seed(0)
-            for k in np.arange(n_subsamples):
-                x0_sub[:, j, k] = subsample_state(x0_mat[:, j], subsample_size)
-                xf_sub[:, j, k] = subsample_state(xf_mat[:, j], subsample_size)
 
     # run control code
     if control == 'minimum_fast':
-        if type(B_store) == str and B_store != 'wb':
-            B_store = 'wb'
-
+        e = minimum_energy_fast(A, T, B, x0_mat, xf_mat)
+        E[:] = e.reshape(n_states, n_states)
         n_err[:] = np.nan
-
-        # get B matrix, this will either be identity or a brain map, since these are the only that work here
-        if type(B_store) == str and B_store == 'wb':
-            B = np.eye(n_parcels)
-        else:
-            B = np.zeros((n_parcels, n_parcels))
-            B[np.eye(n_parcels) == 1] = B_store + 1
-
-        if add_noise:
-            B[np.eye(n_parcels) == 1] = B[np.eye(n_parcels) == 1] + noise
-
-        if n_subsamples > 0:
-            for k in np.arange(n_subsamples):
-                e = minimum_energy_fast(A, T, B, x0_sub[:, :, k], xf_sub[:, :, k])
-                E[:, :, k] = e.reshape(n_states, n_states)
-        else:
-            e = minimum_energy_fast(A, T, B, x0_mat, xf_mat)
-            E[:] = e.reshape(n_states, n_states)
-    else:
+    elif control == 'minimum':
         col = 0
         for i in np.arange(n_states):
             for j in np.arange(n_states):
-                if n_subsamples > 0:
-                    for k in np.arange(n_subsamples):
-                        B = get_B_matrix(x0_sub[:, col, k], xf_sub[:, col, k], version=B_store)
-                        if add_noise:
-                            B[np.eye(n_parcels) == 1] = B[np.eye(n_parcels) == 1] + noise
 
-                        if control == 'minimum':
-                            x, u, n_err[i, j, k] = minimum_energy(A, T, B, x0_sub[:, col, k], xf_sub[:, col, k])
-                            E[i, j, k] = np.sum(np.square(u))
-                else:
-                    B = get_B_matrix(x0_mat[:, col], xf_mat[:, col], version=B_store)
-                    if add_noise:
-                        B[np.eye(n_parcels) == 1] = B[np.eye(n_parcels) == 1] + noise
-
-                    if control == 'minimum':
-                        x, u, n_err[i, j] = minimum_energy(A, T, B, x0_mat[:, col], xf_mat[:, col])
-                        E[i, j] = np.sum(np.square(u))
+                x, u, n_err[i, j] = minimum_energy(A, T, B, x0_mat[:, col], xf_mat[:, col])
+                E[i, j] = np.sum(np.square(u))
 
                 col += 1
-
-    if n_subsamples > 0:
-        E = np.nanmean(E, axis=2)
-        n_err = np.nanmean(n_err, axis=2)
 
     return E, n_err
 
