@@ -24,8 +24,9 @@ except:
     pass
 
 class DataMatrix():
-    def __init__(self, data=[]):
+    def __init__(self, data=[], name=''):
         self.data = data
+        self.name = name
 
     def get_distance_matrix(self):
         self.D, self.hops, self.Pmat = distance_wei_floyd(self.data, transform='inv')
