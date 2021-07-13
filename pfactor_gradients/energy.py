@@ -5,7 +5,7 @@ from scipy.linalg import svd
 from tqdm import tqdm
 
 # %% functions
-def matrix_normalization(A, version=None, c=1):
+def matrix_normalization(A, version=None, c=1, verbose=False):
     '''
 
     Args:
@@ -23,14 +23,15 @@ def matrix_normalization(A, version=None, c=1):
 
     '''
 
-    if version == 'continuous':
-        print("Normalizing A for a continuous-time system")
-    elif version == 'discrete':
-        print("Normalizing A for a discrete-time system")
-    elif version == None:
-        raise Exception("Time system not specified. "
-                        "Please nominate whether you are normalizing A for a continuous-time or a discrete-time system "
-                        "(see function help).")
+    if verbose:
+        if version == 'continuous':
+            print("Normalizing A for a continuous-time system")
+        elif version == 'discrete':
+            print("Normalizing A for a discrete-time system")
+        elif version == None:
+            raise Exception("Time system not specified. "
+                            "Please nominate whether you are normalizing A for a continuous-time or a discrete-time system "
+                            "(see function help).")
 
     # singluar value decomposition
     u, s, vt = svd(A)
@@ -45,7 +46,7 @@ def matrix_normalization(A, version=None, c=1):
     return A_norm
 
 
-def minimum_energy(A, T, B, x0, xf, c=1):
+def minimum_energy(A, T, B, x0, xf):
     """
     :param A:
     :param T:
@@ -141,14 +142,25 @@ def expand_states(states):
     return x0_mat, xf_mat
 
 
-def minimum_energy_fast(A, T, B, x0, xf, c=1, return_regional=False):
+def minimum_energy_fast(A, T, B, x0, xf, return_regional=False):
     # System Size
     n_parcels = A.shape[0]
 
-    if type(x0[0][0]) == np.bool_:
-        x0 = x0.astype(float)
-    if type(xf[0][0]) == np.bool_:
-        xf = xf.astype(float)
+    try:
+        if type(x0[0][0]) == np.bool_:
+            x0 = x0.astype(float)
+        if type(xf[0][0]) == np.bool_:
+            xf = xf.astype(float)
+    except:
+        if type(x0[0]) == np.bool_:
+            x0 = x0.astype(float)
+        if type(xf[0]) == np.bool_:
+            xf = xf.astype(float)
+
+    if x0.ndim == 1:
+        x0 = x0.reshape(-1, 1)
+    if xf.ndim == 1:
+        xf = xf.reshape(-1, 1)
 
     # Number of integration steps
     nt = 1000
@@ -248,7 +260,7 @@ def control_energy_brainmap(A, states, T=1, B='wb'):
     return E
 
 
-def get_gmat(A, T=1, c=1):
+def get_gmat(A, T=1):
     # System Size
     n_parcels = A.shape[0]
 
@@ -267,7 +279,7 @@ def get_gmat(A, T=1, c=1):
 
     # Compute Gradient
     end = dEA.shape[2]
-    for i in tqdm(np.arange(0, n_parcels)):
+    for i in np.arange(0, n_parcels):
         dEAOdd = np.multiply(dEA[:, :, np.arange(1, end, 2)],
                              np.repeat(dEA[i, :, :][:, np.arange(1, end, 2)][np.newaxis, :, :], n_parcels, axis=0))
 
@@ -285,7 +297,7 @@ def get_gmat(A, T=1, c=1):
     return gmat
 
 
-def grad_descent_B(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.01, T=1, c=1):
+def grad_descent_b(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.1, T=1):
     # System Size
     n_parcels = A.shape[0]
     k = x0_mat.shape[1]
@@ -294,7 +306,7 @@ def grad_descent_B(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.01, T=1, c=1):
     B_opt = B0.copy()
 
     # Iterate across state transitions
-    for i in tqdm(np.arange(k)):
+    for i in np.arange(k):
         # Iterate across gradient steps
         for j in np.arange(n):
             BM = B_opt[:, i].copy().reshape(1, 1, n_parcels)
