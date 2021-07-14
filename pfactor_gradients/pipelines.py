@@ -189,20 +189,23 @@ class ComputeMinimumControlEnergy():
         file_prefix = self.file_prefix+'ns-{0}_ctrl-{1}_T-{2}'.format(len(unique), self.control, self.T)
         if type(self.B) == DataMatrix:
             file_prefix = file_prefix+'_B-{0}_'.format(self.B.name)
+        elif type(self.B) == str:
+            file_prefix = file_prefix+'_B-{0}_'.format(self.B)
         else:
             file_prefix = file_prefix+'_B-unknown_'
 
         return file_prefix
 
     def _get_gmat(self):
-        file_prefix = '_'.join(self._get_file_prefix().split('_')[:-2])
-        file_prefix = file_prefix + '_'
+        self.B = 'optimized'
+        file_prefix = self._get_file_prefix()
 
         if os.path.exists(self._output_dir()) and \
                 os.path.isfile(os.path.join(self._output_dir(), file_prefix+'gmat.npy')) and \
                 self.force_rerun == False:
 
             self.gmat = np.load(os.path.join(self._output_dir(), file_prefix+'gmat.npy'))
+            print('\tgmat loaded.')
         else:
             print('\tcomputing gmat...')
             self.gmat = get_gmat(A=self.A_norm, T=self.T)
@@ -211,33 +214,6 @@ class ComputeMinimumControlEnergy():
             if self.save_outputs:
                 if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
                 np.save(os.path.join(self._output_dir(), file_prefix+'gmat'), self.gmat)
-
-    def _get_optimize_b(self):
-        file_prefix = '_'.join(self._get_file_prefix().split('_')[:-2])
-        file_prefix = file_prefix + '_'
-
-        self._get_gmat()
-
-        if os.path.exists(self._output_dir()) and \
-                os.path.isfile(os.path.join(self._output_dir(), file_prefix+'B-optimized.npy')) and \
-                self.force_rerun == False:
-
-            self.B_opt = np.load(os.path.join(self._output_dir(), file_prefix+'B-optimized.npy'))
-        else:
-            print('\tcomputing optimized B weights for all state transitions...')
-
-            x0_mat, xf_mat = expand_states(self.states)
-
-            B0 = np.ones((self.A_norm.shape[0], x0_mat.shape[1]))
-
-            self.B_opt = grad_descent_b(A=self.A_norm, B0=B0, x0_mat=x0_mat, xf_mat=xf_mat,
-                                        gmat=self.gmat, n=1, ds=0.1, T=self.T)
-
-
-            # save outputs
-            if self.save_outputs:
-                if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
-                np.save(os.path.join(self._output_dir(), file_prefix+'B-optimized'), self.B_opt)
 
     def run(self):
         file_prefix = self._get_file_prefix()
@@ -277,10 +253,8 @@ class ComputeMinimumControlEnergy():
 
 
     def run_with_optimized_b(self):
-        file_prefix = '_'.join(self._get_file_prefix().split('_')[:-2])
-        file_prefix = file_prefix + '_B-optimized_'
-
         self.B = 'optimized'
+        file_prefix = self._get_file_prefix()
 
         if self.verbose:
             print('Pipeline: getting minimum control energy using optimized B weights')
@@ -290,7 +264,6 @@ class ComputeMinimumControlEnergy():
 
         self._check_inputs()
         self._get_gmat()
-        self._get_optimize_b()
 
         if os.path.exists(self._output_dir()) and \
                 os.path.isfile(os.path.join(self._output_dir(), file_prefix+'E.npy')) and \
@@ -300,30 +273,27 @@ class ComputeMinimumControlEnergy():
                 print('\toutput already exists...skipping')
 
             self.E_opt = np.load(os.path.join(self._output_dir(), file_prefix+'E.npy'))
+            self.B_opt = np.load(os.path.join(self._output_dir(), file_prefix+'weights.npy'))
         else:
-            n_parcels = self.A_norm.shape[0]
+            x0_mat, xf_mat = expand_states(self.states)
+
+            B0 = np.ones((self.A_norm.shape[0], x0_mat.shape[1]))
+
+            B_opt, E_opt = grad_descent_b(A=self.A_norm, B0=B0, x0_mat=x0_mat, xf_mat=xf_mat,
+                                          gmat=self.gmat, n=1, ds=0.1, T=self.T)
+
             unique = np.unique(self.states, return_counts=False)
             n_states = len(unique)
+            E_opt = E_opt[:, 0].reshape(n_states, n_states)
 
-            x0_mat, xf_mat = expand_states(self.states)
-            n_transitions = x0_mat.shape[1]
-
-            E_opt = np.zeros((n_transitions,))
-
-            for i in tqdm(np.arange(n_transitions)):
-                B = np.zeros((n_parcels, n_parcels))
-                B[np.eye(n_parcels) == 1] = self.B_opt[:, i]
-
-                E_opt[i] = minimum_energy_fast(A=self.A_norm, T=self.T, B=B, x0=x0_mat[:, i], xf=xf_mat[:, i])
-
-            E_opt = E_opt.reshape(n_states, n_states)
-
+            self.B_opt = B_opt
             self.E_opt = E_opt
 
             # save outputs
             if self.save_outputs:
                 if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
                 np.save(os.path.join(self._output_dir(), file_prefix+'E'), self.E_opt)
+                np.save(os.path.join(self._output_dir(), file_prefix+'weights'), self.B_opt)
 
 class Regression():
     def __init__(self, environment, X, y, c, X_name='X', y_name='y', c_name='c',

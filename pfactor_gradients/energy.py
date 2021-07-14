@@ -304,6 +304,7 @@ def grad_descent_b(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.1, T=1):
 
     V = np.matmul(sp.linalg.expm(A * T), x0_mat.astype(float)) - xf_mat.astype(float)
     B_opt = B0.copy()
+    E_opt = np.zeros((k, n))
 
     # Iterate across state transitions
     for i in np.arange(k):
@@ -311,7 +312,6 @@ def grad_descent_b(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.1, T=1):
         for j in np.arange(n):
             BM = B_opt[:, i].copy().reshape(1, 1, n_parcels)
             # Compute Gramian
-            # BM = np.repeat(np.repeat(BM, n_parcels, axis=0), n_parcels, axis=1)
             Wc = np.sum(np.multiply(gmat, BM ** 2), axis=2)
             vWcI = sp.linalg.solve(Wc, V[:, i].reshape(-1, 1))
             x1 = np.multiply(gmat, BM)
@@ -322,4 +322,10 @@ def grad_descent_b(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.1, T=1):
 
             B_opt[:, i] = B_opt[:, i] + grad / sp.linalg.norm(grad) * ds
 
-    return B_opt
+            # get energy
+            BM = B_opt[:, i].copy().reshape(1, 1, n_parcels)
+            Wc = np.sum(np.multiply(gmat, BM ** 2), axis=2)
+            vWcI = sp.linalg.solve(Wc, V[:, i].reshape(-1, 1))
+            E_opt[i, j] = np.matmul(V[:, i].reshape(-1, 1).transpose(), vWcI)
+
+    return B_opt, E_opt
