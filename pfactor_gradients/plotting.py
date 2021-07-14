@@ -1,4 +1,4 @@
-import os
+import sys, os, platform
 from pfactor_gradients.utils import get_p_val_string
 
 import numpy as np
@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt
 
 
 def set_plotting_params(format='png'):
-    os.system('rm -rf ~/.cache/matplotlib')
+    if platform.system() == 'Darwin':
+        os.system('rm -rf ~/.cache/matplotlib')
     plt.rcParams['pdf.fonttype'] = 42
     plt.rcParams['ps.fonttype'] = 42
     plt.rcParams['savefig.format'] = format
