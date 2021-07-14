@@ -3,8 +3,9 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 from pfactor_gradients.routines import LoadFC
-from pfactor_gradients.imaging_derivs import DataVector
-from pfactor_gradients.energy import control_energy_helper
+from pfactor_gradients.imaging_derivs import DataVector, DataMatrix
+from pfactor_gradients.energy import matrix_normalization, expand_states, control_energy_helper, \
+    get_gmat, grad_descent_b, minimum_energy_fast
 from pfactor_gradients.prediction import corr_true_pred, root_mean_squared_error, run_reg, run_perm
 from brainspace.gradient import GradientMaps
 from sklearn.cluster import KMeans
@@ -149,23 +150,27 @@ class LoadGeneExpression():
 
 
 class ComputeMinimumControlEnergy():
-    def __init__(self, environment, A, states, n_subsamples=0, control='minimum', T=1, B='wb', file_prefix='',
-                 force_rerun=False, save_outputs=True, add_noise=False, verbose=True):
+    def __init__(self, environment, A, states, B, T=1, control='minimum_fast', file_prefix='',
+                 force_rerun=False, save_outputs=True, verbose=True):
         self.environment = environment
         self.A = A
         self.states = states
-        self.n_subsamples = n_subsamples
-
-        self.control = control
-        self.T = T
         self.B = B
+
+        self.T = T
+        self.control = control
 
         self.file_prefix = file_prefix
 
         self.force_rerun = force_rerun
         self.save_outputs = save_outputs
-        self.add_noise = add_noise
         self.verbose = verbose
+
+    def _check_inputs(self):
+        try:
+            A_norm = self.A_norm
+        except AttributeError:
+            self.A_norm = matrix_normalization(self.A, version='continuous')
 
     def _output_dir(self):
         return os.path.join(self.environment.pipelinedir, 'minimum_control_energy')
@@ -174,41 +179,82 @@ class ComputeMinimumControlEnergy():
         unique = np.unique(self.states, return_counts=False)
         print('\tsettings:')
         print('\t\tn_states: {0}'.format(len(unique)))
-        print('\t\tn_subsamples: {0}'.format(self.n_subsamples))
         print('\t\tcontrol: {0}'.format(self.control))
         print('\t\tT: {0}'.format(self.T))
 
-        if type(self.B) == str:
-            print('\t\tB: {0}'.format(self.B))
-        elif type(self.B) == DataVector:
+        if type(self.B) == DataMatrix:
             print('\t\tB: {0}'.format(self.B.name))
+        elif type(self.B) == str:
+            print('\t\tB: {0}'.format(self.B))
         else:
-            print('\t\tB: vector')
+            print('\t\tB: unknown')
 
     def _get_file_prefix(self):
         unique = np.unique(self.states, return_counts=False)
-        file_prefix = self.file_prefix+'ns-{0}-{1}_ctrl-{2}_T-{3}'.format(len(unique),
-                                                                          self.n_subsamples, self.control, self.T)
-        if type(self.B) == str:
-            file_prefix = file_prefix+'_B-{0}_'.format(self.B)
-        elif type(self.B) == DataVector:
+        file_prefix = self.file_prefix+'ns-{0}_ctrl-{1}_T-{2}'.format(len(unique), self.control, self.T)
+        if type(self.B) == DataMatrix:
             file_prefix = file_prefix+'_B-{0}_'.format(self.B.name)
         else:
-            file_prefix = file_prefix+'_B-vector_'
+            file_prefix = file_prefix+'_B-unknown_'
 
         return file_prefix
 
+    def _get_gmat(self):
+        file_prefix = '_'.join(self._get_file_prefix().split('_')[:-2])
+        file_prefix = file_prefix + '_'
+
+        if os.path.exists(self._output_dir()) and \
+                os.path.isfile(os.path.join(self._output_dir(), file_prefix+'gmat.npy')) and \
+                self.force_rerun == False:
+
+            self.gmat = np.load(os.path.join(self._output_dir(), file_prefix+'gmat.npy'))
+        else:
+            print('\tcomputing gmat...')
+            self.gmat = get_gmat(A=self.A_norm, T=self.T)
+
+            # save outputs
+            if self.save_outputs:
+                if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
+                np.save(os.path.join(self._output_dir(), file_prefix+'gmat'), self.gmat)
+
+    def _get_optimize_b(self):
+        file_prefix = '_'.join(self._get_file_prefix().split('_')[:-2])
+        file_prefix = file_prefix + '_'
+
+        self._get_gmat()
+
+        if os.path.exists(self._output_dir()) and \
+                os.path.isfile(os.path.join(self._output_dir(), file_prefix+'B-optimized.npy')) and \
+                self.force_rerun == False:
+
+            self.B_opt = np.load(os.path.join(self._output_dir(), file_prefix+'B-optimized.npy'))
+        else:
+            print('\tcomputing optimized B weights for all state transitions...')
+
+            x0_mat, xf_mat = expand_states(self.states)
+
+            B0 = np.ones((self.A_norm.shape[0], x0_mat.shape[1]))
+
+            self.B_opt = grad_descent_b(A=self.A_norm, B0=B0, x0_mat=x0_mat, xf_mat=xf_mat,
+                                        gmat=self.gmat, n=1, ds=0.1, T=self.T)
+
+
+            # save outputs
+            if self.save_outputs:
+                if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
+                np.save(os.path.join(self._output_dir(), file_prefix+'B-optimized'), self.B_opt)
+
     def run(self):
         file_prefix = self._get_file_prefix()
-        if self.add_noise:
-            file_prefix = 'noise_'+file_prefix
 
         if self.verbose:
             print('Pipeline: getting minimum control energy')
             self._print_settings()
             print('\t' + file_prefix)
 
-        if type(self.B) == DataVector:
+        self._check_inputs()
+
+        if type(self.B) == DataMatrix:
             B = self.B.data
         else:
             B = self.B
@@ -224,8 +270,8 @@ class ComputeMinimumControlEnergy():
             if self.control != 'minimum_fast':
                 self.n_err = np.load(os.path.join(self._output_dir(), file_prefix+'n_err.npy'))
         else:
-            self.E, self.n_err = control_energy_helper(self.A, self.states, n_subsamples=self.n_subsamples,
-                                                       control=self.control, T=self.T, B=B, add_noise=self.add_noise)
+            self.E, self.n_err = control_energy_helper(A=self.A_norm, states=self.states, B=B,
+                                                       T=self.T, control=self.control)
 
             # save outputs
             if self.save_outputs:
@@ -234,6 +280,55 @@ class ComputeMinimumControlEnergy():
                 if self.control != 'minimum_fast':
                     np.save(os.path.join(self._output_dir(), file_prefix+'n_err'), self.n_err)
 
+
+    def run_with_optimized_b(self):
+        file_prefix = '_'.join(self._get_file_prefix().split('_')[:-2])
+        file_prefix = file_prefix + '_B-optimized_'
+
+        self.B = 'optimized'
+
+        if self.verbose:
+            print('Pipeline: getting minimum control energy using optimized B weights')
+            self._print_settings()
+            print('\t' + file_prefix)
+            print('\tNOTE: original B settings will be ignored and weights will be initialized using identity!')
+
+        self._check_inputs()
+        self._get_gmat()
+        self._get_optimize_b()
+
+        if os.path.exists(self._output_dir()) and \
+                os.path.isfile(os.path.join(self._output_dir(), file_prefix+'E.npy')) and \
+                self.force_rerun == False:
+
+            if self.verbose:
+                print('\toutput already exists...skipping')
+
+            self.E_opt = np.load(os.path.join(self._output_dir(), file_prefix+'E.npy'))
+        else:
+            n_parcels = self.A_norm.shape[0]
+            unique = np.unique(self.states, return_counts=False)
+            n_states = len(unique)
+
+            x0_mat, xf_mat = expand_states(self.states)
+            n_transitions = x0_mat.shape[1]
+
+            E_opt = np.zeros((n_transitions,))
+
+            for i in tqdm(np.arange(n_transitions)):
+                B = np.zeros((n_parcels, n_parcels))
+                B[np.eye(n_parcels) == 1] = self.B_opt[:, i]
+
+                E_opt[i] = minimum_energy_fast(A=self.A_norm, T=self.T, B=B, x0=x0_mat[:, i], xf=xf_mat[:, i])
+
+            E_opt = E_opt.reshape(n_states, n_states)
+
+            self.E_opt = E_opt
+
+            # save outputs
+            if self.save_outputs:
+                if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
+                np.save(os.path.join(self._output_dir(), file_prefix+'E'), self.E_opt)
 
 class Regression():
     def __init__(self, environment, X, y, c, X_name='X', y_name='y', c_name='c',
