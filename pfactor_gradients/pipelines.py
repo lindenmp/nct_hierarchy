@@ -18,19 +18,14 @@ from sklearn.preprocessing import StandardScaler
 import abagen
 from tqdm import tqdm
 
-# %% Plotting
-import matplotlib.pyplot as plt
+# %% plotting
 import seaborn as sns
-
-sns.set(style='white', context='talk', font_scale=1)
-import matplotlib.font_manager as font_manager
-try:
-    fontpath = 'PublicSans-Thin.ttf'
-    prop = font_manager.FontProperties(fname=fontpath)
-    plt.rcParams['font.family'] = prop.get_name()
-    plt.rcParams['svg.fonttype'] = 'none'
-except:
-    pass
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.colors import ListedColormap
+from pfactor_gradients.plotting import set_plotting_params
+set_plotting_params(format='png')
+figsize = 1.5
 
 # %% pipeline classes
 class ComputeGradients():
