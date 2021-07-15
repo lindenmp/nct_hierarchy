@@ -122,7 +122,7 @@ def my_cross_val_score(X, y, c, my_cv, reg, scorer, runpca=False):
         X_train = sc.transform(X_train)
         X_test = sc.transform(X_test)
 
-        if c != None:
+        try:
             # standardize covariates
             sc = StandardScaler()
             sc.fit(c_train)
@@ -136,6 +136,8 @@ def my_cross_val_score(X, y, c, my_cv, reg, scorer, runpca=False):
             X_train = X_train - X_pred
             X_pred = nuis_reg.predict(c_test)
             X_test = X_test - X_pred
+        except:
+            pass
 
         if type(runpca) == str or type(runpca) == int:
             pca = PCA(n_components=n_components, svd_solver='full')
