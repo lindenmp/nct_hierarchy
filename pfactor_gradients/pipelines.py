@@ -263,7 +263,6 @@ class ComputeMinimumControlEnergy():
             print('\tNOTE: original B settings will be ignored and weights will be initialized using identity!')
 
         self._check_inputs()
-        self._get_gmat()
 
         if os.path.exists(self._output_dir()) and \
                 os.path.isfile(os.path.join(self._output_dir(), file_prefix+'E.npy')) and \
@@ -275,6 +274,8 @@ class ComputeMinimumControlEnergy():
             self.E_opt = np.load(os.path.join(self._output_dir(), file_prefix+'E.npy'))
             self.B_opt = np.load(os.path.join(self._output_dir(), file_prefix+'weights.npy'))
         else:
+            self._get_gmat()
+
             x0_mat, xf_mat = expand_states(self.states)
 
             B0 = np.ones((self.A_norm.shape[0], x0_mat.shape[1]))
