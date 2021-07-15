@@ -321,7 +321,7 @@ class Regression():
         return os.path.join(self.environment.pipelinedir, 'prediction')
 
     def _get_file_prefix(self):
-        file_prefix = '{0}-{1}-{2}_alg-{3}_score-{4}_pca-{5}'.format(self.X_name, self.y_name, self.c_name,
+        file_prefix = '{0}_y-{1}_c-{2}_alg-{3}_score-{4}_pca-{5}'.format(self.X_name, self.y_name, self.c_name,
                                                                      self.alg, self.score, self.runpca)
 
         return file_prefix
