@@ -34,13 +34,15 @@ def shuffle_data(X, y, c, seed=0):
 
     try:
         X_shuf = X[idx, :]
-    except:
+    except IndexError:
         X_shuf = X[idx]
 
     try:
         c_shuf = c[idx, :]
-    except:
+    except IndexError:
         c_shuf = c[idx]
+    except TypeError:
+        c_shuf = None
 
     y_shuf = y[idx]
 
@@ -98,16 +100,18 @@ def my_cross_val_score(X, y, c, my_cv, reg, scorer, runpca=False):
         try:
             X_train = X[tr, :]
             X_test = X[te, :]
-        except:
+        except IndexError:
             X_train = X[tr]
             X_test = X[te]
 
         try:
             c_train = c[tr, :]
             c_test = c[te, :]
-        except:
+        except IndexError:
             c_train = c[tr]
             c_test = c[te]
+        except TypeError:
+            pass
 
         y_train = y[tr]
         y_test = y[te]
@@ -118,19 +122,20 @@ def my_cross_val_score(X, y, c, my_cv, reg, scorer, runpca=False):
         X_train = sc.transform(X_train)
         X_test = sc.transform(X_test)
 
-        # standardize covariates
-        sc = StandardScaler()
-        sc.fit(c_train)
-        c_train = sc.transform(c_train)
-        c_test = sc.transform(c_test)
+        if c != None:
+            # standardize covariates
+            sc = StandardScaler()
+            sc.fit(c_train)
+            c_train = sc.transform(c_train)
+            c_test = sc.transform(c_test)
 
-        # regress nuisance (X)
-        nuis_reg = copy.deepcopy(reg)
-        nuis_reg.fit(c_train, X_train)
-        X_pred = nuis_reg.predict(c_train)
-        X_train = X_train - X_pred
-        X_pred = nuis_reg.predict(c_test)
-        X_test = X_test - X_pred
+            # regress nuisance (X)
+            nuis_reg = copy.deepcopy(reg)
+            nuis_reg.fit(c_train, X_train)
+            X_pred = nuis_reg.predict(c_train)
+            X_train = X_train - X_pred
+            X_pred = nuis_reg.predict(c_test)
+            X_test = X_test - X_pred
 
         if type(runpca) == str or type(runpca) == int:
             pca = PCA(n_components=n_components, svd_solver='full')
