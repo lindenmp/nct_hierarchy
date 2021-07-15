@@ -15,7 +15,7 @@ if platform.system() == 'Linux':
 elif platform.system() == 'Darwin':
     computer = 'macbook'
 parc = 'schaefer'
-n_parcels = 400
+n_parcels = 200
 sc_edge_weight = 'streamlineCount'
 environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_edge_weight=sc_edge_weight)
 environment.make_output_dirs()
