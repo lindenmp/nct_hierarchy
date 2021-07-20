@@ -251,9 +251,9 @@ class ComputeMinimumControlEnergy():
                     np.save(os.path.join(self._output_dir(), file_prefix+'n_err'), self.n_err)
 
 
-    def run_with_optimized_b(self, n=1):
+    def run_with_optimized_b(self, n=1, ds=1):
         # self.B = 'optimized'
-        self.B = 'optimized-n-{0}'.format(n)
+        self.B = 'optimized-n-{0}-ds-{1}'.format(n, ds)
         file_prefix = self._get_file_prefix()
 
         if self.verbose:
@@ -281,11 +281,7 @@ class ComputeMinimumControlEnergy():
             B0 = np.ones((self.A_norm.shape[0], x0_mat.shape[1]))
 
             B_opt, E_opt = grad_descent_b(A=self.A_norm, B0=B0, x0_mat=x0_mat, xf_mat=xf_mat,
-                                          gmat=self.gmat, n=n, ds=0.1, T=self.T)
-
-            # unique = np.unique(self.states, return_counts=False)
-            # n_states = len(unique)
-            # E_opt = E_opt[:, -1].reshape(n_states, n_states)
+                                          gmat=self.gmat, n=n, ds=ds, T=self.T)
 
             self.B_opt = B_opt
             self.E_opt = E_opt
