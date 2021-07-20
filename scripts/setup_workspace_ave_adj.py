@@ -73,6 +73,8 @@ load_average_bms.brain_maps[dv.name] = dv
 
 # %% get states
 which_brain_map = 'hist-g2'
+# which_brain_map = 'func-g1'
+# which_brain_map = 'ct'
 
 if which_brain_map == 'hist-g2':
     if computer == 'macbook':
