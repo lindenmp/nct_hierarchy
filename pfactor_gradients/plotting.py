@@ -1,5 +1,5 @@
 import sys, os, platform
-from pfactor_gradients.utils import get_p_val_string
+from pfactor_gradients.utils import get_p_val_string, get_exact_p
 
 import numpy as np
 import pandas as pd
@@ -227,13 +227,17 @@ def my_null_plot(observed, null, p_val, xlabel, ax):
             horizontalalignment='right', verticalalignment='top', rotation=270, c=color_red)
 
 
-def my_distpair_plot(df, ylabel, ax):
+def my_distpair_plot(df, ylabel, ax, test_stat='ttest'):
     sns.violinplot(data=df, ax=ax, inner="box", palette="pastel", cut=2, linewidth=1.5)
     sns.despine(left=True, bottom=True)
     ax.set_ylabel(ylabel, labelpad=-0.5)
     ax.tick_params(pad=-2.5)
-    t, p_val = sp.stats.ttest_rel(a=df.iloc[:, 0], b=df.iloc[:, 1])
-    textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{t}', t, get_p_val_string(p_val))
-    ax.text(0.5, ax.get_ylim()[1] + (ax.get_ylim()[1] * 0.15), textstr, fontsize=8,
-            horizontalalignment='center', verticalalignment='top')
-    ax.axhline(y=ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05, xmin=0.25, xmax=0.75, color='k', linewidth=1)
+    if test_stat == 'exact':
+        p_val = get_exact_p(df.iloc[:, 0], df.iloc[:, 1])
+        textstr = get_p_val_string(p_val)
+    elif test_stat == 'ttest':
+        t, p_val = sp.stats.ttest_rel(a=df.iloc[:, 0], b=df.iloc[:, 1])
+        textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{t}', t, get_p_val_string(p_val))
+    ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=8,
+            horizontalalignment='center', verticalalignment='bottom')
+    ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
