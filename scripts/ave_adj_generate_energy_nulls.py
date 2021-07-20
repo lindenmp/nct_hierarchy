@@ -42,8 +42,11 @@ R, eff = randmio_und(A, itr=n_iter)
 file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
                                                             consist_thresh, which_brain_map)
 # %% network null
-A_list = [Wsp, Wssp]
-file_prefixes = ['average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wsp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+A_list = [Wwp, Wsp, Wssp]
+file_prefixes = ['average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wwp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                                consist_thresh, which_brain_map,
+                                                                                sge_task_id),
+                 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wsp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
                                                                                 consist_thresh, which_brain_map,
                                                                                 sge_task_id),
                  'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wssp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
