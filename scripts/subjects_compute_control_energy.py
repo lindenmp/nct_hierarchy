@@ -61,5 +61,6 @@ nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A, states=
                                            control='minimum_fast', T=T,
                                            file_prefix=file_prefix,
                                            force_rerun=False, save_outputs=True, verbose=True)
-n = 100
-nct_pipeline.run_with_optimized_b(n=n)
+n = 1
+ds = 0.1
+nct_pipeline.run_with_optimized_b(n=n, ds=ds)
