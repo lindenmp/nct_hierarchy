@@ -306,6 +306,7 @@ def grad_descent_b(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.1, T=1):
     # B_opt = B0.copy()
     B_opt = np.zeros((n_parcels, k, n + 1))
     B_opt[:, :, 0] = B0.copy()
+    B_opt[:, :, 0] = B_opt[:, :, 0] / sp.linalg.norm(B_opt[:, 0, 0])
     E_opt = np.zeros((k, n))
 
     # Iterate across state transitions
@@ -328,6 +329,9 @@ def grad_descent_b(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.1, T=1):
             E_opt[i, j] = np.matmul(V[:, i].reshape(-1, 1).transpose(), vWcI)
 
             # update weights
-            B_opt[:, i, j + 1] = B_opt[:, i, j] + grad / sp.linalg.norm(grad) * ds
+            B_tmp = B_opt[:, i, j] + grad / sp.linalg.norm(grad) * ds
+            # normalize
+            B_tmp = B_tmp / sp.linalg.norm(B_tmp)
+            B_opt[:, i, j + 1] = B_tmp
 
     return B_opt, E_opt
