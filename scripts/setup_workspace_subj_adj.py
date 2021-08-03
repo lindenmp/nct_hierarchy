@@ -59,8 +59,8 @@ for key in loaders_dict:
     loaders_dict[key].run()
 
 # %% get states
-# which_brain_map = 'hist-g2'
-which_brain_map = 'ct'
+which_brain_map = 'hist-g2'
+# which_brain_map = 'ct'
 
 if which_brain_map == 'hist-g2':
     if computer == 'macbook':
