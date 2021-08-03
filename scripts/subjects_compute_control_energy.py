@@ -16,22 +16,6 @@ elif platform.system() == 'Darwin':
     sge_task_id = 0
 print(sge_task_id)
 
-# %% get subject A matrix out
-A = load_sc.A[:, :, sge_task_id].copy()
-print(load_sc.df.index[sge_task_id])
-
-environment.df = environment.df.iloc[sge_task_id, :].to_frame().transpose()
-print(environment.df.index[0])
-
-# %% load subj's brain maps
-loaders_dict = {
-    'ct': LoadCT(environment=environment, Subject=Subject),
-    'sa': LoadSA(environment=environment, Subject=Subject)
-}
-
-for key in loaders_dict:
-    loaders_dict[key].run()
-
 # %% compute minimum energy
 T = 1
 file_prefix = '{0}_{1}_'.format(environment.df.index[0], which_brain_map)
