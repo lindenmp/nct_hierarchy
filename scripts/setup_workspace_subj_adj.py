@@ -3,7 +3,7 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC
+from pfactor_gradients.routines import LoadSC, LoadCT, LoadSA
 from pfactor_gradients.pipelines import ComputeGradients
 from pfactor_gradients.utils import get_states_from_brain_map
 
@@ -12,8 +12,10 @@ import numpy as np
 # %% Setup project environment
 if platform.system() == 'Linux':
     computer = 'cbica'
+    sge_task_id = int(os.getenv("SGE_TASK_ID")) - 1
 elif platform.system() == 'Darwin':
     computer = 'macbook'
+    sge_task_id = 0
 parc = 'schaefer'
 n_parcels = 200
 sc_edge_weight = 'streamlineCount'
@@ -40,8 +42,25 @@ n_subs = environment.df.shape[0]
 compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
 compute_gradients.run()
 
+# %% get subject A matrix out
+A = load_sc.A[:, :, sge_task_id].copy()
+print(load_sc.df.index[sge_task_id])
+
+environment.df = environment.df.iloc[sge_task_id, :].to_frame().transpose()
+print(environment.df.index[0])
+
+# %% load subj's brain maps
+loaders_dict = {
+    'ct': LoadCT(environment=environment, Subject=Subject),
+    'sa': LoadSA(environment=environment, Subject=Subject)
+}
+
+for key in loaders_dict:
+    loaders_dict[key].run()
+
 # %% get states
-which_brain_map = 'hist-g2'
+# which_brain_map = 'hist-g2'
+which_brain_map = 'ct'
 
 if which_brain_map == 'hist-g2':
     if computer == 'macbook':
@@ -58,6 +77,8 @@ if which_brain_map == 'hist-g2':
     state_brain_map = state_brain_map * -1
 elif which_brain_map == 'func-g1':
     state_brain_map = compute_gradients.gradients[:, 0].copy()
+elif which_brain_map == 'ct':
+    state_brain_map = loaders_dict['ct'].values[0, :].copy()
 
 n_bins = int(n_parcels/10)
 states = get_states_from_brain_map(brain_map=state_brain_map, n_bins=n_bins)
