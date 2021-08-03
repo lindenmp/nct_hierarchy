@@ -363,3 +363,12 @@ def threshold_consistency(A, thr=0.60):
     Am[mask] = 0
 
     return Am
+
+
+def get_bootstrap_indices(d_size=5, n_samples=10000):
+    bootstrap_indices = np.zeros((n_samples, d_size))
+
+    for i in np.arange(n_samples):
+        bootstrap_indices[i, :] = np.random.choice(np.arange(d_size), size=d_size, replace=True)
+
+    return bootstrap_indices.astype(int)
