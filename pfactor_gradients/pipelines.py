@@ -325,7 +325,8 @@ class Regression():
     def _output_files(self):
         file_prefix = self._get_file_prefix()
 
-        primary_files = ['{0}_accuracy_mean.txt'.format(file_prefix), '{0}_accuracy_std.txt'.format(file_prefix)]
+        primary_files = ['{0}_accuracy_mean.txt'.format(file_prefix), '{0}_accuracy_std.txt'.format(file_prefix),
+                         '{0}_y_pred.txt'.format(file_prefix)]
         secondary_file = '{0}_accuracy_perm.txt'.format(file_prefix)
 
         return primary_files, secondary_file
@@ -397,15 +398,17 @@ class Regression():
             primary_files, secondary_file = self._output_files()
             self.accuracy_mean = np.loadtxt(os.path.join(self._output_dir(), primary_files[0]))
             self.accuracy_std = np.loadtxt(os.path.join(self._output_dir(), primary_files[1]))
+            self.y_pred = np.loadtxt(os.path.join(self._output_dir(), primary_files[2]))
         else:
             self._get_reg()
             self._get_scorer()
 
             accuracy_mean = np.zeros(self.n_rand_splits)
             accuracy_std = np.zeros(self.n_rand_splits)
+            y_pred = np.zeros((len(self.y), self.n_rand_splits))
 
             for i in tqdm(np.arange(self.n_rand_splits)):
-                accuracy, y_pred_out = run_reg(X=self.X, y=self.y, c=self.c, reg=self.reg,
+                accuracy, y_pred[:, i] = run_reg(X=self.X, y=self.y, c=self.c, reg=self.reg,
                                                scorer=self.scorer, n_splits=self.n_splits, runpca=self.runpca,
                                                seed=i)
                 accuracy_mean[i] = accuracy.mean()
@@ -413,12 +416,14 @@ class Regression():
 
             self.accuracy_mean = accuracy_mean
             self.accuracy_std = accuracy_std
+            self.y_pred = y_pred
 
             # save outputs
             if not os.path.exists(self._output_dir()): os.makedirs(self._output_dir())
             primary_files, secondary_file = self._output_files()
             np.savetxt(os.path.join(self._output_dir(), primary_files[0]), self.accuracy_mean)
             np.savetxt(os.path.join(self._output_dir(), primary_files[1]), self.accuracy_std)
+            np.savetxt(os.path.join(self._output_dir(), primary_files[2]), self.y_pred)
 
     def run_perm(self):
         print('Pipeline: prediction, permutation test')
