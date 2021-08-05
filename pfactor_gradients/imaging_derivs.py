@@ -159,8 +159,11 @@ class DataVector():
 
 
     def regress_nuisance(self, c):
-        x = self.data.reshape(-1, 1)
-        c = c.reshape(-1, 1)
+        x = self.data
+        if x.ndim == 1:
+            x = x.reshape(-1, 1)
+        if c.ndim == 1:
+            c = c.reshape(-1, 1)
 
         nuis_reg = LinearRegression()
         nuis_reg.fit(c, x)
