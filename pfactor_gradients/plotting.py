@@ -235,9 +235,14 @@ def my_distpair_plot(df, ylabel, ax, test_stat='ttest'):
     if test_stat == 'exact':
         p_val = get_exact_p(df.iloc[:, 0], df.iloc[:, 1])
         textstr = get_p_val_string(p_val)
+        ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=8,
+                horizontalalignment='center', verticalalignment='bottom')
+        ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
     elif test_stat == 'ttest':
         t, p_val = sp.stats.ttest_rel(a=df.iloc[:, 0], b=df.iloc[:, 1])
         textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{t}', t, get_p_val_string(p_val))
-    ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=8,
-            horizontalalignment='center', verticalalignment='bottom')
-    ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
+        ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=8,
+                horizontalalignment='center', verticalalignment='bottom')
+        ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
+    elif test_stat == None:
+        pass
