@@ -375,3 +375,11 @@ def get_bootstrap_indices(d_size=5, n_samples=10000):
         bootstrap_indices[i, :] = np.random.choice(np.arange(d_size), size=d_size, replace=True)
 
     return bootstrap_indices.astype(int)
+
+
+def mean_confidence_interval(data, confidence=0.95):
+    a = 1.0 * np.array(data)
+    n = len(a)
+    m, se = np.mean(a), sp.stats.sem(a)
+    h = se * sp.stats.t.ppf((1 + confidence) / 2., n-1)
+    return m, m - h, m + h
