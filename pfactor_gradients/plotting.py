@@ -1,5 +1,5 @@
 import sys, os, platform
-from pfactor_gradients.utils import get_p_val_string, get_exact_p
+from pfactor_gradients.utils import get_p_val_string, get_exact_p, mean_confidence_interval
 
 import numpy as np
 import pandas as pd
@@ -104,7 +104,7 @@ def roi_to_vtx(roi_data, parcel_names, parc_file):
     return vtx_data, vtx_data_min, vtx_data_max
 
 
-def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson'):
+def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson', regr_line=True, kde=True):
     if len(x.shape) > 1 and len(y.shape) > 1:
         if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
             mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
@@ -135,21 +135,32 @@ def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson'):
     except:
         pass
 
-    color_blue = sns.color_palette("Set1")[1]
-    try:
-        sns.kdeplot(x=x, y=y, ax=ax, color='gray', thresh=0.05, alpha=0.25)
-    except:
-        pass
-    sns.regplot(x=x, y=y, ax=ax, scatter=False, color=color_blue)
+    # kde plot
+    if kde == True:
+        try:
+            sns.kdeplot(x=x, y=y, ax=ax, color='gray', thresh=0.05, alpha=0.25)
+        except:
+            pass
+
+    # regression line
+    if regr_line == True:
+        color_blue = sns.color_palette("Set1")[1]
+        sns.regplot(x=x, y=y, ax=ax, scatter=False, color=color_blue)
+
+    # scatter plot
     if type(c) == str:
         ax.scatter(x=x, y=y, c=c, s=5, alpha=0.5)
     else:
         ax.scatter(x=x, y=y, c=c, cmap='viridis', s=5, alpha=0.5)
+
+    # axis options
     ax.set_xlabel(xlabel, labelpad=-0.5)
     ax.set_ylabel(ylabel, labelpad=-0.5)
     ax.tick_params(pad=-2.5)
     ax.grid(False)
     sns.despine(right=True, top=True, ax=ax)
+
+    # annotation
     r, r_p = sp.stats.pearsonr(x, y)
     rho, rho_p = sp.stats.spearmanr(x, y)
     if annotate == 'pearson':
@@ -227,11 +238,38 @@ def my_null_plot(observed, null, p_val, xlabel, ax):
             horizontalalignment='right', verticalalignment='top', rotation=270, c=color_red)
 
 
-def my_distpair_plot(df, ylabel, ax, test_stat='ttest'):
-    sns.violinplot(data=df, ax=ax, inner="box", palette="pastel", cut=2, linewidth=1.5)
+def my_distpair_plot(df, ylabel, ax, test_stat='ttest', split=False):
+    if split == True:
+        mean_x1, lower_x1, upper_x1 = mean_confidence_interval(data=np.abs(df.iloc[:, 0]))
+        mean_x2, lower_x2, upper_x2 = mean_confidence_interval(data=np.abs(df.iloc[:, 1]))
+
+        df_tmp = pd.melt(df)
+        df_tmp["x"] = ""
+        sns.violinplot(data=df_tmp, ax=ax, x="x", y="value", hue="variable", inner=None, palette="pastel",
+                       cut=2, linewidth=1.5, linecolor="k", split=split)
+        ax.set_xlabel('')
+        # ax.legend(title='', bbox_to_anchor=(1, 1.15), loc='upper right')
+        ax.legend_.remove()
+
+        # add point estimate with 95% CI
+        ax.axhline(y=mean_x1, xmin=0.49, xmax=0.25, color="white", linewidth=1)
+        ax.axhline(y=upper_x1, xmin=0.49, xmax=0.25, color="white", linewidth=0.5, linestyle=':')
+        ax.axhline(y=lower_x1, xmin=0.49, xmax=0.25, color="white", linewidth=0.5, linestyle=':')
+        ax.text(-0.15, upper_x1, '95% CI', fontsize=4,
+                horizontalalignment='center', verticalalignment='bottom', rotation=0, c="white")
+
+        ax.axhline(y=mean_x2, xmin=0.51, xmax=0.75, color="white", linewidth=1)
+        ax.axhline(y=upper_x2, xmin=0.51, xmax=0.75, color="white", linewidth=0.5, linestyle=':')
+        ax.axhline(y=lower_x2, xmin=0.51, xmax=0.75, color="white", linewidth=0.5, linestyle=':')
+        ax.text(0.15, upper_x2, '95% CI', fontsize=4,
+                horizontalalignment='center', verticalalignment='bottom', rotation=0, c="white")
+    else:
+        sns.violinplot(data=df, ax=ax, inner="box", palette="pastel", cut=2, linewidth=1.5)
+
     sns.despine(left=True, bottom=True)
     ax.set_ylabel(ylabel, labelpad=-0.5)
     ax.tick_params(pad=-2.5)
+
     if test_stat == 'exact':
         p_val = get_exact_p(df.iloc[:, 0], df.iloc[:, 1])
         textstr = get_p_val_string(p_val)
@@ -244,5 +282,5 @@ def my_distpair_plot(df, ylabel, ax, test_stat='ttest'):
         ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=8,
                 horizontalalignment='center', verticalalignment='bottom')
         ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
-    elif test_stat == None:
+    elif test_stat is None:
         pass
