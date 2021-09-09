@@ -73,6 +73,38 @@ def get_cv(y, n_splits=10):
     return my_cv
 
 
+def get_stratified_cv(X, y, c=None, n_splits=10):
+    # sort data on outcome variable in ascending order
+    idx = np.argsort(y)
+    y_sort = y[idx]
+
+    if X.ndim == 2:
+        X_sort = X[idx, :]
+    elif X.ndim == 1:
+        X_sort = X[idx]
+
+    if c is not None:
+        if c.ndim == 2:
+            c_sort = c[idx, :]
+        elif c.ndim == 1:
+            c_sort = c[idx]
+
+    # create custom stratified kfold on outcome variable
+    my_cv = []
+    for k in range(n_splits):
+        my_bool = np.zeros(y.shape[0]).astype(bool)
+        my_bool[np.arange(k, y.shape[0], n_splits)] = True
+
+        train_idx = np.where(my_bool == False)[0]
+        test_idx = np.where(my_bool == True)[0]
+        my_cv.append((train_idx, test_idx))
+
+    if c is not None:
+        return X_sort, y_sort, my_cv, c_sort
+    else:
+        return X_sort, y_sort, my_cv
+
+
 def my_cross_val_score(X, y, c, my_cv, reg, scorer, runpca=False):
     accuracy = np.zeros(len(my_cv), )
     y_pred_out = np.zeros(y.shape)
@@ -158,6 +190,15 @@ def run_reg(X, y, c, reg, scorer, n_splits=10, runpca=False, seed=0):
     my_cv = get_cv(y_shuf, n_splits=n_splits)
 
     accuracy, y_pred_out = my_cross_val_score(X=X_shuf, y=y_shuf, c=c_shuf, my_cv=my_cv, reg=reg,
+                                              scorer=scorer, runpca=runpca)
+
+    return accuracy, y_pred_out
+
+
+def run_reg_scv(X, y, c, reg, scorer, n_splits=10, runpca=False):
+    X_sort, y_sort, my_cv, c_sort = get_stratified_cv(X=X, y=y, c=c, n_splits=n_splits)
+
+    accuracy, y_pred_out = my_cross_val_score(X=X_sort, y=y_sort, c=c_sort, my_cv=my_cv, reg=reg,
                                               scorer=scorer, runpca=runpca)
 
     return accuracy, y_pred_out
