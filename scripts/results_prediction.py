@@ -209,9 +209,9 @@ y = df_pred.loc[df_pred['B'] == B_list[3], 'score']
 print(get_exact_p(x, y))
 print(sp.stats.wilcoxon(x, y))
 
-df_pred['flip'] = df_pred['B'].str.contains('_flip')
+df_pred['standard'] = ~df_pred['B'].str.contains('_flip')
 df_pred['B_strip'] = df_pred['B'].map(lambda x: x.rstrip('_flip'))
-df_null['flip'] = df_null['B'].str.contains('_flip')
+df_null['standard'] = ~df_null['B'].str.contains('_flip')
 df_null['B_strip'] = df_null['B'].map(lambda x: x.rstrip('_flip'))
 
 f, ax = plt.subplots(1, 1, figsize=(2.5, 4))
@@ -219,20 +219,20 @@ sns.despine(left=True, bottom=True)
 ax.tick_params(pad=-2.5)
 
 # nulls (background)
-sns.violinplot(data=df_null, ax=ax, x='B_strip', y='score', hue='flip', split=True, scale='width', palette=cmap,
+sns.violinplot(data=df_null, ax=ax, x='B_strip', y='score', hue='standard', split=True, scale='width', palette=cmap,
                inner=None, linewidth=0.5)
 for violin in ax.collections:
     violin.set_alpha(0.2)
 
 # observed (foreground)
-sns.violinplot(data=df_pred, ax=ax, x='B_strip', y='score', hue='flip', split=True, scale='width', palette=cmap,
+sns.violinplot(data=df_pred, ax=ax, x='B_strip', y='score', hue='standard', split=True, scale='width', palette=cmap,
                inner=None, linewidth=1.5)
 n_violins = len(ax.collections)
 for violin in ax.collections[int(n_violins/2):]:
     violin.set_alpha(1)
 
 handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles=handles[:2], labels=['standard', 'flipped'], title='', bbox_to_anchor=(1, 1.15), loc='upper right')
+ax.legend(handles=handles[:2], labels=['flipped', 'standard'], title='', bbox_to_anchor=(1, 1.15), loc='upper right')
 ax.set_ylabel('negative {0} (higher = better)'.format(score.upper()))
 ax.set_xlabel('')
 ax.set_xticklabels(['CT', 'SA'])
