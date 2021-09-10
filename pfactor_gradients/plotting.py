@@ -20,6 +20,7 @@ def set_plotting_params(format='png'):
     plt.rcParams['pdf.fonttype'] = 42
     plt.rcParams['ps.fonttype'] = 42
     plt.rcParams['savefig.format'] = format
+    plt.rcParams['font.size'] = 8
 
     # path = pkg_resources.resource_stream('pfactor_gradients', 'PublicSans-Thin.ttf')
     # prop = mpl.font_manager.FontProperties(fname=path.name)
