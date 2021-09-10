@@ -425,7 +425,7 @@ class Regression():
             np.savetxt(os.path.join(self._output_dir(), primary_files[1]), self.accuracy_std)
             np.savetxt(os.path.join(self._output_dir(), primary_files[2]), self.y_pred)
 
-    def run_perm(self):
+    def run_perm(self, n_perm=int(5e3)):
         print('Pipeline: prediction, permutation test')
         if self._check_secondary_outputs() and self.force_rerun == False:
             print('\toutput already exists...skipping')
@@ -436,7 +436,7 @@ class Regression():
             self._get_scorer()
 
             accuracy_perm = run_perm(X=self.X, y=self.y, c=self.c, reg=self.reg,
-                                    scorer=self.scorer, n_splits=self.n_splits, runpca=self.runpca)
+                                    scorer=self.scorer, n_splits=self.n_splits, runpca=self.runpca, n_perm=n_perm)
 
             self.accuracy_perm = accuracy_perm
 
