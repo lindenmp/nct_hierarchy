@@ -110,6 +110,7 @@ class Environment():
         df.set_index(['subjid'], inplace=True)
 
         # filter dataframe
+        print('\tInitial sample: {0} subjects with {1} columns'.format(df.shape[0], df.shape[1]))
         if len(filters) > 0:
             for filter in filters:
                 n_excluded = df.shape[0] - df[df[filter] == filters[filter]].shape[0]
