@@ -252,3 +252,32 @@ for B in ['identity', ]:
         plt.close()
     except FileNotFoundError:
         print('Requisite files not found...')
+
+    # RLFP delta
+    rlfp_delta = np.zeros((n_states, n_states))
+    for i in np.arange(n_states):
+        for j in np.arange(n_states):
+            rlfp_delta[i, j] = load_average_bms.brain_maps['rlfp'].data[states == i].mean() - \
+                               load_average_bms.brain_maps['rlfp'].data[states == j].mean()
+
+    # RLFP matrix
+    f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
+    sns.heatmap(rlfp_delta, center=0, vmin=np.floor(np.min(rlfp_delta)), vmax=np.ceil(np.max(rlfp_delta)),
+                square=True, cmap='coolwarm', ax=ax, cbar_kws={"shrink": 0.60})
+    ax.set_ylabel("initial states", labelpad=-1)
+    ax.set_xlabel("target states", labelpad=-1)
+    ax.set_yticklabels('')
+    ax.set_xticklabels('')
+    ax.tick_params(pad=-2.5)
+    f.savefig(os.path.join(environment.figdir, 'rlfp_matrix'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+    plt.close()
+
+    # energy asymmetry vs RLFP delta
+    f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+    my_reg_plot(x=ed[indices_lower], y=rlfp_delta[indices_lower],
+                xlabel='energy (delta)', ylabel='RLFP (delta)',
+                ax=ax, annotate='both')
+    plt.subplots_adjust(wspace=.25)
+    f.savefig(os.path.join(environment.figdir, 'ed_rlfpd_{0}.png'.format(B)), dpi=600,
+              bbox_inches='tight', pad_inches=0.1)
+    plt.close()
