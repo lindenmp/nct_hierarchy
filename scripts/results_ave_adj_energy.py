@@ -32,6 +32,10 @@ for key in load_average_bms.brain_maps:
     # load_average_bms.brain_maps[key].rescale_unit_interval()
     print(key, sp.stats.pearsonr(state_brain_map, load_average_bms.brain_maps[key].data))
 
+# plot brain maps
+# load_average_bms.brain_maps['rlfp'].brain_surface_plot(environment)
+# sp.stats.spearmanr(load_average_bms.brain_maps['func-g1'].data, load_average_bms.brain_maps['rlfp'].data)
+
 # %% get control energy
 file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
                                                             consist_thresh, which_brain_map)
@@ -148,8 +152,7 @@ for B in ['identity', ]:
     plot_mask = plot_mask.astype(bool)
 
     f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
-    sns.heatmap(ed, center=0, vmin=np.floor(np.min(ed)), vmax=np.ceil(np.max(ed)),
-    # sns.heatmap(ed, mask=plot_mask, center=0, vmin=np.floor(np.min(ed)), vmax=np.ceil(np.max(ed)),
+    sns.heatmap(ed, mask=plot_mask, center=0, vmin=np.floor(np.min(ed)), vmax=np.ceil(np.max(ed)),
                             square=True, cmap='coolwarm', ax=ax, cbar_kws={"shrink": 0.80})
     ax.set_ylabel("initial states", labelpad=-1)
     ax.set_xlabel("target states", labelpad=-1)
@@ -215,20 +218,37 @@ for B in ['identity', ]:
     # %% 4) effective connectivity and RLFP
 
     # load dcm outputs
-    file = 'dcm_ns-{0}_A.mat'.format(n_states)
-    dcm = sp.io.loadmat(os.path.join(environment.pipelinedir, 'spdcm', file))
-    ec = dcm['A']
-    ec = np.abs(ec)
-    ec = rank_int(ec)
-    ecd = ec.transpose() - ec
+    try:
+        file = 'dcm_ns-{0}_A.mat'.format(n_states)
+        dcm = sp.io.loadmat(os.path.join(environment.pipelinedir, 'spdcm', file))
+        ec = dcm['A']
+        ec = np.abs(ec)
+        ec = rank_int(ec)
+        ecd = ec.transpose() - ec
 
-    # energy asymmetry vs effective connectivity asymmetry
-    f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-    my_reg_plot(x=ed[indices_upper], y=ecd[indices_upper],
-                xlabel='energy (delta)', ylabel='effective connectivity (delta)',
-                ax=ax, annotate='both')
-    plt.subplots_adjust(wspace=.25)
-    f.savefig(os.path.join(environment.figdir, 'ed_ecd_{0}.png'.format(B)), dpi=600,
-              bbox_inches='tight', pad_inches=0.1)
-    plt.close()
+        # effective connectivity matrix
+        f, ax = plt.subplots(1, 2, figsize=(figsize*2.4, figsize*1.2))
+        sns.heatmap(ec, center=0, vmin=np.floor(np.min(ec)), vmax=np.ceil(np.max(ec)),
+                    square=True, cmap='coolwarm', ax=ax[0], cbar_kws={"shrink": 0.60})
+        sns.heatmap(ecd, center=0, vmin=np.floor(np.min(ecd)), vmax=np.ceil(np.max(ecd)),
+                    square=True, cmap='coolwarm', ax=ax[1], cbar_kws={"shrink": 0.60})
+        for i in [0, 1]:
+            ax[i].set_ylabel("initial states", labelpad=-1)
+            ax[i].set_xlabel("target states", labelpad=-1)
+            ax[i].set_yticklabels('')
+            ax[i].set_xticklabels('')
+            ax[i].tick_params(pad=-2.5)
+        f.savefig(os.path.join(environment.figdir, 'ec_matrix'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+        plt.close()
 
+        # energy asymmetry vs effective connectivity asymmetry
+        f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+        my_reg_plot(x=ed[indices_lower], y=ecd[indices_lower],
+                    xlabel='energy (delta)', ylabel='effective connectivity (delta)',
+                    ax=ax, annotate='both')
+        plt.subplots_adjust(wspace=.25)
+        f.savefig(os.path.join(environment.figdir, 'ed_ecd_{0}.png'.format(B)), dpi=600,
+                  bbox_inches='tight', pad_inches=0.1)
+        plt.close()
+    except FileNotFoundError:
+        print('Requisite files not found...')
