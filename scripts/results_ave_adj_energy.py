@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import ListedColormap
 from pfactor_gradients.plotting import set_plotting_params
-set_plotting_params(format='png')
+set_plotting_params(format='svg')
 figsize = 1.5
 
 # %% orthogonalize brain maps against state map
@@ -259,6 +259,13 @@ for B in ['identity', ]:
         for j in np.arange(n_states):
             rlfp_delta[i, j] = load_average_bms.brain_maps['rlfp'].data[states == i].mean() - \
                                load_average_bms.brain_maps['rlfp'].data[states == j].mean()
+    # sign of this rlfp_delta matrix is currently unintuitive.
+    #   if state_i = 0.3 and state_j = 0.5, then 0.3-0.5=-0.2.
+    #   likewise, if state_i = 0.5 and state_j = 0.3, then 0.5-0.3=0.2.
+    # thus, an increase in rlfp over states is encoded by a negative number and a decrease is encoded by a positive
+    # number. Not good! sign flip for intuition
+    rlfp_delta = rlfp_delta * -1
+    # now, negative sign represent bold power decreasing over states and positive sign represent bold power increasing over states.
 
     # RLFP matrix
     f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
@@ -269,7 +276,7 @@ for B in ['identity', ]:
     ax.set_yticklabels('')
     ax.set_xticklabels('')
     ax.tick_params(pad=-2.5)
-    f.savefig(os.path.join(environment.figdir, 'rlfp_matrix'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+    f.savefig(os.path.join(environment.figdir, 'rlfp_delta_matrix'), dpi=600, bbox_inches='tight', pad_inches=0.01)
     plt.close()
 
     # energy asymmetry vs RLFP delta
