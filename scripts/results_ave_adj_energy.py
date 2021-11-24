@@ -208,8 +208,6 @@ for B in ['identity', ]:
         for i in np.arange(n_perms):
             ed_null = DataMatrix(data=e_network_null[:, :, i] - e_network_null[:, :, i].transpose())
             ed_null.regress_nuisance(c=states_distance_mni.data_clusters, mask=mask)
-            # r_null[i] = sp.stats.spearmanr(states_distance.data[indices_lower], np.abs(ed_null.data_resid[indices_lower]))[0]
-            r_null[i] = sp.stats.spearmanr(states_distance.data[indices_lower], np.abs(ed_null.data[indices_lower]))[0]
 
             r_null[i] = sp.stats.spearmanr(states_distance.data[indices_upper], ed_null.data[indices_upper])[0]
             r_null_abs[i] = sp.stats.spearmanr(states_distance.data[indices_upper], np.abs(ed_null.data[indices_upper]))[0]
