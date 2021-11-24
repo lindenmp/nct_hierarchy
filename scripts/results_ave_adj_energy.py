@@ -88,7 +88,7 @@ for B in ['identity', ]:
         # e = np.log10(E[B]) # normalized energy matrix
     else:
         e = E[B] # energy matrix
-    ed = e.transpose() - e # energy asymmetry matrix
+    ed = e - e.transpose() # energy asymmetry matrix
     print(np.all(np.round(np.abs(ed.flatten()), 4) == np.round(np.abs(ed.transpose().flatten()), 4)))
 
     # save out mean ed for use in other scripts
@@ -147,7 +147,7 @@ for B in ['identity', ]:
 
     # energy asymmetry matrix
     plot_mask = np.zeros((n_states, n_states))
-    plot_mask[indices_upper] = 1
+    plot_mask[indices_lower] = 1
     plot_mask[np.eye(n_states) == 1] = 1
     plot_mask = plot_mask.astype(bool)
 
@@ -169,6 +169,7 @@ for B in ['identity', ]:
     for i in np.arange(n_states):
         for j in np.arange(n_states):
             states_distance[i, j] = state_brain_map[states == i].mean() - state_brain_map[states == j].mean()
+    states_distance = np.abs(states_distance)
     states_distance = DataMatrix(data=states_distance)
 
     # get mni distance between states
@@ -180,13 +181,20 @@ for B in ['identity', ]:
     # regress mni distance out of energy asymmetry
     ed_matrix = DataMatrix(data=ed)
     mask = np.zeros((n_states, n_states)).astype(bool)
-    mask[indices_lower] = True
+    mask[indices_upper] = True
     ed_matrix.regress_nuisance(c=states_distance_mni.data_clusters, mask=mask)
 
-    # plot
+    # plot distance asymm
     f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-    # my_reg_plot(states_distance.data[indices_lower], np.abs(ed_matrix.data_resid[indices_lower]),
-    my_reg_plot(states_distance.data[indices_lower], np.abs(ed_matrix.data[indices_lower]),
+    my_reg_plot(states_distance.data[indices_upper], ed_matrix.data[indices_upper],
+                            'hierarchy distance', 'energy asymmetry', ax, annotate='spearman')
+    f.savefig(os.path.join(environment.figdir, 'corr(distance,e_asym_{0})'.format(B)), dpi=600, bbox_inches='tight',
+              pad_inches=0.01)
+    plt.close()
+
+    # plot distance asymm (absolute)
+    f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+    my_reg_plot(states_distance.data[indices_upper], np.abs(ed_matrix.data[indices_upper]),
                             'hierarchy distance', 'energy asymmetry\n(abs.)', ax, annotate='spearman')
     f.savefig(os.path.join(environment.figdir, 'corr(distance,abs_e_asym_{0})'.format(B)), dpi=600, bbox_inches='tight',
               pad_inches=0.01)
@@ -195,20 +203,31 @@ for B in ['identity', ]:
     # plot null
     try:
         r_null = np.zeros(n_perms)
+        r_null_abs = np.zeros(n_perms)
 
         for i in np.arange(n_perms):
-            ed_null = DataMatrix(data=e_network_null[:, :, i].transpose() - e_network_null[:, :, i])
+            ed_null = DataMatrix(data=e_network_null[:, :, i] - e_network_null[:, :, i].transpose())
             ed_null.regress_nuisance(c=states_distance_mni.data_clusters, mask=mask)
             # r_null[i] = sp.stats.spearmanr(states_distance.data[indices_lower], np.abs(ed_null.data_resid[indices_lower]))[0]
             r_null[i] = sp.stats.spearmanr(states_distance.data[indices_lower], np.abs(ed_null.data[indices_lower]))[0]
 
-        # get p val
-        # observed = sp.stats.spearmanr(states_distance.data[indices_lower], np.abs(ed_matrix.data_resid[indices_lower]))[0]
-        observed = sp.stats.spearmanr(states_distance.data[indices_lower], np.abs(ed_matrix.data[indices_lower]))[0]
-        p_val = get_null_p(observed, r_null, abs=True)
+            r_null[i] = sp.stats.spearmanr(states_distance.data[indices_upper], ed_null.data[indices_upper])[0]
+            r_null_abs[i] = sp.stats.spearmanr(states_distance.data[indices_upper], np.abs(ed_null.data[indices_upper]))[0]
 
+        # plot distance asymm null
+        observed = sp.stats.spearmanr(states_distance.data[indices_upper], ed_matrix.data[indices_upper])[0]
+        p_val = get_null_p(observed, r_null, abs=True)
         f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
         my_null_plot(observed=observed, null=r_null, p_val=p_val, xlabel='distance corr.\n(null network)', ax=ax)
+        f.savefig(os.path.join(environment.figdir, 'corr(distance,abs_e_asym_{0})_null'.format(B)), dpi=600,
+                  bbox_inches='tight', pad_inches=0.01)
+        plt.close()
+
+        # plot distance asymm null (absolute)
+        observed = sp.stats.spearmanr(states_distance.data[indices_upper], np.abs(ed_matrix.data[indices_upper]))[0]
+        p_val = get_null_p(observed, r_null_abs, abs=True)
+        f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+        my_null_plot(observed=observed, null=r_null_abs, p_val=p_val, xlabel='distance corr.\n(null network)', ax=ax)
         f.savefig(os.path.join(environment.figdir, 'corr(distance,e_asym_{0})_null'.format(B)), dpi=600,
                   bbox_inches='tight', pad_inches=0.01)
         plt.close()
@@ -224,7 +243,7 @@ for B in ['identity', ]:
         ec = dcm['A']
         ec = np.abs(ec)
         ec = rank_int(ec)
-        ecd = ec.transpose() - ec
+        ecd = ec - ec.transpose()
 
         # effective connectivity matrix
         f, ax = plt.subplots(1, 2, figsize=(figsize*2.4, figsize*1.2))
@@ -243,11 +262,11 @@ for B in ['identity', ]:
 
         # energy asymmetry vs effective connectivity asymmetry
         f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-        my_reg_plot(x=ed[indices_lower], y=ecd[indices_lower],
+        my_reg_plot(x=ed[indices_upper], y=ecd[indices_upper],
                     xlabel='energy (delta)', ylabel='effective connectivity (delta)',
                     ax=ax, annotate='both')
         plt.subplots_adjust(wspace=.25)
-        f.savefig(os.path.join(environment.figdir, 'ed_ecd_{0}.png'.format(B)), dpi=600,
+        f.savefig(os.path.join(environment.figdir, 'ed_ecd_{0}'.format(B)), dpi=600,
                   bbox_inches='tight', pad_inches=0.1)
         plt.close()
     except FileNotFoundError:
@@ -281,10 +300,10 @@ for B in ['identity', ]:
 
     # energy asymmetry vs RLFP delta
     f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-    my_reg_plot(x=ed[indices_lower], y=rlfp_delta[indices_lower],
+    my_reg_plot(x=ed[indices_upper], y=rlfp_delta[indices_upper],
                 xlabel='energy (delta)', ylabel='RLFP (delta)',
                 ax=ax, annotate='both')
     plt.subplots_adjust(wspace=.25)
-    f.savefig(os.path.join(environment.figdir, 'ed_rlfpd_{0}.png'.format(B)), dpi=600,
+    f.savefig(os.path.join(environment.figdir, 'ed_rlfpd_{0}'.format(B)), dpi=600,
               bbox_inches='tight', pad_inches=0.1)
     plt.close()
