@@ -124,8 +124,8 @@ for B in ['identity', ]:
     plot_mask = plot_mask.astype(bool)
 
     f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
-    sns.heatmap(e, mask=plot_mask, vmin=np.floor(np.min(e[~plot_mask])), vmax=np.ceil(np.max(e)),
-                            square=True, ax=ax, cbar_kws={"shrink": 0.80})
+    sns.heatmap(e, mask=plot_mask, center=0, vmin=np.floor(np.min(e[~plot_mask])), vmax=np.ceil(np.max(e)),
+                            square=True, cmap='coolwarm', ax=ax, cbar_kws={"shrink": 0.80})
     ax.set_ylabel("initial states", labelpad=-1)
     ax.set_xlabel("target states", labelpad=-1)
     ax.set_yticklabels('')
