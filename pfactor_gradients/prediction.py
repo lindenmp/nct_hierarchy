@@ -196,13 +196,13 @@ def run_reg(X, y, c, reg, scorer, n_splits=10, runpca=False, seed=0):
 
 
 def run_reg_scv(X, y, c, reg, scorer, n_splits=10, runpca=False):
-    if c != None:
-        X_sort, y_sort, my_cv, c_sort = get_stratified_cv(X=X, y=y, c=c, n_splits=n_splits)
-        accuracy, y_pred_out = my_cross_val_score(X=X_sort, y=y_sort, c=c_sort, my_cv=my_cv, reg=reg,
-                                                  scorer=scorer, runpca=runpca)
-    else:
+    if c is None:
         X_sort, y_sort, my_cv = get_stratified_cv(X=X, y=y, c=c, n_splits=n_splits)
         accuracy, y_pred_out = my_cross_val_score(X=X_sort, y=y_sort, c=c, my_cv=my_cv, reg=reg,
+                                                  scorer=scorer, runpca=runpca)
+    else:
+        X_sort, y_sort, my_cv, c_sort = get_stratified_cv(X=X, y=y, c=c, n_splits=n_splits)
+        accuracy, y_pred_out = my_cross_val_score(X=X_sort, y=y_sort, c=c_sort, my_cv=my_cv, reg=reg,
                                                   scorer=scorer, runpca=runpca)
 
     return accuracy, y_pred_out
