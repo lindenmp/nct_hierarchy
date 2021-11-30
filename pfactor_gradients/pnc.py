@@ -49,6 +49,8 @@ class Environment():
         self.rsfmri_tr = 3
         self.n_trs = 120
         self.rsfmri_te = 0.032
+        self.rsfmri_low = 0.01
+        self.rsfmri_high = 0.08
 
     def make_output_dirs(self):
         if not os.path.exists(self.pipelinedir): os.makedirs(self.pipelinedir)
@@ -330,7 +332,9 @@ class Subject():
 
             rlfp = np.zeros((n_parcels,))
             for i in np.arange(n_parcels):
-                rlfp[i] = compute_rlfp(rsts[:, i], tr=self.environment.rsfmri_tr, num_bands=5, band_of_interest=1)
+                rlfp[i] = compute_rlfp(rsts[:, i], tr=self.environment.rsfmri_tr,
+                                       low=self.environment.rsfmri_low, high=self.environment.rsfmri_high,
+                                       num_bands=5, band_of_interest=1)
 
             self.rlfp = rlfp
 
