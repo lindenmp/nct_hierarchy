@@ -1,6 +1,6 @@
 # %% import
 import sys, os, platform
-from pfactor_gradients.imaging_derivs import DataMatrix
+from pfactor_gradients.imaging_derivs import DataMatrix, DataVector
 from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
 from pfactor_gradients.plotting import my_reg_plot, my_distpair_plot, my_null_plot
 from pfactor_gradients.energy import expand_states, matrix_normalization
@@ -21,20 +21,34 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import ListedColormap
 from pfactor_gradients.plotting import set_plotting_params
-set_plotting_params(format='svg')
+set_plotting_params(format='png')
 figsize = 1.5
 
-# %% orthogonalize brain maps against state map
+# %% brain maps
+A_tmp = DataMatrix(data=A)
+A_tmp.get_strength()
+
 for key in load_average_bms.brain_maps:
+    nan_mask = np.isnan(load_average_bms.brain_maps[key].data)
+
     # load_average_bms.brain_maps[key].regress_nuisance(state_brain_map)
     # load_average_bms.brain_maps[key].data = load_average_bms.brain_maps[key].data_resid.copy()
     # load_average_bms.brain_maps[key].rankdata()
     # load_average_bms.brain_maps[key].rescale_unit_interval()
-    print(key, sp.stats.pearsonr(state_brain_map, load_average_bms.brain_maps[key].data))
 
-# plot brain maps
-# load_average_bms.brain_maps['rlfp'].brain_surface_plot(environment)
-# sp.stats.spearmanr(load_average_bms.brain_maps['func-g1'].data, load_average_bms.brain_maps['rlfp'].data)
+    print('state_brain_map vs. {0}'.format(key), sp.stats.pearsonr(state_brain_map[~nan_mask],
+                                                                   load_average_bms.brain_maps[key].data[~nan_mask]))
+    print('strength vs. {0}'.format(key), sp.stats.spearmanr(A_tmp.S[~nan_mask],
+                                                             load_average_bms.brain_maps[key].data[~nan_mask]))
+
+    # plot brain map
+    load_average_bms.brain_maps[key].brain_surface_plot(environment)
+
+# plot state brain map
+DataVector(data=state_brain_map, name='state_brain_map').brain_surface_plot(environment)
+DataVector(data=states == 0, name='state_0').brain_surface_plot(environment)
+DataVector(data=states == int(n_states/2), name='state_{0}'.format(int(n_states/2))).brain_surface_plot(environment)
+DataVector(data=states == n_states-1, name='state_{0}'.format(int(n_states-1))).brain_surface_plot(environment)
 
 # %% get control energy
 file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
@@ -45,16 +59,14 @@ B_dict = dict()
 B = DataMatrix(data=np.eye(n_parcels), name='identity')
 B_dict[B.name] = B
 
-# for key in load_average_bms.brain_maps:
-#     B = DataMatrix(data=np.zeros((n_parcels, n_parcels)), name=key)
-#     B.data[np.eye(n_parcels) == 1] = 1 + load_average_bms.brain_maps[key].data
-#     B_dict[B.name] = B
-
 E = dict.fromkeys(B_dict)
+
+c = 1
+T = 1
 
 for B in B_dict:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A, states=states, B=B_dict[B],
-                                               control='minimum_fast', T=1,
+                                               control='minimum_fast', c=c, T=T,
                                                file_prefix=file_prefix,
                                                force_rerun=False, save_outputs=True, verbose=True)
     nct_pipeline.run()
@@ -64,7 +76,7 @@ for B in B_dict:
 
 # optimized B weights
 nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A, states=states, B=B_dict['identity'],
-                                           control='minimum_fast', T=1,
+                                           control='minimum_fast', c=c, T=T,
                                            file_prefix=file_prefix,
                                            force_rerun=False, save_outputs=True, verbose=True)
 n = 2
@@ -74,42 +86,38 @@ nct_pipeline.run_with_optimized_b(n=n, ds=ds)
 E['E_opt'] = nct_pipeline.E_opt[:, 1].reshape(n_states, n_states)
 B_opt = nct_pipeline.B_opt[:, :, 1]
 
-# E['identity'] = nct_pipeline.E_opt[:, 0].reshape(n_states, n_states)
-
- # %% data for plotting
+# %% data for plotting
 norm_energy = True
 # for B in ['identity', 'E_opt']:
 for B in ['identity', ]:
     # B = 'identity'
     # B = 'E_opt'
     print(B)
+    e = E[B].copy()
+
     if norm_energy:
-        e = rank_int(E[B]) # normalized energy matrix
-        # e = np.log10(E[B]) # normalized energy matrix
-    else:
-        e = E[B] # energy matrix
+        e = rank_int(e) # normalized energy matrix
+
     ed = e - e.transpose() # energy asymmetry matrix
     print(np.all(np.round(np.abs(ed.flatten()), 4) == np.round(np.abs(ed.transpose().flatten()), 4)))
 
     # save out mean ed for use in other scripts
     np.save(os.path.join(environment.pipelinedir, 'e_{0}_{1}.npy'.format(which_brain_map, B)), e)
     np.save(os.path.join(environment.pipelinedir, 'ed_{0}_{1}.npy'.format(which_brain_map, B)), ed)
-    # np.save(os.path.join(environment.pipelinedir, 'e_{0}_{1}_gi.npy'.format(which_brain_map, B)), e)
-    # np.save(os.path.join(environment.pipelinedir, 'ed_{0}_{1}_gi.npy'.format(which_brain_map, B)), ed)
 
     try:
         n_perms = 10000
-        network_null = 'mni-wssp'
+        network_null = 'mni-wwp'
         e_network_null = np.zeros((n_states, n_states, n_perms))
 
         for i in tqdm(np.arange(n_perms)):
-            file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-{3}-{4}_ns-{5}_ctrl-minimum_fast_T-1_B-{6}_E.npy' \
+            file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-{3}-{4}_ns-{5}_ctrl-minimum_fast_c-{6}_T-{7}_B-{8}_E.npy' \
                 .format(n_subs,
                         consist_thresh,
                         which_brain_map,
                         network_null,
-                        i, n_states, B)
-            e_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
+                        i, n_states, c, T, B)
+            e_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy_new', file))
 
             # normalize
             if norm_energy:
@@ -232,7 +240,7 @@ for B in ['identity', ]:
     except NameError:
         print('Requisite variables not found...')
 
-    # %% 4) effective connectivity and RLFP
+    # %% 4) effective connectivity
 
     # load dcm outputs
     try:
@@ -270,38 +278,38 @@ for B in ['identity', ]:
     except FileNotFoundError:
         print('Requisite files not found...')
 
-    # RLFP delta
-    rlfp_delta = np.zeros((n_states, n_states))
+    # %% 5) fMRI delta
+    timescales_delta = np.zeros((n_states, n_states))
     for i in np.arange(n_states):
         for j in np.arange(n_states):
-            rlfp_delta[i, j] = load_average_bms.brain_maps['rlfp'].data[states == i].mean() - \
-                               load_average_bms.brain_maps['rlfp'].data[states == j].mean()
-    # sign of this rlfp_delta matrix is currently unintuitive.
+            timescales_delta[i, j] = np.nanmean(load_average_bms.brain_maps['tau'].data[states == i]) - \
+                                     np.nanmean(load_average_bms.brain_maps['tau'].data[states == j])
+    # sign of this timescales_delta matrix is currently unintuitive.
     #   if state_i = 0.3 and state_j = 0.5, then 0.3-0.5=-0.2.
     #   likewise, if state_i = 0.5 and state_j = 0.3, then 0.5-0.3=0.2.
     # thus, an increase in rlfp over states is encoded by a negative number and a decrease is encoded by a positive
     # number. Not good! sign flip for intuition
-    rlfp_delta = rlfp_delta * -1
+    timescales_delta = timescales_delta * -1
     # now, negative sign represent bold power decreasing over states and positive sign represent bold power increasing over states.
 
-    # RLFP matrix
+    # fmri matrix
     f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
-    sns.heatmap(rlfp_delta, center=0, vmin=np.floor(np.min(rlfp_delta)), vmax=np.ceil(np.max(rlfp_delta)),
+    sns.heatmap(timescales_delta, center=0, vmin=np.floor(np.min(timescales_delta)), vmax=np.ceil(np.max(timescales_delta)),
                 square=True, cmap='coolwarm', ax=ax, cbar_kws={"shrink": 0.60})
     ax.set_ylabel("initial states", labelpad=-1)
     ax.set_xlabel("target states", labelpad=-1)
     ax.set_yticklabels('')
     ax.set_xticklabels('')
     ax.tick_params(pad=-2.5)
-    f.savefig(os.path.join(environment.figdir, 'rlfp_delta_matrix'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+    f.savefig(os.path.join(environment.figdir, 'timescales_delta_matrix'), dpi=600, bbox_inches='tight', pad_inches=0.01)
     plt.close()
 
     # energy asymmetry vs RLFP delta
     f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-    my_reg_plot(x=ed[indices_upper], y=rlfp_delta[indices_upper],
-                xlabel='energy (delta)', ylabel='RLFP (delta)',
+    my_reg_plot(x=timescales_delta[indices_upper], y=ed[indices_upper],
+                xlabel='timescales (delta)', ylabel='energy asymmetry',
                 ax=ax, annotate='both')
     plt.subplots_adjust(wspace=.25)
-    f.savefig(os.path.join(environment.figdir, 'ed_rlfpd_{0}'.format(B)), dpi=600,
+    f.savefig(os.path.join(environment.figdir, 'ed_timescales_{0}'.format(B)), dpi=600,
               bbox_inches='tight', pad_inches=0.1)
     plt.close()
