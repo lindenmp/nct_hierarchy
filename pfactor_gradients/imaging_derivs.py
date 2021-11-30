@@ -175,14 +175,22 @@ class DataVector():
 
 
     def rankdata(self, descending=False):
+        nan_mask = np.isnan(self.data)
+
+        tmp = np.zeros(len(self.data))
+        tmp[nan_mask] = np.nan
+
         if descending:
-            self.data = (len(self.data) + 1) - sp.stats.rankdata(self.data).astype(int)
+            tmp[~nan_mask] = (len(self.data[~nan_mask]) + 1) - sp.stats.rankdata(self.data[~nan_mask])
         else:
-            self.data = sp.stats.rankdata(self.data).astype(int)
+            tmp[~nan_mask] = sp.stats.rankdata(self.data[~nan_mask])
+
+        self.data = tmp.copy()
 
 
     def rescale_unit_interval(self):
-        self.data = (self.data - min(self.data)) / (max(self.data) - min(self.data))
+        nan_mask = np.isnan(self.data)
+        self.data[~nan_mask] = (self.data[~nan_mask] - min(self.data[~nan_mask])) / (max(self.data[~nan_mask]) - min(self.data[~nan_mask]))
 
 
     def shuffle_data(self, n_shuffles=10000, shuffle_indices=[]):
