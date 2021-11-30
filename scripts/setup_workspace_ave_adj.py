@@ -9,6 +9,7 @@ from pfactor_gradients.utils import get_states_from_brain_map
 from pfactor_gradients.imaging_derivs import DataVector
 
 import numpy as np
+import pandas as pd
 
 # %% Setup project environment
 if platform.system() == 'Linux':
@@ -45,8 +46,8 @@ A = load_average_sc.A.copy()
 
 # %% load mean brain maps
 loaders_dict = {
-    'ct': LoadCT(environment=environment, Subject=Subject),
-    'sa': LoadSA(environment=environment, Subject=Subject),
+    # 'ct': LoadCT(environment=environment, Subject=Subject),
+    # 'sa': LoadSA(environment=environment, Subject=Subject),
     'rlfp': LoadRLFP(environment=environment, Subject=Subject),
     'alff': LoadALFF(environment=environment, Subject=Subject)
 }
@@ -64,6 +65,16 @@ dv.rankdata()
 dv.rescale_unit_interval()
 load_average_bms.brain_maps[dv.name] = dv
 
+# %% append tau map from Gao et al. 2020 eLife
+df_human_tau = pd.read_csv('/Users/lindenmp/research_data/field-echos/tau_Schaefer2018_{0}Parcels_17Networks.csv'
+                           .format(n_parcels), index_col=0)
+nan_mask = df_human_tau['tau'].isna()
+
+dv = DataVector(data=df_human_tau['tau'].values, name='tau')
+dv.rankdata()
+dv.rescale_unit_interval()
+load_average_bms.brain_maps[dv.name] = dv
+
 # %% append hcp myelin map
 # hcp_brain_maps = BrainMapLoader(computer=computer)
 # hcp_brain_maps.load_myelin(lh_annot_file=environment.lh_annot_file, rh_annot_file=environment.rh_annot_file)
@@ -75,16 +86,24 @@ load_average_bms.brain_maps[dv.name] = dv
 
 # %% get states
 which_brain_map = 'hist-g2'
+# which_brain_map = 'hist-g1'
 # which_brain_map = 'func-g1'
 # which_brain_map = 'ct'
 
-if which_brain_map == 'hist-g2':
-    if computer == 'macbook':
-        # bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
-        bbw_dir = '/Users/lindenmp/research_data/BigBrainWarp/spaces/fsaverage/'
-    elif computer == 'cbica':
-        bbw_dir = '/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/'
+if computer == 'macbook':
+    # bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
+    bbw_dir = '/Users/lindenmp/research_data/BigBrainWarp/spaces/fsaverage/'
+elif computer == 'cbica':
+    bbw_dir = '/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/'
 
+if which_brain_map == 'hist-g1':
+    if parc == 'schaefer':
+        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G1_Schaefer2018_{0}Parcels_17Networks.txt' \
+                                                  .format(n_parcels)))
+    elif parc == 'glasser':
+        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G1_HCP-MMP1.txt'))
+    state_brain_map = state_brain_map * -1
+elif which_brain_map == 'hist-g2':
     if parc == 'schaefer':
         state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_Schaefer2018_{0}Parcels_17Networks.txt' \
                                                   .format(n_parcels)))
@@ -96,10 +115,9 @@ elif which_brain_map == 'func-g1':
 else:
     state_brain_map = load_average_bms.brain_maps[which_brain_map].data.copy()
 
-n_bins = int(n_parcels/10)
+n_bins = int(n_parcels / 10)
 states = get_states_from_brain_map(brain_map=state_brain_map, n_bins=n_bins)
 n_states = len(np.unique(states))
-
 mask = ~np.eye(n_states, dtype=bool)
 indices = np.where(mask)
 indices_upper = np.triu_indices(n_states, k=1)
