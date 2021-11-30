@@ -324,12 +324,14 @@ def bandpower(ts, fs, fmin, fmax):
 
     return np.trapz(Pxx[ind_min: ind_max], f[ind_min: ind_max])
 
-def compute_rlfp(ts, tr, num_bands=5, band_of_interest=1):
+def compute_rlfp(ts, tr, low=None, high=None, num_bands=5, band_of_interest=1):
     """
     Parameters
     ----------
     ts : np.array (n_timepoints,)
         time series
+    tr : np.float
+        tr in seconds
 
     Returns
     -------
@@ -337,14 +339,16 @@ def compute_rlfp(ts, tr, num_bands=5, band_of_interest=1):
         relative low frequency power
     """
 
-    num_timepoints = len(ts)
-
-    scan_duration = num_timepoints * tr
     sample_freq = 1 / tr
+    nyq_freq = sample_freq / 2
 
     y = sp.stats.zscore(ts)
 
-    band_intervals = np.linspace(0, sample_freq / 2, num_bands + 1)
+    if low is None and high is None:
+        band_intervals = np.linspace(0, nyq_freq, num_bands + 1)
+    else:
+        band_intervals = np.linspace(low, high, num_bands + 1)
+
     band_freq_range = band_intervals[band_of_interest - 1:band_of_interest + 1]
 
     return bandpower(y, sample_freq, band_freq_range[0], band_freq_range[1])
