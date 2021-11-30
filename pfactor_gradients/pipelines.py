@@ -145,13 +145,14 @@ class LoadGeneExpression():
 
 
 class ComputeMinimumControlEnergy():
-    def __init__(self, environment, A, states, B, T=1, control='minimum_fast', file_prefix='',
+    def __init__(self, environment, A, states, B, c=1, T=1, control='minimum_fast', file_prefix='',
                  force_rerun=False, save_outputs=True, verbose=True):
         self.environment = environment
         self.A = A
         self.states = states
         self.B = B
 
+        self.c = c
         self.T = T
         self.control = control
 
@@ -165,7 +166,7 @@ class ComputeMinimumControlEnergy():
         try:
             A_norm = self.A_norm
         except AttributeError:
-            self.A_norm = matrix_normalization(self.A, version='continuous')
+            self.A_norm = matrix_normalization(self.A, version='continuous', c=self.c)
 
     def _output_dir(self):
         return os.path.join(self.environment.pipelinedir, 'minimum_control_energy')
@@ -175,6 +176,7 @@ class ComputeMinimumControlEnergy():
         print('\tsettings:')
         print('\t\tn_states: {0}'.format(len(unique)))
         print('\t\tcontrol: {0}'.format(self.control))
+        print('\t\tc: {0}'.format(self.c))
         print('\t\tT: {0}'.format(self.T))
 
         if type(self.B) == DataMatrix:
@@ -186,7 +188,7 @@ class ComputeMinimumControlEnergy():
 
     def _get_file_prefix(self):
         unique = np.unique(self.states, return_counts=False)
-        file_prefix = self.file_prefix+'ns-{0}_ctrl-{1}_T-{2}'.format(len(unique), self.control, self.T)
+        file_prefix = self.file_prefix+'ns-{0}_ctrl-{1}_c-{2}_T-{3}'.format(len(unique), self.control, self.c, self.T)
         if type(self.B) == DataMatrix:
             file_prefix = file_prefix+'_B-{0}_'.format(self.B.name)
         elif type(self.B) == str:
