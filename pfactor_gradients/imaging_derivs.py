@@ -243,7 +243,7 @@ class DataVector():
 
     def brain_surface_plot(self, environment, cmap='viridis'):
         f, ax = plt.subplots(1, 4, subplot_kw={'projection': '3d'})
-        data = self.data
+        data = self.data.copy()
 
         if np.min(data) == 0:
             data = data + 1e-5
