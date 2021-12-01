@@ -42,33 +42,25 @@ n_subs = environment.df.shape[0]
 compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
 compute_gradients.run()
 
-# %% get subject A matrix out
-A = load_sc.A[:, :, sge_task_id].copy()
-print(load_sc.df.index[sge_task_id])
-
-environment.df = environment.df.iloc[sge_task_id, :].to_frame().transpose()
-print(environment.df.index[0])
-
-# %% load subj's brain maps
-loaders_dict = {
-    'ct': LoadCT(environment=environment, Subject=Subject),
-    'sa': LoadSA(environment=environment, Subject=Subject)
-}
-
-for key in loaders_dict:
-    loaders_dict[key].run()
-
 # %% get states
 which_brain_map = 'hist-g2'
-# which_brain_map = 'ct'
+# which_brain_map = 'hist-g1'
+# which_brain_map = 'func-g1'
 
-if which_brain_map == 'hist-g2':
-    if computer == 'macbook':
-        # bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
-        bbw_dir = '/Users/lindenmp/research_data/BigBrainWarp/spaces/fsaverage/'
-    elif computer == 'cbica':
-        bbw_dir = '/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/'
+if computer == 'macbook':
+    # bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
+    bbw_dir = '/Users/lindenmp/research_data/BigBrainWarp/spaces/fsaverage/'
+elif computer == 'cbica':
+    bbw_dir = '/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/'
 
+if which_brain_map == 'hist-g1':
+    if parc == 'schaefer':
+        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G1_Schaefer2018_{0}Parcels_17Networks.txt' \
+                                                  .format(n_parcels)))
+    elif parc == 'glasser':
+        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G1_HCP-MMP1.txt'))
+    state_brain_map = state_brain_map * -1
+elif which_brain_map == 'hist-g2':
     if parc == 'schaefer':
         state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_Schaefer2018_{0}Parcels_17Networks.txt' \
                                                   .format(n_parcels)))
@@ -77,13 +69,10 @@ if which_brain_map == 'hist-g2':
     state_brain_map = state_brain_map * -1
 elif which_brain_map == 'func-g1':
     state_brain_map = compute_gradients.gradients[:, 0].copy()
-elif which_brain_map == 'ct':
-    state_brain_map = loaders_dict['ct'].values[0, :].copy()
 
-n_bins = int(n_parcels/10)
+n_bins = int(n_parcels / 10)
 states = get_states_from_brain_map(brain_map=state_brain_map, n_bins=n_bins)
 n_states = len(np.unique(states))
-
 mask = ~np.eye(n_states, dtype=bool)
 indices = np.where(mask)
 indices_upper = np.triu_indices(n_states, k=1)
