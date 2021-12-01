@@ -88,7 +88,6 @@ load_average_bms.brain_maps[dv.name] = dv
 which_brain_map = 'hist-g2'
 # which_brain_map = 'hist-g1'
 # which_brain_map = 'func-g1'
-# which_brain_map = 'ct'
 
 if computer == 'macbook':
     # bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
