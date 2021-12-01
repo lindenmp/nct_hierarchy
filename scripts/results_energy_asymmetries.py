@@ -3,7 +3,7 @@ from pfactor_gradients.pnc import Environment, Subject
 from pfactor_gradients.routines import LoadSC, LoadCT, LoadSA, LoadAverageSC, LoadAverageBrainMaps
 from pfactor_gradients.pipelines import ComputeGradients, ComputeMinimumControlEnergy
 from pfactor_gradients.utils import rank_int, get_fdr_p, fit_hyperplane, helper_null_hyperplane, helper_null_mean,\
-get_states_from_gradient, get_null_p
+get_states_from_brain_map, get_null_p
 from pfactor_gradients.plotting import my_reg_plot, my_null_plot, my_distpair_plot
 from pfactor_gradients.imaging_derivs import DataVector, DataMatrix
 from pfactor_gradients.hcp import BrainMapLoader
@@ -23,8 +23,8 @@ figsize = 1.5
 
 # %% Setup project environment
 computer = 'macbook'
-parc = 'schaefer'
-n_parcels = 400
+parc = 'glasser'
+n_parcels = 360
 sc_edge_weight = 'streamlineCount'
 environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_edge_weight=sc_edge_weight)
 environment.make_output_dirs()
@@ -34,39 +34,11 @@ environment.load_parc_data()
 filters = {'healthExcludev2': 0, 'psychoactiveMedPsychv2': 0,
            't1Exclude': 0, 'fsFinalExclude': 0,
            'b0ProtocolValidationStatus': 1, 'dti64ProtocolValidationStatus': 1, 'dti64Exclude': 0}
-           # 'restProtocolValidationStatus': 1, 'restExclude': 0} # need to add these filters in if doing funcg1 below
+           # 'restProtocolValidationStatus': 1, 'restExclude': 0} # need to add these filters in if doing func-g1 below
 environment.load_metadata(filters)
 
-# %% get states
-which_grad = 'histg2'
-
-if which_grad == 'histg2':
-    if computer == 'macbook':
-        bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
-    elif computer == 'cbica':
-        bbw_dir = '/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/'
-
-    if parc == 'schaefer':
-        gradient = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_Schaefer2018_{0}Parcels_17Networks.txt'.format(n_parcels)))
-    elif parc == 'glasser':
-        gradient = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_HCP-MMP1.txt'))
-    gradient = gradient * -1
-elif which_grad == 'funcg1':
-    # compute function gradient
-    compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
-    compute_gradients.run()
-    gradient = compute_gradients.gradients[:, 0]
-
-n_bins = int(n_parcels/10)
-states = get_states_from_gradient(gradient=gradient, n_bins=n_bins)
-n_states = len(np.unique(states))
-
-mask = ~np.eye(n_states, dtype=bool)
-indices = np.where(mask)
-indices_upper = np.triu_indices(n_states, k=1)
-indices_lower = np.tril_indices(n_states, k=-1)
-
 # %% Load sc data
+# note, this performs more subject exclusion
 load_sc = LoadSC(environment=environment, Subject=Subject)
 load_sc.run()
 # refilter environment due to LoadSC excluding on disconnected nodes
@@ -93,10 +65,57 @@ loaders_dict = {
 load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
 load_average_bms.run(return_descending=False)
 
+# %% compute functional gradient
+compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
+compute_gradients.run()
+
+# append fc gradient to brain maps
+dv = DataVector(data=compute_gradients.gradients[:, 0], name='func-g1')
+dv.rankdata()
+dv.rescale_unit_interval()
+load_average_bms.brain_maps[dv.name] = dv
+
+# %% get states
+which_brain_map = 'hist-g2'
+
+if which_brain_map == 'hist-g2':
+    if computer == 'macbook':
+        bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
+    elif computer == 'cbica':
+        bbw_dir = '/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/'
+
+    if parc == 'schaefer':
+        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_Schaefer2018_{0}Parcels_17Networks.txt'.format(n_parcels)))
+    elif parc == 'glasser':
+        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_HCP-MMP1.txt'))
+    state_brain_map = state_brain_map * -1
+elif which_brain_map == 'func-g1':
+    state_brain_map = compute_gradients.gradients[:, 0].copy()
+else:
+    state_brain_map = load_average_bms.brain_maps[which_brain_map].data.copy()
+
+n_bins = int(n_parcels/10)
+states = get_states_from_brain_map(brain_map=state_brain_map, n_bins=n_bins)
+n_states = len(np.unique(states))
+
+mask = ~np.eye(n_states, dtype=bool)
+indices = np.where(mask)
+indices_upper = np.triu_indices(n_states, k=1)
+indices_lower = np.tril_indices(n_states, k=-1)
+
+# %% orthogonalize brain maps against state map
+for key in load_average_bms.brain_maps:
+    # load_average_bms.brain_maps[key].regress_nuisance(state_brain_map)
+    # load_average_bms.brain_maps[key].data = load_average_bms.brain_maps[key].data_resid.copy()
+    # load_average_bms.brain_maps[key].rankdata()
+    # load_average_bms.brain_maps[key].rescale_unit_interval()
+    print(sp.stats.pearsonr(state_brain_map, load_average_bms.brain_maps[key].data))
+
 # %% get control energy
-file_prefix = 'average_adj_n-{0}_s-{1}_{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, which_grad)
+file_prefix = 'average_adj_n-{0}_s-{1}_{2}_'.format(load_average_sc.load_sc.df.shape[0], spars_thresh, which_brain_map)
 n_subsamples = 0
-B_list = ['wb',] + list(load_average_bms.brain_maps.keys())
+# B_list = ['wb',] + list(load_average_bms.brain_maps.keys())
+B_list = ['wb',]
 E = dict.fromkeys(B_list)
 
 for B in B_list:
@@ -104,14 +123,14 @@ for B in B_list:
         nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc.A,
                                                    states=states, n_subsamples=n_subsamples,
                                                    control='minimum_fast', T=1, B='wb', file_prefix=file_prefix,
-                                                   force_rerun=False, save_outputs=True, verbose=True)
+                                                   force_rerun=True, save_outputs=False, verbose=True)
         nct_pipeline.run()
     else:
         nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A,
                                                    states=states, n_subsamples=n_subsamples,
                                                    control='minimum_fast', T=1, B=load_average_bms.brain_maps[B],
                                                    file_prefix=file_prefix,
-                                                   force_rerun=False, save_outputs=True, verbose=True)
+                                                   force_rerun=True, save_outputs=False, verbose=True)
         nct_pipeline.run()
 
     E[B] = nct_pipeline.E
@@ -119,13 +138,17 @@ for B in B_list:
 # %% plots
 
 # %% data for plotting
-# for B in ['wb', 'ct', 'sa']:
+# for B in ['wb', 'ct', 'sa', 'func-g1']:
 B = 'wb'
 print(B)
-e = rank_int(E[B]) # normalized energy matrix
+# e = rank_int(E[B]) # normalized energy matrix
+e = E[B] # normalized energy matrix
 ed = e.transpose() - e # energy asymmetry matrix
 # save out mean ed for use in other scripts
-np.save(os.path.join(environment.pipelinedir, 'ed_{0}_{1}.npy'.format(which_grad, B)), ed)
+np.save(os.path.join(environment.pipelinedir, 'e_{0}_{1}.npy'.format(which_brain_map, B)), e)
+np.save(os.path.join(environment.pipelinedir, 'ed_{0}_{1}.npy'.format(which_brain_map, B)), ed)
+# np.save(os.path.join(environment.pipelinedir, 'e_{0}_{1}_gi.npy'.format(which_brain_map, B)), e)
+# np.save(os.path.join(environment.pipelinedir, 'ed_{0}_{1}_gi.npy'.format(which_brain_map, B)), ed)
 
 try:
     n_perms = 10000
@@ -137,7 +160,7 @@ try:
     for i in tqdm(np.arange(n_perms)):
         file = 'average_adj_n-{0}_s-{1}_{2}_null-{3}-{4}_ns-{5}-0_c-minimum_fast_T-1_B-{6}_E.npy'.format(n_subs,
                                                                                                          spars_thresh,
-                                                                                                         which_grad,
+                                                                                                         which_brain_map,
                                                                                                          network_null,
                                                                                                          i, n_states, B)
         e_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
@@ -152,7 +175,7 @@ try:
         for i in tqdm(np.arange(n_perms)):
             file = 'average_adj_n-{0}_s-{1}_{2}_ns-{3}-0_c-minimum_fast_T-1_B-{4}-spin-{5}_E.npy'.format(n_subs,
                                                                                                          spars_thresh,
-                                                                                                         which_grad,
+                                                                                                         which_brain_map,
                                                                                                          n_states, B, i)
             e_spin_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
 
@@ -163,6 +186,36 @@ except FileNotFoundError:
     print('Requisite files not found...')
     del e_network_null
 
+# %%
+from pfactor_gradients.energy import expand_states
+from scipy.linalg import svd
+
+A = load_average_sc.A.copy()
+c = 1
+# singluar value decomposition
+u, s, vt = svd(A)
+# Matrix normalization
+A = A / (c + s[0]) - np.eye(n_parcels)
+
+x0_mat, xf_mat = expand_states(states)
+
+xf_mat_tmp = xf_mat[:, :n_states]
+xf_mat_tmp = xf_mat_tmp.astype(int)
+
+A_e = sp.linalg.expm(A)
+
+X = np.matmul(A_e, xf_mat_tmp)
+
+X = np.sum(np.square(X), axis=0)
+
+# plot
+f, ax = plt.subplots(1, 2, figsize=(figsize*2, figsize))
+my_reg_plot(np.arange(n_states), X, '', '', ax[0], annotate='both')
+my_reg_plot(np.sum(e, axis=1), X, '', '', ax[1], annotate='both')
+f.savefig(os.path.join(environment.figdir, 'test'), dpi=600, bbox_inches='tight',
+          pad_inches=0.01)
+plt.close()
+
 # %% 1) energy dists: top-down vs bottom-up
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 df_plot = pd.DataFrame(data=np.vstack((e[indices_upper], e[indices_lower])).transpose(),
@@ -170,6 +223,21 @@ df_plot = pd.DataFrame(data=np.vstack((e[indices_upper], e[indices_lower])).tran
 my_distpair_plot(df=df_plot, ylabel='energy (z-score)', ax=ax)
 f.savefig(os.path.join(environment.figdir, 'e_{0}'.format(B)), dpi=600, bbox_inches='tight',
           pad_inches=0.01)
+plt.close()
+
+# 1.1) energy matrix
+plot_mask = np.eye(n_states)
+plot_mask = plot_mask.astype(bool)
+
+f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
+sns.heatmap(e, mask=plot_mask, vmin=np.floor(np.min(e[~plot_mask])), vmax=np.ceil(np.max(e)),
+                        square=True, ax=ax, cbar_kws={"shrink": 0.80})
+ax.set_ylabel("initial states", labelpad=-1)
+ax.set_xlabel("target states", labelpad=-1)
+ax.set_yticklabels('')
+ax.set_xticklabels('')
+ax.tick_params(pad=-2.5)
+f.savefig(os.path.join(environment.figdir, 'e_{0}'.format(B)), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
 # 2) energy asymmetry matrix
@@ -196,7 +264,7 @@ plt.close()
 states_distance = np.zeros((n_states, n_states))
 for i in np.arange(n_states):
     for j in np.arange(n_states):
-        states_distance[i, j] = gradient[states == i].mean() - gradient[states == j].mean()
+        states_distance[i, j] = state_brain_map[states == i].mean() - state_brain_map[states == j].mean()
 states_distance = DataMatrix(data=states_distance)
 
 # get mni distance between states
@@ -215,6 +283,14 @@ ed_matrix.regress_nuisance(c=states_distance_mni.data_clusters, mask=mask)
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 my_reg_plot(states_distance.data[indices_lower], np.abs(ed_matrix.data_resid[indices_lower]),
                         'hierarchy distance', 'energy asymmetry\n(abs.)', ax, annotate='spearman')
+f.savefig(os.path.join(environment.figdir, 'corr(distance,abs_e_asym_{0})'.format(B)), dpi=600, bbox_inches='tight',
+          pad_inches=0.01)
+plt.close()
+
+# plot
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+my_reg_plot(states_distance.data[indices_lower], ed_matrix.data_resid[indices_lower],
+            'hierarchy distance', 'energy asymmetry', ax, annotate='spearman')
 f.savefig(os.path.join(environment.figdir, 'corr(distance,e_asym_{0})'.format(B)), dpi=600, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
