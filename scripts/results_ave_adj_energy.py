@@ -13,7 +13,8 @@ from scipy.linalg import svd
 from tqdm import tqdm
 
 # %% import workspace
-from setup_workspace_ave_adj import *
+os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
+from setup_workspace import *
 
 # %% plotting
 import seaborn as sns
@@ -55,14 +56,12 @@ file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load
                                                             consist_thresh, which_brain_map)
 
 B_dict = dict()
-
 B = DataMatrix(data=np.eye(n_parcels), name='identity')
 B_dict[B.name] = B
 
-E = dict.fromkeys(B_dict)
-
 c = 1
 T = 1
+E = dict.fromkeys(B_dict)
 
 for B in B_dict:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A, states=states, B=B_dict[B],
