@@ -12,7 +12,8 @@ from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
 from pfactor_gradients.utils import get_bootstrap_indices
 
 # %% import workspace
-from setup_workspace_ave_adj import *
+os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
+from setup_workspace import *
 
 # %% bootstrap
 bootstrap_indices = get_bootstrap_indices(d_size=n_subs)
@@ -29,8 +30,11 @@ load_average_sc_strap.run()
 
 # get bootstrapped energy
 B = DataMatrix(data=np.eye(n_parcels), name='identity')
+c = 1
+T = 1
+
 nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=load_average_sc_strap.A, states=states, B=B,
-                                           control='minimum_fast', T=1,
+                                           control='minimum_fast', c=c, T=T,
                                            file_prefix=file_prefix,
                                            force_rerun=False, save_outputs=True, verbose=True)
 n = 2

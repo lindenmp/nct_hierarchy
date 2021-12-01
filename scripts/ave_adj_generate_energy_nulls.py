@@ -22,7 +22,8 @@ elif platform.system() == 'Darwin':
     octave.addpath('/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/geomsurr') # path to matlab functions
 
 # %% import workspace
-from setup_workspace_ave_adj import *
+os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
+from setup_workspace import *
 
 # %% rewire mean adjacency matrix with spatial constraints
 D = sp.spatial.distance.pdist(environment.centroids, 'euclidean')
@@ -42,32 +43,34 @@ R, eff = randmio_und(A, itr=n_iter)
 file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
                                                             consist_thresh, which_brain_map)
 # %% network null
-A_list = [Wwp, Wsp, Wssp]
+# A_list = [Wwp, Wsp, Wssp]
+# file_prefixes = ['average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wwp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+#                                                                                 consist_thresh, which_brain_map,
+#                                                                                 sge_task_id),
+#                  'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wsp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+#                                                                                 consist_thresh, which_brain_map,
+#                                                                                 sge_task_id),
+#                  'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wssp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+#                                                                                  consist_thresh, which_brain_map,
+#                                                                                  sge_task_id)]
+A_list = [Wwp, ]
 file_prefixes = ['average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wwp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                                consist_thresh, which_brain_map,
-                                                                                sge_task_id),
-                 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wsp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                                consist_thresh, which_brain_map,
-                                                                                sge_task_id),
-                 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wssp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
                                                                                  consist_thresh, which_brain_map,
-                                                                                 sge_task_id)]
+                                                                                 sge_task_id), ]
 
-B_dict = dict()
 B = DataMatrix(data=np.eye(n_parcels), name='identity')
-B_dict[B.name] = B
-
-# for key in load_average_bms.brain_maps:
-#     B = DataMatrix(data=np.zeros((n_parcels, n_parcels)), name=key)
-#     B.data[np.eye(n_parcels) == 1] = 1 + load_average_bms.brain_maps[key].data
-#     B_dict[B.name] = B
+c = 1
+T = 1
 
 for A_idx, A_entry in enumerate(A_list):
     file_prefix = file_prefixes[A_idx]
 
-    for B in B_dict:
-        nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A_entry, states=states, B=B_dict[B],
-                                                   control='minimum_fast', T=1,
-                                                   file_prefix=file_prefix,
-                                                   force_rerun=False, save_outputs=True, verbose=True)
-        nct_pipeline.run()
+    nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A_entry, states=states, B=B,
+                                               control='minimum_fast', c=c, T=T,
+                                               file_prefix=file_prefix,
+                                               force_rerun=False, save_outputs=True, verbose=True)
+    nct_pipeline.run()
+
+    n = 2
+    ds = 0.1
+    nct_pipeline.run_with_optimized_b(n=n, ds=ds)
