@@ -44,6 +44,7 @@ class Environment():
         self.ctdir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
         self.sadir = os.path.join(self.datadir, 'processedData', 'structural', 'freesurfer53')
         self.rstsdir = os.path.join(self.datadir, 'processedData', 'restbold', 'restbold_201607151621')
+        self.cbfdir = os.path.join(self.datadir, 'processedData', 'asl', 'parcelwise_cbf')
 
         # imaging parameters
         self.rsfmri_tr = 3
@@ -198,6 +199,10 @@ class Subject():
                                        .format(self.environment.n_parcels))
             sa_filename = glob.glob(os.path.join(self.environment.sadir, sa_filename))
 
+            cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_schaefer{1}_17.txt' \
+                                       .format(self.scanid, self.environment.n_parcels))
+            cbf_filename = glob.glob(os.path.join(self.environment.cbfdir, cbf_filename))
+
             if self.environment.n_parcels == 200:
                 rsts_filename = os.path.join('{0}'.format(self.bblid),
                                              '*x{0}'.format(self.scanid),
@@ -262,6 +267,9 @@ class Subject():
                                          .format(self.bblid, self.scanid))
             alff_filename = glob.glob(os.path.join(self.environment.rstsdir, alff_filename))
 
+            cbf_filename = os.path.join('{0}_asl_quant_ssT1Std_glasser.txt'.format(self.scanid))
+            cbf_filename = glob.glob(os.path.join(self.environment.cbfdir, cbf_filename))
+
         try: self.sc_filename = sc_filename[0]
         except: self.sc_filename = []
 
@@ -276,6 +284,9 @@ class Subject():
 
         try: self.alff_filename = alff_filename[0]
         except: self.alff_filename = []
+
+        try: self.cbf_filename = cbf_filename[0]
+        except: self.cbf_filename = []
 
     def load_sc(self):
         try:
@@ -344,3 +355,10 @@ class Subject():
             self.alff[:] = np.nan
         else:
             self.alff = np.genfromtxt(self.alff_filename, skip_header=1)[2:]
+
+    def load_cbf(self):
+        if not self.cbf_filename:
+            self.cbf = np.zeros((self.environment.n_parcels,))
+            self.cbf[:] = np.nan
+        else:
+            self.cbf = np.loadtxt(self.cbf_filename)
