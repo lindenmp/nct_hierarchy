@@ -3,7 +3,8 @@ import sys, os, platform
 if platform.system() == 'Linux':
     sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
 from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadCT, LoadSA, LoadAverageSC, LoadAverageBrainMaps, LoadRLFP, LoadALFF
+from pfactor_gradients.routines import LoadSC, LoadCT, LoadSA, LoadRLFP, LoadALFF, LoadCBF, \
+    LoadAverageSC, LoadAverageBrainMaps
 from pfactor_gradients.pipelines import ComputeGradients
 from pfactor_gradients.utils import get_states_from_brain_map
 from pfactor_gradients.imaging_derivs import DataVector
@@ -13,6 +14,8 @@ import pandas as pd
 
 workspace = os.getenv("MY_PYTHON_WORKSPACE")
 print('Running workspace: {0}'.format(workspace))
+which_brain_map = os.getenv("WHICH_BRAIN_MAP")
+print('Brain map: {0}'.format(which_brain_map))
 
 # %% Setup project environment
 if platform.system() == 'Linux':
@@ -58,6 +61,7 @@ if workspace == 'ave_adj':
     loaders_dict = {
         # 'ct': LoadCT(environment=environment, Subject=Subject),
         # 'sa': LoadSA(environment=environment, Subject=Subject),
+        'cbf': LoadCBF(environment=environment, Subject=Subject),
         'rlfp': LoadRLFP(environment=environment, Subject=Subject),
         'alff': LoadALFF(environment=environment, Subject=Subject)
     }
@@ -93,9 +97,6 @@ elif workspace == 'subj_adj':
     pass
 
 # %% get states
-which_brain_map = 'hist-g2'
-# which_brain_map = 'hist-g1'
-# which_brain_map = 'func-g1'
 
 if computer == 'macbook':
     # bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
