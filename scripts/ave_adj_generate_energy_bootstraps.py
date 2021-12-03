@@ -13,6 +13,8 @@ from pfactor_gradients.utils import get_bootstrap_indices
 
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
+os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
+# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
 from setup_workspace import *
 
 # %% bootstrap

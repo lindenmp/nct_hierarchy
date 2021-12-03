@@ -7,6 +7,8 @@ from pfactor_gradients.imaging_derivs import DataMatrix
 
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'subj_adj'
+os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
+# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
 from setup_workspace import *
 
 # %% Setup project environment
