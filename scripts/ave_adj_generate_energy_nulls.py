@@ -23,6 +23,8 @@ elif platform.system() == 'Darwin':
 
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
+os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
+# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
 from setup_workspace import *
 
 # %% rewire mean adjacency matrix with spatial constraints
