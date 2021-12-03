@@ -76,14 +76,16 @@ if workspace == 'ave_adj':
     load_average_bms.brain_maps[dv.name] = dv
 
     # append tau map from Gao et al. 2020 eLife
-    df_human_tau = pd.read_csv('/Users/lindenmp/research_data/field-echos/tau_Schaefer2018_{0}Parcels_17Networks.csv'
-                               .format(n_parcels), index_col=0)
-    nan_mask = df_human_tau['tau'].isna()
+    if parc == 'schaefer':
+        df_human_tau = pd.read_csv(os.path.join(environment.research_data, 'field-echos',
+                                                'tau_Schaefer2018_{0}Parcels_17Networks.csv'.format(n_parcels)),
+                                   index_col=0)
+        nan_mask = df_human_tau['tau'].isna()
 
-    dv = DataVector(data=df_human_tau['tau'].values, name='tau')
-    dv.rankdata()
-    dv.rescale_unit_interval()
-    load_average_bms.brain_maps[dv.name] = dv
+        dv = DataVector(data=df_human_tau['tau'].values, name='tau')
+        dv.rankdata()
+        dv.rescale_unit_interval()
+        load_average_bms.brain_maps[dv.name] = dv
 
     # append hcp myelin map
     # hcp_brain_maps = BrainMapLoader(computer=computer)
@@ -97,14 +99,8 @@ elif workspace == 'subj_adj':
     pass
 
 # %% get states
-
-if computer == 'macbook':
-    # bbw_dir = '/Volumes/T7/research_data/BigBrainWarp/spaces/fsaverage/'
-    bbw_dir = '/Users/lindenmp/research_data/BigBrainWarp/spaces/fsaverage/'
-elif computer == 'cbica':
-    bbw_dir = '/cbica/home/parkesl/research_data/BigBrainWarp/spaces/fsaverage/'
-
 if which_brain_map == 'hist-g1':
+    bbw_dir = os.path.join(environment.research_data, 'BigBrainWarp', 'spaces', 'fsaverage')
     if parc == 'schaefer':
         state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G1_Schaefer2018_{0}Parcels_17Networks.txt' \
                                                   .format(n_parcels)))
@@ -112,6 +108,7 @@ if which_brain_map == 'hist-g1':
         state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G1_HCP-MMP1.txt'))
     state_brain_map = state_brain_map * -1
 elif which_brain_map == 'hist-g2':
+    bbw_dir = os.path.join(environment.research_data, 'BigBrainWarp', 'spaces', 'fsaverage')
     if parc == 'schaefer':
         state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_Schaefer2018_{0}Parcels_17Networks.txt' \
                                                   .format(n_parcels)))
