@@ -312,3 +312,88 @@ for B in ['identity', ]:
     f.savefig(os.path.join(environment.figdir, 'ed_timescales_{0}'.format(B)), dpi=600,
               bbox_inches='tight', pad_inches=0.1)
     plt.close()
+
+# %% n) comparisons between different energies
+e1_str = 'identity'
+e1 = E[e1_str]
+e2_str = 'E_opt'
+e2 = E[e2_str]
+
+# if norm_energy:
+#     # normalized energy matrix
+#     e1 = rank_int(e1)
+#     e2 = rank_int(e2)
+
+# correlation between energy and optimized energy
+print(np.sum(np.round(e1[indices], 2) == np.round(e2[indices], 2)))
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+my_reg_plot(e1[indices], e2[indices], 'energy ({0})'.format(e1_str), 'energy ({0})'.format(e2_str), ax, annotate='both')
+f.savefig(os.path.join(environment.figdir, 'corr({0},{1})'.format(e1_str, e2_str)), dpi=600, bbox_inches='tight',
+          pad_inches=0.01)
+plt.close()
+
+# %% n) optimized weights
+x0_mat, xf_mat = expand_states(states)
+n_transitions = x0_mat.shape[1]
+
+# %% null network
+B_opt_network_null = np.zeros((n_parcels, n_transitions, n_perms))
+
+for i in tqdm(np.arange(n_perms)):
+    file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-{3}-{4}_ns-{5}_ctrl-minimum_fast_c-{6}_T-{7}_B-optimized-n-2-ds-0.1_weights.npy' \
+        .format(n_subs,
+                consist_thresh,
+                which_brain_map,
+                network_null,
+                i, n_states, c, T)
+    B_opt_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))[:, :, 1]
+
+# %%
+try:
+    r_null = np.load(os.path.join(environment.pipelinedir, 'optimized_weights_r_null_{0}_{1}.npy' \
+                                  .format(which_brain_map, network_null)))
+    p_vals = np.load(os.path.join(environment.pipelinedir, 'optimized_weights_p_vals_{0}_{1}.npy' \
+                                  .format(which_brain_map, network_null)))
+    observed = np.load(os.path.join(environment.pipelinedir, 'optimized_weights_observed_{0}_{1}.npy' \
+                                  .format(which_brain_map, network_null)))
+except:
+    observed = np.zeros(n_transitions)
+
+    r_null = np.zeros((n_transitions, n_perms))
+    p_vals = np.zeros(n_transitions)
+
+    for i in tqdm(np.arange(n_transitions)):
+        bystanders = ~np.logical_or(x0_mat[:, i], xf_mat[:, i])
+        x = sp.stats.rankdata(state_brain_map[bystanders])
+
+        B_bystanders = B_opt[bystanders, i]
+        B_bystanders = sp.stats.rankdata(B_bystanders)
+        # B_bystanders = rank_int(B_bystanders)
+
+        # observed
+        observed[i], _ = sp.stats.pearsonr(x, B_bystanders)
+        # observed[i], _ = sp.stats.spearmanr(x, B_bystanders)
+
+        # null
+        for j in np.arange(n_perms):
+            B_null = B_opt_network_null[bystanders, i, j]
+            # B_null = rank_int(B_null)
+
+            r_null[i, j], _ = sp.stats.pearsonr(x, sp.stats.rankdata(B_null))
+            # r_null[i, j], _ = sp.stats.spearmanr(x, sp.stats.rankdata(B_null))
+
+        p_vals[i] = get_null_p(observed[i], r_null[i, :], abs=True)
+
+    np.save(os.path.join(environment.pipelinedir, 'optimized_weights_r_null_{0}_{1}.npy'.format(which_brain_map, network_null)), r_null)
+    np.save(os.path.join(environment.pipelinedir, 'optimized_weights_p_vals_{0}_{1}.npy'.format(which_brain_map, network_null)), p_vals)
+    np.save(os.path.join(environment.pipelinedir, 'optimized_weights_observed_{0}_{1}.npy'.format(which_brain_map, network_null)), observed)
+
+# %% null for brain map spatial corrs
+
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+observed_mean = np.mean(np.abs(observed))
+r_null_mean = np.mean(np.abs(r_null), axis=0)
+p_val = get_null_p(observed_mean, r_null_mean, abs=True)
+my_null_plot(observed=observed_mean, null=r_null_mean, p_val=p_val, xlabel='spatial corr.\n(null network)', ax=ax)
+f.savefig(os.path.join(environment.figdir, 'corr(smap,B_opt)_null'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+plt.close()
