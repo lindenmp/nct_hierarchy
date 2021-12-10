@@ -9,7 +9,7 @@
     pip install ipython pandas numpy seaborn matplotlib nibabel nilearn ipywidgets tqdm
 
 	# Tertiary
-	pip install scipy statsmodels sklearn pingouin brainspace bctpy shap pygam abagen
+	pip install scipy statsmodels sklearn pingouin brainspace bctpy shap pygam abagen networkx
 	conda install -c conda-forge control
 
     # Octave support
