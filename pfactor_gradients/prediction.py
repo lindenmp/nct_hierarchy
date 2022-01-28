@@ -225,3 +225,23 @@ def run_perm(X, y, c, reg, scorer, n_splits=10, runpca=False, n_perm=int(5e3)):
         permuted_acc[i] = temp_acc.mean()
 
     return permuted_acc
+
+
+def get_reg_weights(X, y, reg, c=None):
+    sc = StandardScaler()
+    X = sc.fit_transform(X)
+    if c is None:
+        pass
+    else:
+        c = sc.fit_transform(c)
+
+        nuis_reg = copy.deepcopy(reg)
+        nuis_reg.fit(c, X)
+        X_pred = nuis_reg.predict(c)
+        X = X - X_pred
+
+    reg.fit(X, y)
+
+    coefs = reg.coef_
+
+    return coefs
