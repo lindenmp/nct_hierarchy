@@ -1,4 +1,4 @@
-function [] = spdcm_firstlevel_loop(spmdir, rsts, tr, te, outdir)
+function [] = spdcm_firstlevel_loop(spmdir, rsts, tr, te, outdir, fileprefix)
     % where spm12 is
     addpath(spmdir)
     cd(outdir)
@@ -54,7 +54,8 @@ function [] = spdcm_firstlevel_loop(spmdir, rsts, tr, te, outdir)
 
                 % wrap dcm
                 DCM{1} = dcm;
-                DCM{1}.name = ['dcm_ns-', num2str(n_rois), '-i', num2str(i), 'j', num2str(j)]
+                filename = ['dcm_', fileprefix, '_ns-', num2str(n_rois), '-i', num2str(i), 'j', num2str(j)]
+                DCM{1}.name = filename
                 DCM{1}
 
                 % invert model
@@ -64,8 +65,11 @@ function [] = spdcm_firstlevel_loop(spmdir, rsts, tr, te, outdir)
                 % store
                 A(i, j) = DCM{1}.Ep.A(1, 2);
                 A(j, i) = DCM{1}.Ep.A(2, 1);
+
+                % delete interim dcm file
+                delete([filename,'.mat'])
             end
         end
     end
-    save(['dcm_ns-', num2str(n_rois),'_A.mat'], 'A')
+    save(['dcm_', fileprefix, '_ns-', num2str(n_rois),'_A.mat'], 'A')
 end
