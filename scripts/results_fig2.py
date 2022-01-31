@@ -75,8 +75,8 @@ np.save(os.path.join(environment.pipelinedir, 'ed_{0}_{1}.npy'.format(which_brai
 # load permuted data
 try:
     n_perms = 5000
-    network_null = 'mni-wwp'
-    # network_null = 'mni-wsp'
+    # network_null = 'mni-wwp'
+    network_null = 'mni-wsp'
     e_network_null = np.zeros((n_states, n_states, n_perms))
 
     for i in tqdm(np.arange(n_perms)):
