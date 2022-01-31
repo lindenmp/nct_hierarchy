@@ -72,11 +72,11 @@ if workspace == 'ave_adj':
     # brain_maps = load_average_bms.brain_maps.copy()
     brain_maps = dict()
 
-    # # append fc gradient to brain maps
-    # dv = DataVector(data=compute_gradients.gradients[:, 0], name='func-g1')
-    # dv.rankdata()
-    # dv.rescale_unit_interval()
-    # brain_maps[dv.name] = dv
+    # append fc gradient to brain maps
+    dv = DataVector(data=compute_gradients.gradients[:, 0], name='func-g1')
+    dv.rankdata()
+    dv.rescale_unit_interval()
+    brain_maps[dv.name] = dv
 
     # append tau map from Gao et al. 2020 eLife
     if parc == 'schaefer':
