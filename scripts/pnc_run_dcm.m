@@ -1,7 +1,8 @@
 clear all; clc
-outdir = '/Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients/output_local/pnc/schaefer_400_streamlineCount/pipelines/spdcm/'
+outdir = '/Users/lindenmp/research_projects/pfactor_gradients/output_local/pnc/schaefer_200_streamlineCount/pipelines/spdcm/'
 spmdir = '/Users/lindenmp/Google-Drive-Penn/work/matlab_tools/spm12';
-rsts_file = [outdir 'rsts_states_ns-40.npy'];
+rsts_file = [outdir 'rsts_states_hist-g2_ns-20.npy'];
+%rsts_file = [outdir 'rsts_states_func-g1_ns-20.npy'];
 rsts = readNPY(rsts_file);
 size(rsts)
 tr = 3;
