@@ -449,11 +449,12 @@ class Regression():
 
 
 class DCM():
-    def __init__(self, environment, Subject, states,
+    def __init__(self, environment, Subject, states, file_prefix='',
                  force_rerun=False):
         self.environment = environment
         self.Subject = Subject
         self.states = states
+        self.file_prefix = file_prefix
         self.force_rerun = force_rerun
 
     def _output_dir(self):
@@ -463,7 +464,7 @@ class DCM():
         unique = np.unique(self.states)
         n_states = len(unique)
 
-        return 'rsts_states_ns-{0}.npy'.format(n_states)
+        return 'rsts_states_{0}_ns-{1}.npy'.format(self.file_prefi, n_states)
 
     def _check_outputs(self):
         if os.path.exists(self._output_dir()) and os.path.isfile(os.path.join(self._output_dir(), self._output_file())):
