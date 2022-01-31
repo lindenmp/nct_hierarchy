@@ -96,7 +96,7 @@ except FileNotFoundError:
     print('Requisite files not found...')
     del e_network_null
 
-# %% 1) energy matrix
+# %% energy matrix
 plot_mask = np.eye(n_states)
 plot_mask = plot_mask.astype(bool)
 
@@ -111,7 +111,7 @@ ax.tick_params(pad=-2.5)
 f.savefig(os.path.join(environment.figdir, 'e_{0}'.format(B)), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
-# %% 2) energy asymmetry
+# %% Panel A: energy asymmetry
 
 # top-down vs bottom-up
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
@@ -139,7 +139,7 @@ ax.tick_params(pad=-2.5)
 f.savefig(os.path.join(environment.figdir, 'e_asym_{0}_matrix'.format(B)), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
-# %% 3) energy asymmetry distance corr
+# %% Panel B: energy asymmetry distance corr
 
 # get hierarchy distance between states
 states_distance = np.zeros((n_states, n_states))
