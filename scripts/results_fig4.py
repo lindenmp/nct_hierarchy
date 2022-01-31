@@ -5,6 +5,8 @@ from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
 from pfactor_gradients.plotting import my_reg_plot
 from pfactor_gradients.utils import rank_int
 
+import scipy as sp
+
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
 os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
@@ -65,7 +67,7 @@ if norm_energy:
 ed = e - e.transpose() # energy asymmetry matrix
 print(np.all(np.round(np.abs(ed.flatten()), 4) == np.round(np.abs(ed.transpose().flatten()), 4)))
 
-# %% 5) timescales delta
+# %% Panel B: timescales delta
 timescales_delta = np.zeros((n_states, n_states))
 for i in np.arange(n_states):
     for j in np.arange(n_states):
@@ -101,3 +103,42 @@ plt.subplots_adjust(wspace=.25)
 f.savefig(os.path.join(environment.figdir, 'ed_timescales_{0}'.format(B)), dpi=600,
           bbox_inches='tight', pad_inches=0.1)
 plt.close()
+
+# %% Figure S2: effective connectivity
+# load dcm outputs
+try:
+    file = 'dcm_{0}_ns-{1}_A.mat'.format(which_brain_map, n_states)
+    dcm = sp.io.loadmat(os.path.join(environment.pipelinedir, 'spdcm', file))
+    ec = dcm['A']
+    ec = np.abs(ec)
+    ec = rank_int(ec)
+    ecd = ec - ec.transpose()
+
+    # effective connectivity matrix
+    f, ax = plt.subplots(1, 2, figsize=(figsize * 2.4, figsize * 1.2))
+    sns.heatmap(ec, center=0, vmin=np.floor(np.min(ec)), vmax=np.ceil(np.max(ec)),
+                square=True, cmap='coolwarm', ax=ax[0], cbar_kws={"shrink": 0.60})
+    sns.heatmap(ecd, center=0, vmin=np.floor(np.min(ecd)), vmax=np.ceil(np.max(ecd)),
+                square=True, cmap='coolwarm', ax=ax[1], cbar_kws={"shrink": 0.60})
+    for i in [0, 1]:
+        ax[i].set_ylabel("initial states", labelpad=-1)
+        ax[i].set_xlabel("target states", labelpad=-1)
+        ax[i].set_yticklabels('')
+        ax[i].set_xticklabels('')
+        ax[i].tick_params(pad=-2.5)
+    f.savefig(os.path.join(environment.figdir, 'ec_matrix'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+    plt.close()
+
+    # energy asymmetry vs effective connectivity asymmetry
+    f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+    my_reg_plot(x=ecd[indices_upper], y=ed[indices_upper],
+                xlabel='effective connectivity (delta)', ylabel='energy asymmetry',
+                ax=ax, annotate='both')
+    plt.subplots_adjust(wspace=.25)
+    ax.set_xlim([-4, 4])
+    ax.set_ylim([-5.25, 5.25])
+    f.savefig(os.path.join(environment.figdir, 'ed_ecd_{0}'.format(B)), dpi=600,
+              bbox_inches='tight', pad_inches=0.1)
+    plt.close()
+except FileNotFoundError:
+    print('Requisite files not found...')
