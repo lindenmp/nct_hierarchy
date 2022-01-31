@@ -57,23 +57,26 @@ if workspace == 'ave_adj':
     load_average_sc.run()
     A = load_average_sc.A.copy()
 
-    # load mean brain maps
-    loaders_dict = {
-        # 'ct': LoadCT(environment=environment, Subject=Subject),
-        # 'sa': LoadSA(environment=environment, Subject=Subject),
-        'cbf': LoadCBF(environment=environment, Subject=Subject),
-        'rlfp': LoadRLFP(environment=environment, Subject=Subject),
-        'alff': LoadALFF(environment=environment, Subject=Subject)
-    }
+    # # load mean brain maps
+    # loaders_dict = {
+    #     # 'ct': LoadCT(environment=environment, Subject=Subject),
+    #     # 'sa': LoadSA(environment=environment, Subject=Subject),
+    #     'cbf': LoadCBF(environment=environment, Subject=Subject),
+    #     'rlfp': LoadRLFP(environment=environment, Subject=Subject),
+    #     'alff': LoadALFF(environment=environment, Subject=Subject)
+    # }
+    #
+    # load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
+    # load_average_bms.run(return_descending=False)
 
-    load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
-    load_average_bms.run(return_descending=False)
+    # brain_maps = load_average_bms.brain_maps.copy()
+    brain_maps = dict()
 
-    # append fc gradient to brain maps
-    dv = DataVector(data=compute_gradients.gradients[:, 0], name='func-g1')
-    dv.rankdata()
-    dv.rescale_unit_interval()
-    load_average_bms.brain_maps[dv.name] = dv
+    # # append fc gradient to brain maps
+    # dv = DataVector(data=compute_gradients.gradients[:, 0], name='func-g1')
+    # dv.rankdata()
+    # dv.rescale_unit_interval()
+    # brain_maps[dv.name] = dv
 
     # append tau map from Gao et al. 2020 eLife
     if parc == 'schaefer':
@@ -85,7 +88,7 @@ if workspace == 'ave_adj':
         dv = DataVector(data=df_human_tau['tau'].values, name='tau')
         dv.rankdata()
         dv.rescale_unit_interval()
-        load_average_bms.brain_maps[dv.name] = dv
+        brain_maps[dv.name] = dv
 
     # append hcp myelin map
     # hcp_brain_maps = BrainMapLoader(computer=computer)
