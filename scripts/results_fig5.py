@@ -4,7 +4,7 @@ from pfactor_gradients.imaging_derivs import DataMatrix
 from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
 from pfactor_gradients.plotting import my_reg_plot, my_distpair_plot, my_null_plot
 from pfactor_gradients.energy import expand_states
-from pfactor_gradients.utils import rank_int, get_null_p, get_bootstrap_indices, mean_confidence_interval
+from pfactor_gradients.utils import rank_int, get_null_p, get_bootstrap_indices, mean_confidence_interval, get_fdr_p
 
 import scipy as sp
 from tqdm import tqdm
@@ -84,7 +84,8 @@ f.savefig(os.path.join(environment.figdir, 'e_asym_{0}_dists'.format(B)), dpi=60
 plt.close()
 
 # %% Panel C: bootstrap
-n_samples = 1000
+# n_samples = 1000
+n_samples = 10
 bootstrap_indices = get_bootstrap_indices(d_size=n_subs, n_samples=n_samples)
 
 ed_bs = np.zeros(n_samples)
@@ -181,7 +182,7 @@ except:
             B_null = B_opt_network_null[bystanders, i, j]
             r_null[i, j], _ = sp.stats.pearsonr(x, sp.stats.rankdata(B_null))
 
-        p_vals[i] = get_null_p(observed[i], r_null[i, :], abs=True)
+        p_vals[i] = get_null_p(observed[i], r_null[i, :], version='smallest', abs= False)
 
     np.save(os.path.join(environment.pipelinedir, 'optimized_weights_r_null_{0}_{1}.npy'.format(which_brain_map, network_null)), r_null)
     np.save(os.path.join(environment.pipelinedir, 'optimized_weights_p_vals_{0}_{1}.npy'.format(which_brain_map, network_null)), p_vals)
@@ -194,4 +195,21 @@ r_null_mean = np.mean(np.abs(r_null), axis=0)
 p_val = get_null_p(observed_mean, r_null_mean, abs=True)
 my_null_plot(observed=observed_mean, null=r_null_mean, p_val=p_val, xlabel='spatial corr.\n(null network)', ax=ax)
 f.savefig(os.path.join(environment.figdir, 'corr(smap,B_opt)_null_{0}'.format(network_null)), dpi=600, bbox_inches='tight', pad_inches=0.01)
+plt.close()
+
+# %% Figure S3
+
+p_vals_fdr = get_fdr_p(p_vals)
+sig_mask = p_vals_fdr > 0.05
+
+f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
+sns.heatmap(observed.reshape(n_states, n_states), mask=sig_mask.reshape(n_states, n_states),
+# sns.heatmap(observed.reshape(n_states, n_states),
+            center=0, square=True, cmap='coolwarm', ax=ax, cbar_kws={"shrink": 0.80})
+ax.set_ylabel("initial states", labelpad=-1)
+ax.set_xlabel("target states", labelpad=-1)
+ax.set_yticklabels('')
+ax.set_xticklabels('')
+ax.tick_params(pad=-2.5)
+f.savefig(os.path.join(environment.figdir, 'corr(B_opt,brainmap)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
