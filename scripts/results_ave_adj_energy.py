@@ -14,6 +14,8 @@ from tqdm import tqdm
 
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
+os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
+# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
 from setup_workspace import *
 
 # %% plotting
@@ -22,7 +24,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import ListedColormap
 from pfactor_gradients.plotting import set_plotting_params
-set_plotting_params(format='png')
+set_plotting_params(format='svg')
 figsize = 1.5
 
 # %% brain maps
@@ -37,13 +39,15 @@ for key in load_average_bms.brain_maps:
     # load_average_bms.brain_maps[key].rankdata()
     # load_average_bms.brain_maps[key].rescale_unit_interval()
 
-    print('state_brain_map vs. {0}'.format(key), sp.stats.pearsonr(state_brain_map[~nan_mask],
-                                                                   load_average_bms.brain_maps[key].data[~nan_mask]))
-    print('strength vs. {0}'.format(key), sp.stats.spearmanr(A_tmp.S[~nan_mask],
-                                                             load_average_bms.brain_maps[key].data[~nan_mask]))
+    print('state_brain_map vs. {0}'.format(key),
+          sp.stats.pearsonr(state_brain_map[~nan_mask], load_average_bms.brain_maps[key].data[~nan_mask]))
+    print('strength vs. {0}'.format(key),
+          sp.stats.pearsonr(A_tmp.S[~nan_mask], load_average_bms.brain_maps[key].data[~nan_mask]))
 
     # plot brain map
     load_average_bms.brain_maps[key].brain_surface_plot(environment)
+
+print('strength vs. state_brain_map', sp.stats.pearsonr(A_tmp.S, state_brain_map))
 
 # plot state brain map
 DataVector(data=state_brain_map, name='state_brain_map').brain_surface_plot(environment)
@@ -62,6 +66,13 @@ B_dict[B.name] = B
 c = 1
 T = 1
 E = dict.fromkeys(B_dict)
+
+# A_lesion = A.copy()
+# for i in np.arange(n_states):
+#     A_lesion[np.ix_(states == i, states == i)] = 0
+#
+# file_prefix = 'average_adj_lesioned_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
+#                                                                      consist_thresh, which_brain_map)
 
 for B in B_dict:
     nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A, states=states, B=B_dict[B],
@@ -87,8 +98,8 @@ B_opt = nct_pipeline.B_opt[:, :, 1]
 
 # %% data for plotting
 norm_energy = True
-# for B in ['identity', 'E_opt']:
-for B in ['identity', ]:
+for B in ['identity', 'E_opt']:
+# for B in ['identity', ]:
     # B = 'identity'
     # B = 'E_opt'
     print(B)
@@ -105,7 +116,7 @@ for B in ['identity', ]:
     np.save(os.path.join(environment.pipelinedir, 'ed_{0}_{1}.npy'.format(which_brain_map, B)), ed)
 
     try:
-        n_perms = 10000
+        n_perms = 5000
         network_null = 'mni-wwp'
         e_network_null = np.zeros((n_states, n_states, n_perms))
 
@@ -116,7 +127,7 @@ for B in ['identity', ]:
                         which_brain_map,
                         network_null,
                         i, n_states, c, T, B)
-            e_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy_new', file))
+            e_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
 
             # normalize
             if norm_energy:
@@ -224,7 +235,7 @@ for B in ['identity', ]:
         p_val = get_null_p(observed, r_null, abs=True)
         f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
         my_null_plot(observed=observed, null=r_null, p_val=p_val, xlabel='distance corr.\n(null network)', ax=ax)
-        f.savefig(os.path.join(environment.figdir, 'corr(distance,abs_e_asym_{0})_null'.format(B)), dpi=600,
+        f.savefig(os.path.join(environment.figdir, 'corr(distance,e_asym_{0})_null_{1}'.format(B, network_null)), dpi=600,
                   bbox_inches='tight', pad_inches=0.01)
         plt.close()
 
@@ -233,7 +244,7 @@ for B in ['identity', ]:
         p_val = get_null_p(observed, r_null_abs, abs=True)
         f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
         my_null_plot(observed=observed, null=r_null_abs, p_val=p_val, xlabel='distance corr.\n(null network)', ax=ax)
-        f.savefig(os.path.join(environment.figdir, 'corr(distance,e_asym_{0})_null'.format(B)), dpi=600,
+        f.savefig(os.path.join(environment.figdir, 'corr(distance,abs_e_asym_{0})_null_{1}'.format(B, network_null)), dpi=600,
                   bbox_inches='tight', pad_inches=0.01)
         plt.close()
     except NameError:
@@ -267,29 +278,33 @@ for B in ['identity', ]:
 
         # energy asymmetry vs effective connectivity asymmetry
         f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-        my_reg_plot(x=ed[indices_upper], y=ecd[indices_upper],
-                    xlabel='energy (delta)', ylabel='effective connectivity (delta)',
+        my_reg_plot(x=ecd[indices_upper], y=ed[indices_upper],
+                    xlabel='effective connectivity (delta)', ylabel='energy asymmetry',
                     ax=ax, annotate='both')
         plt.subplots_adjust(wspace=.25)
+        ax.set_xlim([-4, 4])
+        ax.set_ylim([-5.25, 5.25])
         f.savefig(os.path.join(environment.figdir, 'ed_ecd_{0}'.format(B)), dpi=600,
                   bbox_inches='tight', pad_inches=0.1)
         plt.close()
     except FileNotFoundError:
         print('Requisite files not found...')
 
-    # %% 5) fMRI delta
+    # %% 5) timescales delta
     timescales_delta = np.zeros((n_states, n_states))
     for i in np.arange(n_states):
         for j in np.arange(n_states):
             timescales_delta[i, j] = np.nanmean(load_average_bms.brain_maps['tau'].data[states == i]) - \
                                      np.nanmean(load_average_bms.brain_maps['tau'].data[states == j])
+            # timescales_delta[i, j] = np.nanmean(load_average_bms.brain_maps['cbf'].data[states == i]) - \
+            #                          np.nanmean(load_average_bms.brain_maps['cbf'].data[states == j])
     # sign of this timescales_delta matrix is currently unintuitive.
     #   if state_i = 0.3 and state_j = 0.5, then 0.3-0.5=-0.2.
     #   likewise, if state_i = 0.5 and state_j = 0.3, then 0.5-0.3=0.2.
     # thus, an increase in rlfp over states is encoded by a negative number and a decrease is encoded by a positive
     # number. Not good! sign flip for intuition
     timescales_delta = timescales_delta * -1
-    # now, negative sign represent bold power decreasing over states and positive sign represent bold power increasing over states.
+    # now, negative sign represents decreasing over states and positive sign represents  increasing over states.
 
     # fmri matrix
     f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
@@ -303,15 +318,39 @@ for B in ['identity', ]:
     f.savefig(os.path.join(environment.figdir, 'timescales_delta_matrix'), dpi=600, bbox_inches='tight', pad_inches=0.01)
     plt.close()
 
-    # energy asymmetry vs RLFP delta
+    # energy asymmetry vs timescales delta
     f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
     my_reg_plot(x=timescales_delta[indices_upper], y=ed[indices_upper],
-                xlabel='timescales (delta)', ylabel='energy asymmetry',
+                xlabel='intrinsic timescales (delta)', ylabel='energy asymmetry',
                 ax=ax, annotate='both')
+    ax.set_ylim([-6, 4])
     plt.subplots_adjust(wspace=.25)
     f.savefig(os.path.join(environment.figdir, 'ed_timescales_{0}'.format(B)), dpi=600,
               bbox_inches='tight', pad_inches=0.1)
     plt.close()
+
+    # plot null
+    try:
+        r_null = np.zeros(n_perms)
+
+        for i in np.arange(n_perms):
+            ed_null = DataMatrix(data=e_network_null[:, :, i] - e_network_null[:, :, i].transpose())
+            # ed_null.regress_nuisance(c=states_distance_mni.data_clusters, mask=mask)
+
+            r_null[i] = sp.stats.pearsonr(timescales_delta[indices_upper], ed_null.data[indices_upper])[0]
+
+        # plot distance asymm null
+        observed = sp.stats.pearsonr(timescales_delta[indices_upper], ed[indices_upper])[0]
+        p_val = get_null_p(observed, r_null, version='smallest', abs=False)
+        f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+        my_null_plot(observed=observed, null=r_null, p_val=p_val, xlabel='distance corr.\n(null network)', ax=ax)
+        f.savefig(os.path.join(environment.figdir, 'corr(timescales,e_asym_{0})_null_{1}'.format(B, network_null)),
+                  dpi=600,
+                  bbox_inches='tight', pad_inches=0.01)
+        plt.close()
+    except NameError:
+        print('Requisite variables not found...')
+
 
 # %% n) comparisons between different energies
 e1_str = 'identity'
@@ -337,16 +376,20 @@ x0_mat, xf_mat = expand_states(states)
 n_transitions = x0_mat.shape[1]
 
 # %% null network
-B_opt_network_null = np.zeros((n_parcels, n_transitions, n_perms))
+try:
+    B_opt_network_null = np.zeros((n_parcels, n_transitions, n_perms))
 
-for i in tqdm(np.arange(n_perms)):
-    file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-{3}-{4}_ns-{5}_ctrl-minimum_fast_c-{6}_T-{7}_B-optimized-n-2-ds-0.1_weights.npy' \
-        .format(n_subs,
-                consist_thresh,
-                which_brain_map,
-                network_null,
-                i, n_states, c, T)
-    B_opt_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))[:, :, 1]
+    for i in tqdm(np.arange(n_perms)):
+        file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-{3}-{4}_ns-{5}_ctrl-minimum_fast_c-{6}_T-{7}_B-optimized-n-2-ds-0.1_weights.npy' \
+            .format(n_subs,
+                    consist_thresh,
+                    which_brain_map,
+                    network_null,
+                    i, n_states, c, T)
+        B_opt_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))[:, :, 1]
+except FileNotFoundError:
+    print('Requisite files not found...')
+    del B_opt_network_null
 
 # %%
 try:
@@ -395,5 +438,5 @@ observed_mean = np.mean(np.abs(observed))
 r_null_mean = np.mean(np.abs(r_null), axis=0)
 p_val = get_null_p(observed_mean, r_null_mean, abs=True)
 my_null_plot(observed=observed_mean, null=r_null_mean, p_val=p_val, xlabel='spatial corr.\n(null network)', ax=ax)
-f.savefig(os.path.join(environment.figdir, 'corr(smap,B_opt)_null'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+f.savefig(os.path.join(environment.figdir, 'corr(smap,B_opt)_null_{0}'.format(network_null)), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()

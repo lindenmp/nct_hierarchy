@@ -9,7 +9,10 @@ import pandas as pd
 from tqdm import tqdm
 
 # %% import workspace
-from setup_workspace_ave_adj import *
+os.environ["MY_PYTHON_WORKSPACE"] = 'subj_adj'
+os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
+# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
+from setup_workspace import *
 
 # %% plotting
 import seaborn as sns

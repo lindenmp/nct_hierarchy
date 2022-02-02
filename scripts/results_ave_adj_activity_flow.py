@@ -4,7 +4,7 @@ from pfactor_gradients.imaging_derivs import DataMatrix
 from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
 from pfactor_gradients.plotting import my_reg_plot, my_distpair_plot, my_null_plot
 from pfactor_gradients.energy import matrix_normalization, expand_states
-from pfactor_gradients.utils import get_bootstrap_indices, mean_confidence_interval
+from pfactor_gradients.utils import get_bootstrap_indices, mean_confidence_interval, rank_int
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,10 @@ from scipy.linalg import svd
 from tqdm import tqdm
 
 # %% import workspace
-from setup_workspace_ave_adj import *
+os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
+os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
+# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
+from setup_workspace import *
 
 # %% plotting
 import seaborn as sns
@@ -25,29 +28,30 @@ set_plotting_params(format='svg')
 figsize = 1.5
 
 # %% orthogonalize brain maps against state map
-for key in load_average_bms.brain_maps:
-    # load_average_bms.brain_maps[key].regress_nuisance(state_brain_map)
-    # load_average_bms.brain_maps[key].data = load_average_bms.brain_maps[key].data_resid.copy()
-    # load_average_bms.brain_maps[key].rankdata()
-    # load_average_bms.brain_maps[key].rescale_unit_interval()
-    print(key, sp.stats.pearsonr(state_brain_map, load_average_bms.brain_maps[key].data))
-
 # bm = load_average_bms.brain_maps['ct'].data
 # bm = load_average_bms.brain_maps['func-g1'].data
 bm = state_brain_map
 
+# states = sp.stats.rankdata(bm).astype(int) - 1
+# n_states = len(np.unique(states))
+
+#%%
+# A_lesion = A.copy()
+# for i in np.arange(n_states):
+#     A_lesion[np.ix_(states == i, states == i)] = 0
+
 # %% propagation function
-def simulate_natural_dynamics(A, states, h=5, ds=0.01):
+def simulate_natural_dynamics(A, states, t0=0.01, h=5, ds=0.01):
 
     # Matrix normalization
-    A_norm = matrix_normalization(A, version='continuous')
+    A_norm = matrix_normalization(A, version='continuous', c=1)
 
     x0_mat, xf_mat = expand_states(states)
     n_states = len(np.unique(states))
     x0s = xf_mat[:, :n_states]
     # bystanders = ~x0s
 
-    ts = np.arange(0.5, h, ds)
+    ts = np.arange(t0, h, ds)
     activity = np.zeros((n_states, n_parcels, len(ts)))
     # r = np.zeros((len(ts), n_states))
 
@@ -77,7 +81,8 @@ def simulate_natural_dynamics(A, states, h=5, ds=0.01):
     return activity, activity_mean
 
 # %%
-activity, activity_mean = simulate_natural_dynamics(A, states, h=3.5, ds=0.01)
+ds = 0.01
+activity, activity_mean = simulate_natural_dynamics(A, states, t0=0.5, h=3.5, ds=ds)
 print(activity.shape)
 
 # %% bootstrap
@@ -99,11 +104,14 @@ for i in tqdm(np.arange(n_samples)):
     load_average_sc_strap.run()
 
     A_strp = load_average_sc_strap.A
+    # for j in np.arange(n_states):
+    #     A_strp[np.ix_(states == j, states == j)] = 0
 
     # simulate dynamics
-    activity_strp, activity_mean_strp = simulate_natural_dynamics(A_strp, states, h=3.5, ds=0.1)
+    ds = 0.1
+    activity_strp, activity_mean_strp = simulate_natural_dynamics(A_strp, states, t0=0.01, h=3.5, ds=ds)
 
-    for j, s in enumerate([0, 19]):
+    for j, s in enumerate([0, n_states - 1]):
         a = activity_mean_strp[s, :, :]
         peaks_t = np.argmax(a, axis=1)
         peaks_t = np.delete(peaks_t, s)
@@ -112,7 +120,7 @@ for i in tqdm(np.arange(n_samples)):
 # %% plots
 
 # %% 1) single states
-for s in [0, 19]:
+for s in [0, n_states - 1]:
     f, ax = plt.subplots(1, 1, figsize=(figsize*1.25, figsize*0.75))
 
     plot_data = activity_mean[s, :, :]
@@ -200,3 +208,81 @@ ax.set_ylabel('|$\\rho$|')
 f.savefig(os.path.join(environment.figdir, 'activity_propagation_bootstrap'), dpi=300, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
+
+print(np.round(mean_confidence_interval(data=np.abs(peak_corrs_bs[:, 0])), 4))
+print(np.round(mean_confidence_interval(data=np.abs(peak_corrs_bs[:, 1])), 4))
+
+# %% 4) mean activity at time 1
+ds = 0.01
+activity, activity_mean = simulate_natural_dynamics(A, states, t0=ds, h=1, ds=ds)
+
+activity_mean = np.zeros((n_states, activity.shape[2]))
+for i in np.arange(n_states):
+    activity_mean[i, :] = np.mean(activity[i, states != i, :], axis=0)
+
+# figures
+cmap = plt.cm.get_cmap('viridis', n_states)
+
+# activity spread from t0 to t1
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+for i in np.arange(n_states):
+    ax.plot(np.arange(1, activity.shape[2]+1), activity_mean[i, :], color=cmap(i))
+    # ax.plot(np.arange(1, 6), activity_mean[i, :5], color=cmap(i))
+ax.tick_params(pad=-2.5)
+f.savefig(os.path.join(environment.figdir, 'activity_propagation_mean_t1'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+plt.close()
+
+# correlation between state position and activity at t0
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+my_reg_plot(x=np.arange(n_states), y=activity_mean[:, -1], ax=ax, xlabel='', ylabel='', annotate='pearson')
+ax.tick_params(pad=-2.5)
+f.savefig(os.path.join(environment.figdir, 'activity_propagation_mean_t1_corr'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+plt.close()
+
+# %% 5) mean activity at time 1
+ds = 0.5
+activity, activity_mean = simulate_natural_dynamics(A, states, t0=0.01, h=50, ds=ds)
+
+activity_mean = np.zeros((n_states, activity.shape[2]))
+for i in np.arange(n_states):
+    activity_mean[i, :] = np.mean(activity[i, states != i, :], axis=0)
+
+# correlation with gradient at each time point
+f, ax = plt.subplots(1, 1, figsize=(figsize*2.5, figsize*1.2))
+activity_corr = np.zeros((n_states, activity.shape[2]))
+for i in np.arange(n_states):
+    for j in np.arange(activity.shape[2]):
+        activity_corr[i, j] = sp.stats.spearmanr(bm[states != i], activity[i, states != i, j])[0]
+for i in np.arange(n_states):
+    ax.plot(np.arange(1, activity.shape[2] + 1), activity_corr[i, :], color=cmap(i))
+
+# axis options
+ax.set_xlabel('t (a.u.)')
+ax.set_ylabel('corr(activity,hierarchy)')
+ax.tick_params(pad=-2.5)
+ax.grid(False)
+sns.despine(right=True, top=True, ax=ax)
+ax.set_xticks([])
+
+f.savefig(os.path.join(environment.figdir, 'activity_propagation_hierarchy_corr'),
+          dpi=600, bbox_inches='tight', pad_inches=0.01)
+plt.close()
+
+# diff correlation with gradient at each time point
+f, ax = plt.subplots(1, 1, figsize=(figsize*2.5, figsize*1.2))
+for i in np.arange(n_states):
+    # ax.plot(np.arange(1, activity.shape[2] + 1), np.gradient(activity_corr[i, :], edge_order=1), color=cmap(i))
+    ax.plot(np.arange(1, activity.shape[2]), np.diff(activity_corr[i, :]), color=cmap(i))
+
+# axis options
+ax.set_xlabel('t (a.u.)')
+ax.set_ylabel('corr diff')
+ax.tick_params(pad=-2.5)
+ax.grid(False)
+sns.despine(right=True, top=True, ax=ax)
+ax.set_xticks([])
+
+f.savefig(os.path.join(environment.figdir, 'activity_propagation_hierarchy_corr_diff'),
+          dpi=600, bbox_inches='tight', pad_inches=0.01)
+plt.close()
+
