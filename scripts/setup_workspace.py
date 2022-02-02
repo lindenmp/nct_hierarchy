@@ -121,7 +121,10 @@ elif which_brain_map == 'hist-g2':
 elif which_brain_map == 'func-g1':
     state_brain_map = compute_gradients.gradients[:, 0].copy()
 
-n_bins = int(n_parcels / 10)
+# bin_size = 9
+bin_size = 10
+# bin_size = 11
+n_bins = int(n_parcels / bin_size)
 states = get_states_from_brain_map(brain_map=state_brain_map, n_bins=n_bins)
 n_states = len(np.unique(states))
 mask = ~np.eye(n_states, dtype=bool)
