@@ -6,7 +6,7 @@ from sklearn.metrics import pairwise_distances
 # %%
 workdir = '/Users/lindenmp/research_data/field-echos'
 
-# %% load tau data from Gao et al. eLife
+# %% load tau data from Gao et al. eLife (https://github.com/rdgao/field-echos/tree/master/data)
 df_human = pd.read_csv(os.path.join(workdir, 'data', 'df_human.csv'), index_col=0)
 electrode_coords = df_human.loc[:, ['x', 'y', 'z']]
 
