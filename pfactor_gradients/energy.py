@@ -335,3 +335,30 @@ def grad_descent_b(A, B0, x0_mat, xf_mat, gmat, n=1, ds=0.1, T=1):
             B_opt[:, i, j + 1] = B_tmp
 
     return B_opt, E_opt
+
+
+def simulate_natural_dynamics(A, states, t0=0.01, h=5, ds=0.01):
+    n_parcels = A.shape[0]
+
+    # Matrix normalization
+    A_norm = matrix_normalization(A, version='continuous', c=1)
+
+    x0_mat, xf_mat = expand_states(states)
+    n_states = len(np.unique(states))
+    x0s = xf_mat[:, :n_states]
+
+    ts = np.arange(t0, h, ds)
+    activity = np.zeros((n_states, n_parcels, len(ts)))
+
+    for i, t in enumerate(ts):
+        # scale normalized adj matrix to t
+        A_s = A_norm * t
+
+        # matrix exponential
+        A_e = sp.linalg.expm(A_s)
+
+        # get xfs
+        xfs = np.matmul(A_e, x0s)
+        activity[:, :, i] = xfs.transpose()
+
+    return activity
