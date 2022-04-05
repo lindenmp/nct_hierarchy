@@ -12,6 +12,7 @@ from tqdm import tqdm
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
 os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
 # os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
+os.environ["INTRAHEMI"] = "False"
 from setup_workspace import *
 
 # %% plotting
@@ -22,8 +23,13 @@ set_plotting_params(format='svg')
 figsize = 1.5
 
 # %% get control energy
-file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                            consist_thresh, which_brain_map)
+if intrahemi == True:
+    file_prefix = 'average_adj_n-{0}_intrahemi_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                    consist_thresh, which_brain_map)
+    n_parcels = int(n_parcels / 2)
+else:
+    file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                consist_thresh, which_brain_map)
 
 B_dict = dict()
 B = DataMatrix(data=np.eye(n_parcels), name='identity')

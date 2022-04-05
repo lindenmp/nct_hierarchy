@@ -16,6 +16,8 @@ workspace = os.getenv("MY_PYTHON_WORKSPACE")
 print('Running workspace: {0}'.format(workspace))
 which_brain_map = os.getenv("WHICH_BRAIN_MAP")
 print('Brain map: {0}'.format(which_brain_map))
+intrahemi = os.getenv("INTRAHEMI") == 'True'
+print('Intra-hemisphere: {0}'.format(intrahemi))
 
 # %% Setup project environment
 if platform.system() == 'Linux':
@@ -56,6 +58,8 @@ if workspace == 'ave_adj':
     load_average_sc = LoadAverageSC(load_sc=load_sc, consist_thresh=consist_thresh)
     load_average_sc.run()
     A = load_average_sc.A.copy()
+    if intrahemi == True:
+        A = A[:int(n_parcels / 2), :int(n_parcels / 2)]
 
     # # load mean brain maps
     # loaders_dict = {
@@ -74,6 +78,8 @@ if workspace == 'ave_adj':
 
     # append fc gradient to brain maps
     dv = DataVector(data=compute_gradients.gradients[:, 0], name='func-g1')
+    if intrahemi == True:
+        dv.data = dv.data[:int(n_parcels / 2)]
     dv.rankdata()
     dv.rescale_unit_interval()
     brain_maps[dv.name] = dv
@@ -86,6 +92,8 @@ if workspace == 'ave_adj':
         nan_mask = df_human_tau['tau'].isna()
 
         dv = DataVector(data=df_human_tau['tau'].values, name='tau')
+        if intrahemi == True:
+            dv.data = dv.data[:int(n_parcels / 2)]
         dv.rankdata()
         dv.rescale_unit_interval()
         brain_maps[dv.name] = dv
@@ -124,7 +132,12 @@ elif which_brain_map == 'func-g1':
 # bin_size = 9
 bin_size = 10
 # bin_size = 11
-n_bins = int(n_parcels / bin_size)
+if intrahemi == True:
+    state_brain_map = state_brain_map[:int(n_parcels / 2)]
+    n_bins = int(int(n_parcels / 2) / bin_size)
+else:
+    n_bins = int(n_parcels / bin_size)
+
 states = get_states_from_brain_map(brain_map=state_brain_map, n_bins=n_bins)
 n_states = len(np.unique(states))
 mask = ~np.eye(n_states, dtype=bool)
