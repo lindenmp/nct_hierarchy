@@ -76,10 +76,10 @@ for i in np.arange(n_states):
 # sign of this timescales_delta matrix is currently unintuitive.
 #   if state_i = 0.3 and state_j = 0.5, then 0.3-0.5=-0.2.
 #   likewise, if state_i = 0.5 and state_j = 0.3, then 0.5-0.3=0.2.
-# thus, an increase in rlfp over states is encoded by a negative number and a decrease is encoded by a positive
+# thus, an increase in timescales over states is encoded by a negative number and a decrease is encoded by a positive
 # number. Not good! sign flip for intuition
 timescales_delta = timescales_delta * -1
-# now, negative sign represents decreasing over states and positive sign represents  increasing over states.
+# now, negative sign represents decreasing over states and positive sign represents increasing over states.
 
 # matrix
 f, ax = plt.subplots(1, 1, figsize=(figsize * 1.2, figsize * 1.2))
