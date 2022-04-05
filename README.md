@@ -1,38 +1,16 @@
-# pfactor_gradients
+# nct_hierarchy
 
-# Environment build (Macbook)
+The goal of this project was to examine whether the topology of the structural connectome—which we index using an
+undirected description of connectivty—confers asymmetries in signal propagation across the cortical hierarchy of 
+cytoarchitecture. We use Network Control Theory to model state transitions that span the sensory-fugal axis of
+cytoarchitectonic similarity and examine whether and how dynamics differed for bottom-up state transitions compared to
+top-down.
 
-    conda create -n pfactor_gradients python=3.7
-    conda activate pfactor_gradients
+The preprint for this work can be found here: 
 
-    # Essentials
-    pip install ipython pandas numpy seaborn matplotlib nibabel nilearn ipywidgets tqdm
+## scripts overview
 
-	# Tertiary
-	pip install scipy statsmodels sklearn pingouin brainspace bctpy shap pygam abagen networkx
-	conda install -c conda-forge control
-
-    # Octave support
-    pip install oct2py
-
-    cd /Users/lindenmp/Google-Drive-Penn/work/research_projects/pfactor_gradients
-    conda env export > environment.yml --no-builds
-
-
-# Environment build (cubic, home)
-
-    conda create -n pfactor_gradients python=3.7
-    conda activate pfactor_gradients
-
-    # Essentials
-    pip install ipython pandas numpy seaborn matplotlib nibabel nilearn ipywidgets tqdm
-
-    # Tertiary
-	pip install scipy statsmodels sklearn pingouin brainspace bctpy shap pygam abagen
-	conda install -c conda-forge control
-
-    # Octave support
-    pip install oct2py
-
-    cd /cbica/home/parkesl/research_projects/pfactor_gradients/
-    conda env export > environment_cluster.yml --no-builds
+Python scripts that produce the figures from the above manuscript can be found in `scripts`. Many of these figure 
+scripts are supported by additional scripts that run on our cluster at Penn. Those scripts are stored here for documentation 
+purposes. However, the main `results_figX.py` scripts were designed to run with or without the outputs 
+from these cluster scripts. Of course, some of them will have much longer run times without the cluster outputs.
