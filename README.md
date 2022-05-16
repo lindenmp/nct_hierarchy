@@ -6,7 +6,12 @@ cytoarchitecture. We use Network Control Theory to model state transitions that 
 cytoarchitectonic similarity and examine whether and how dynamics differed for bottom-up state transitions compared to
 top-down.
 
-The preprint for this work can be found here: 
+The preprint for this work can be found here:
+
+Asymmetric Signaling Across the Hierarchy of Cytoarchitecture within the Human Connectome. Linden Parkes, Jason Z Kim, Jennifer Stiso, Monica E Calkins, Matthew Cieslak, Raquel E Gur, Ruben C Gur, Tyler M Moore, Mathieu Ouellet, David R Roalf, Russell T Shinohara, Daniel H Wolf, Theodore D Satterthwaite, Dani S Bassett
+bioRxiv 2022.05.13.491642; doi: https://doi.org/10.1101/2022.05.13.491642
+
+Also see the following YouTube video for a short animation describing this work: https://www.youtube.com/watch?v=cbnS6WamXzE
 
 ## scripts overview
 
