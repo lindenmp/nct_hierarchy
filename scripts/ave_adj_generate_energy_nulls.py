@@ -12,6 +12,7 @@ from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
 
 import scipy as sp
 from bct.algorithms.reference import randmio_und
+from pfactor_gradients.geomsurr import geomsurr
 
 from oct2py import octave
 if platform.system() == 'Linux':
@@ -30,8 +31,8 @@ from setup_workspace import *
 # %% rewire mean adjacency matrix with spatial constraints
 D = sp.spatial.distance.pdist(environment.centroids, 'euclidean')
 D = sp.spatial.distance.squareform(D)
-octave.eval("rand('state',%i)" % sge_task_id)
-Wwp, Wsp, Wssp = octave.geomsurr(A, D, 3, 2, nout=3)
+np.random.seed(sge_task_id)
+Wwp, Wsp, Wssp = geomsurr(W=A, D=D)
 
 # rewire mean adjacency matrix without spatial constraints
 n_parcels = A.shape[0]
