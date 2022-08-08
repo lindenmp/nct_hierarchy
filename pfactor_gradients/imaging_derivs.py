@@ -3,7 +3,7 @@ import numpy as np
 import scipy as sp
 from scipy import stats
 from scipy import signal
-from bct.algorithms.distance import distance_wei_floyd, retrieve_shortest_path
+from bct.algorithms.distance import distance_wei, distance_wei_floyd, retrieve_shortest_path
 from sklearn.linear_model import LinearRegression
 from sklearn.kernel_ridge import KernelRidge
 
@@ -28,8 +28,11 @@ class DataMatrix():
         self.data = data
         self.name = name
 
-    def get_distance_matrix(self):
-        self.D, self.hops, self.Pmat = distance_wei_floyd(self.data, transform='inv')
+    def get_distance_matrix(self, version='dijkstra'):
+        if version == 'dijkstra':
+            self.D, self.hops = distance_wei(1/self.data)
+        elif version == 'floyd':
+            self.D, self.hops, self.Pmat = distance_wei_floyd(self.data, transform='inv')
 
     def get_strength(self):
         self.S = np.sum(self.data, axis=0)
