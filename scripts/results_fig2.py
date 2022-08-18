@@ -1,9 +1,9 @@
 # %% import
 import sys, os, platform
-from pfactor_gradients.imaging_derivs import DataMatrix
-from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
-from pfactor_gradients.plotting import my_reg_plot, my_distpair_plot, my_null_plot
-from pfactor_gradients.utils import rank_int, get_null_p
+from src.imaging_derivs import DataMatrix
+from src.pipelines import ComputeMinimumControlEnergy
+from src.plotting import my_reg_plot, my_distpair_plot, my_null_plot
+from src.utils import rank_int, get_null_p, mean_over_states
 
 import scipy as sp
 from tqdm import tqdm
@@ -18,7 +18,7 @@ from setup_workspace import *
 # %% plotting
 import seaborn as sns
 import matplotlib.pyplot as plt
-from pfactor_gradients.plotting import set_plotting_params
+from src.plotting import set_plotting_params
 set_plotting_params(format='svg')
 figsize = 1.5
 
@@ -80,22 +80,17 @@ np.save(os.path.join(environment.pipelinedir, 'ed_{0}_{1}.npy'.format(which_brai
 
 # load permuted data
 try:
-    n_perms = 5000
-    # network_null = 'mni-wwp'
-    network_null = 'mni-wsp'
-    e_network_null = np.zeros((n_states, n_states, n_perms))
+    network_null = 'mni-wwp'
+    # network_null = 'mni-wsp'
+    file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-{3}-E.npy'.format(load_average_sc.load_sc.df.shape[0],
+                                                                   consist_thresh, which_brain_map,
+                                                                   network_null)
+    e_network_null = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
 
-    for i in tqdm(np.arange(n_perms)):
-        file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-{3}-{4}_ns-{5}_ctrl-minimum_fast_c-{6}_T-{7}_B-{8}_E.npy' \
-            .format(n_subs,
-                    consist_thresh,
-                    which_brain_map,
-                    network_null,
-                    i, n_states, c, T, B)
-        e_network_null[:, :, i] = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file))
-
-        # normalize
-        if norm_energy:
+    # normalize
+    n_perms = e_network_null.shape[2]
+    if norm_energy:
+        for i in tqdm(np.arange(n_perms)):
             e_network_null[:, :, i] = rank_int(e_network_null[:, :, i])
 
 except FileNotFoundError:
@@ -121,7 +116,7 @@ plt.close()
 
 # top-down vs bottom-up
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-df_plot = pd.DataFrame(data=np.vstack((e[indices_upper], e[indices_lower])).transpose(),
+df_plot = pd.DataFrame(data=np.vstack((e[indices_upper], e.transpose()[indices_upper])).transpose(),
                        columns=['bottom-up', 'top-down'])
 my_distpair_plot(df=df_plot, ylabel='energy (z-score)', ax=ax)
 f.savefig(os.path.join(environment.figdir, 'e_asym_{0}_dists'.format(B)), dpi=600, bbox_inches='tight',
@@ -145,13 +140,29 @@ ax.tick_params(pad=-2.5)
 f.savefig(os.path.join(environment.figdir, 'e_asym_{0}_matrix'.format(B)), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
+# plot null
+try:
+    t_null = np.zeros(n_perms)
+
+    for i in np.arange(n_perms):
+        ed_null = e_network_null[:, :, i] - e_network_null[:, :, i].transpose()
+        t_null[i] = np.mean(ed_null[indices_upper])
+
+    # plot distance asymm null
+    observed = np.mean(ed[indices_upper])
+    p_val = get_null_p(observed, t_null, abs=True)
+    f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+    my_null_plot(observed=observed, null=t_null, p_val=p_val, xlabel='mean energy asymmetry', ax=ax)
+    f.savefig(os.path.join(environment.figdir, 'e_asym_{0}_null_{1}'.format(B, network_null)), dpi=600,
+              bbox_inches='tight', pad_inches=0.01)
+    plt.close()
+except NameError:
+    print('Requisite variables not found...')
+
 # %% Panel B: energy asymmetry distance corr
 
 # get hierarchy distance between states
-states_distance = np.zeros((n_states, n_states))
-for i in np.arange(n_states):
-    for j in np.arange(n_states):
-        states_distance[i, j] = state_brain_map[states == i].mean() - state_brain_map[states == j].mean()
+states_distance = mean_over_states(state_brain_map, states)
 states_distance = np.abs(states_distance)
 
 # plot distance asymm
