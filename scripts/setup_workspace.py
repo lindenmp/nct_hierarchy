@@ -1,13 +1,12 @@
 # %% import
 import sys, os, platform
 if platform.system() == 'Linux':
-    sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
-from pfactor_gradients.pnc import Environment, Subject
-from pfactor_gradients.routines import LoadSC, LoadCT, LoadSA, LoadRLFP, LoadALFF, LoadCBF, \
-    LoadAverageSC, LoadAverageBrainMaps
-from pfactor_gradients.pipelines import ComputeGradients
-from pfactor_gradients.utils import get_states_from_brain_map
-from pfactor_gradients.imaging_derivs import DataVector
+    sys.path.extend(['/cbica/home/parkesl/research_projects/nct_hierarchy'])
+from src.pnc import Environment, Subject
+from src.routines import LoadSC, LoadAverageSC
+from src.pipelines import ComputeGradients
+from src.utils import get_states_from_brain_map
+from src.imaging_derivs import DataVector
 
 import numpy as np
 import pandas as pd
@@ -61,18 +60,6 @@ if workspace == 'ave_adj':
     if intrahemi == True:
         A = A[:int(n_parcels / 2), :int(n_parcels / 2)]
 
-    # # load mean brain maps
-    # loaders_dict = {
-    #     # 'ct': LoadCT(environment=environment, Subject=Subject),
-    #     # 'sa': LoadSA(environment=environment, Subject=Subject),
-    #     'cbf': LoadCBF(environment=environment, Subject=Subject),
-    #     'rlfp': LoadRLFP(environment=environment, Subject=Subject),
-    #     'alff': LoadALFF(environment=environment, Subject=Subject)
-    # }
-    #
-    # load_average_bms = LoadAverageBrainMaps(loaders_dict=loaders_dict)
-    # load_average_bms.run(return_descending=False)
-
     # brain_maps = load_average_bms.brain_maps.copy()
     brain_maps = dict()
 
@@ -97,15 +84,6 @@ if workspace == 'ave_adj':
         dv.rankdata()
         dv.rescale_unit_interval()
         brain_maps[dv.name] = dv
-
-    # append hcp myelin map
-    # hcp_brain_maps = BrainMapLoader(computer=computer)
-    # hcp_brain_maps.load_myelin(lh_annot_file=environment.lh_annot_file, rh_annot_file=environment.rh_annot_file)
-    #
-    # data = DataVector(data=hcp_brain_maps.myelin, name='myelin')
-    # data.rankdata()
-    # data.rescale_unit_interval()
-    # load_average_bms.brain_maps['myelin'] = data
 elif workspace == 'subj_adj':
     pass
 
