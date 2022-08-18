@@ -1,8 +1,8 @@
 import numpy as np
 import scipy as sp
 import time
-from pfactor_gradients.imaging_derivs import DataVector, compute_transition_probs_updown, compute_fc
-from pfactor_gradients.utils import threshold_consistency
+from src.imaging_derivs import DataVector, compute_transition_probs_updown, compute_fc
+from src.utils import threshold_consistency
 
 class LoadSC():
     def __init__(self, environment, Subject):

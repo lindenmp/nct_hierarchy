@@ -4,7 +4,7 @@ import scipy.io as sio
 import pandas as pd
 from nilearn import datasets
 
-from pfactor_gradients.imaging_derivs import DataMatrix, compute_fc, compute_rlfp
+from src.imaging_derivs import DataMatrix, compute_fc, compute_rlfp
 
 class Environment():
     def __init__(self, computer='macbook', parc='schaefer', n_parcels=400, sc_edge_weight='streamlineCount'):
@@ -17,8 +17,8 @@ class Environment():
         # directories
         if self.computer == 'macbook':
             self.userdir = '/Users/lindenmp'
-            # self.projdir = os.path.join(self.userdir, 'Google-Drive-Penn', 'work', 'research_projects', 'pfactor_gradients')
-            self.projdir = os.path.join(self.userdir, 'research_projects', 'pfactor_gradients')
+            # self.projdir = os.path.join(self.userdir, 'Google-Drive-Penn', 'work', 'research_projects', 'nct_hierarchy')
+            self.projdir = os.path.join(self.userdir, 'research_projects', 'nct_hierarchy')
             self.rootdir = '/Volumes'
             # self.research_data = os.path.join(self.rootdir, 'T7', 'research_data')
             self.research_data = os.path.join(self.userdir, 'research_data')
@@ -26,7 +26,7 @@ class Environment():
             self.outputdir = os.path.join(self.projdir, 'output_local', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         elif self.computer == 'cbica':
             self.userdir = '/cbica/home/parkesl'
-            self.projdir = os.path.join(self.userdir, 'research_projects', 'pfactor_gradients')
+            self.projdir = os.path.join(self.userdir, 'research_projects', 'nct_hierarchy')
             self.research_data = os.path.join(self.userdir, 'research_data')
 
             self.outputdir = os.path.join(self.projdir, 'output_cluster', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))

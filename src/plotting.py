@@ -1,5 +1,5 @@
 import sys, os, platform
-from pfactor_gradients.utils import get_p_val_string, get_exact_p, mean_confidence_interval
+from src.utils import get_p_val_string, get_exact_p, mean_confidence_interval
 
 import numpy as np
 import pandas as pd
@@ -22,7 +22,7 @@ def set_plotting_params(format='png'):
     plt.rcParams['savefig.format'] = format
     plt.rcParams['font.size'] = 8
 
-    # path = pkg_resources.resource_stream('pfactor_gradients', 'PublicSans-Thin.ttf')
+    # path = pkg_resources.resource_stream('nct_hierarchy', 'PublicSans-Thin.ttf')
     # prop = mpl.font_manager.FontProperties(fname=path.name)
     # plt.rcParams['font.sans-serif'] = prop.get_name()
     # plt.rcParams['font.serif'] = prop.get_name()
@@ -105,7 +105,8 @@ def roi_to_vtx(roi_data, parcel_names, parc_file):
     return vtx_data, vtx_data_min, vtx_data_max
 
 
-def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson', regr_line=True, kde=True):
+def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson', bonferroni=False, regr_line=True, kde=True,
+                fontsize=8):
     if len(x.shape) > 1 and len(y.shape) > 1:
         if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
             mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
@@ -164,18 +165,21 @@ def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson', regr_lin
     # annotation
     r, r_p = sp.stats.pearsonr(x, y)
     rho, rho_p = sp.stats.spearmanr(x, y)
+    if bonferroni != False:
+        r_p = r_p / bonferroni
+        rho_p = rho_p / bonferroni
     if annotate == 'pearson':
         textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{r}', r, get_p_val_string(r_p))
-        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=8,
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
                 verticalalignment='top')
     elif annotate == 'spearman':
         textstr = '$\\rho$ = {:.2f}, {:}'.format(rho, get_p_val_string(rho_p))
-        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=8,
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
                 verticalalignment='top')
     elif annotate == 'both':
         textstr = '$\mathit{:}$ = {:.2f}, {:}\n$\\rho$ = {:.2f}, {:}'.format('{r}', r, get_p_val_string(r_p),
                                                                              rho, get_p_val_string(rho_p))
-        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=8,
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
                 verticalalignment='top')
     else:
         pass
@@ -219,7 +223,7 @@ def my_rnull_plot(x, x_null, y, xlabel, ax):
     ax.tick_params(pad=-2.5)
 
 
-def my_null_plot(observed, null, p_val, xlabel, ax):
+def my_null_plot(observed, null, p_val, xlabel, ax, fontsize=8):
     color_blue = sns.color_palette("Set1")[1]
     color_red = sns.color_palette("Set1")[0]
     sns.histplot(x=null, ax=ax, color='gray')
@@ -231,15 +235,15 @@ def my_null_plot(observed, null, p_val, xlabel, ax):
     ax.set_ylabel('counts', labelpad=-0.5)
 
     textstr = 'obs. = {:.2f}'.format(observed)
-    ax.text(observed, ax.get_ylim()[1], textstr, fontsize=8,
+    ax.text(observed, ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
 
     textstr = '{:}'.format(get_p_val_string(p_val))
-    ax.text(observed - (np.abs(observed)*0.0025), ax.get_ylim()[1], textstr, fontsize=8,
+    ax.text(observed - (np.abs(observed)*0.0025), ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='right', verticalalignment='top', rotation=270, c=color_red)
 
 
-def my_distpair_plot(df, ylabel, ax, test_stat='ttest', split=False):
+def my_distpair_plot(df, ylabel, ax, test_stat='ttest_1samp', split=False, fontsize=8):
     if split == True:
         mean_x1, lower_x1, upper_x1 = mean_confidence_interval(data=np.abs(df.iloc[:, 0]))
         mean_x2, lower_x2, upper_x2 = mean_confidence_interval(data=np.abs(df.iloc[:, 1]))
@@ -256,13 +260,13 @@ def my_distpair_plot(df, ylabel, ax, test_stat='ttest', split=False):
         ax.axhline(y=mean_x1, xmin=0.49, xmax=0.25, color="white", linewidth=1)
         ax.axhline(y=upper_x1, xmin=0.49, xmax=0.25, color="white", linewidth=0.5, linestyle=':')
         ax.axhline(y=lower_x1, xmin=0.49, xmax=0.25, color="white", linewidth=0.5, linestyle=':')
-        ax.text(-0.15, upper_x1, '95% CI', fontsize=4,
+        ax.text(-0.15, upper_x1, '95% CI', fontsize=int(fontsize/2),
                 horizontalalignment='center', verticalalignment='bottom', rotation=0, c="white")
 
         ax.axhline(y=mean_x2, xmin=0.51, xmax=0.75, color="white", linewidth=1)
         ax.axhline(y=upper_x2, xmin=0.51, xmax=0.75, color="white", linewidth=0.5, linestyle=':')
         ax.axhline(y=lower_x2, xmin=0.51, xmax=0.75, color="white", linewidth=0.5, linestyle=':')
-        ax.text(0.15, upper_x2, '95% CI', fontsize=4,
+        ax.text(0.15, upper_x2, '95% CI', fontsize=int(fontsize/2),
                 horizontalalignment='center', verticalalignment='bottom', rotation=0, c="white")
     else:
         sns.violinplot(data=df, ax=ax, inner="box", palette="pastel", cut=2, linewidth=1.5)
@@ -274,13 +278,19 @@ def my_distpair_plot(df, ylabel, ax, test_stat='ttest', split=False):
     if test_stat == 'exact':
         p_val = get_exact_p(df.iloc[:, 0], df.iloc[:, 1])
         textstr = get_p_val_string(p_val)
-        ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=8,
+        ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=fontsize,
                 horizontalalignment='center', verticalalignment='bottom')
         ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
     elif test_stat == 'ttest':
         t, p_val = sp.stats.ttest_rel(a=df.iloc[:, 0], b=df.iloc[:, 1])
         textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{t}', t, get_p_val_string(p_val))
-        ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=8,
+        ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=fontsize,
+                horizontalalignment='center', verticalalignment='bottom')
+        ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
+    elif test_stat == 'ttest_1samp':
+        t, p_val = sp.stats.ttest_1samp(df.iloc[:, 0] - df.iloc[:, 1], popmean=0)
+        textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{t}', t, get_p_val_string(p_val))
+        ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=fontsize,
                 horizontalalignment='center', verticalalignment='bottom')
         ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
     elif test_stat is None:

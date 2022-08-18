@@ -2,11 +2,11 @@ import os
 import numpy as np
 import pandas as pd
 import scipy as sp
-from pfactor_gradients.routines import LoadFC
-from pfactor_gradients.imaging_derivs import DataVector, DataMatrix
-from pfactor_gradients.energy import matrix_normalization, expand_states, control_energy_helper, \
+from src.routines import LoadFC
+from src.imaging_derivs import DataVector, DataMatrix
+from src.energy import matrix_normalization, expand_states, control_energy_helper, \
     get_gmat, grad_descent_b, minimum_energy_fast
-from pfactor_gradients.prediction import corr_true_pred, root_mean_squared_error, run_reg, run_perm
+from src.prediction import corr_true_pred, root_mean_squared_error, run_reg, run_perm
 from brainspace.gradient import GradientMaps
 from sklearn.cluster import KMeans
 from sklearn.linear_model import Ridge, Lasso, LinearRegression
@@ -23,7 +23,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import ListedColormap
-from pfactor_gradients.plotting import set_plotting_params
+from src.plotting import set_plotting_params
 set_plotting_params(format='png')
 figsize = 1.5
 
