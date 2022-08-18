@@ -137,7 +137,7 @@ f.savefig(os.path.join(environment.figdir, 'schematic_energy'), dpi=300, bbox_in
 plt.close()
 
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-x = x.transpose() - x
+x = x - x.transpose()
 plot_mask = np.zeros((n_states, n_states))
 plot_mask[indices_lower] = 1
 plot_mask = plot_mask.astype(bool)
