@@ -1,9 +1,9 @@
 # %% import
 import sys, os, platform
-from pfactor_gradients.imaging_derivs import DataMatrix
-from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
-from pfactor_gradients.plotting import my_reg_plot
-from pfactor_gradients.utils import rank_int
+from src.imaging_derivs import DataMatrix
+from src.pipelines import ComputeMinimumControlEnergy
+from src.plotting import my_reg_plot
+from src.utils import rank_int
 
 import scipy as sp
 
@@ -16,7 +16,7 @@ from setup_workspace import *
 # %% plotting
 import seaborn as sns
 import matplotlib.pyplot as plt
-from pfactor_gradients.plotting import set_plotting_params
+from src.plotting import set_plotting_params
 set_plotting_params(format='svg')
 figsize = 1.5
 
