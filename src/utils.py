@@ -385,3 +385,24 @@ def mean_confidence_interval(data, confidence=0.95):
     m, se = np.mean(a), sp.stats.sem(a)
     h = se * sp.stats.t.ppf((1 + confidence) / 2., n-1)
     return m, m - h, m + h
+
+
+def mean_over_states(matrix, states):
+    if matrix.ndim == 1:
+        is_matrix = False
+    else:
+        is_matrix = True
+
+    unique = np.unique(states, return_counts=False)
+    n_states = len(unique)
+
+    out = np.zeros((n_states, n_states))
+
+    for i in np.arange(n_states):
+        for j in np.arange(n_states):
+            if is_matrix:
+                out[i, j] = matrix[np.ix_(states == i, states == j)].mean()
+            else:
+                out[i, j] = matrix[states == i].mean() - matrix[states == j].mean()
+
+    return out
