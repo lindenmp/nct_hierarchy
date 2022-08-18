@@ -1,8 +1,8 @@
 # %% import
 import sys, os, platform
-from pfactor_gradients.plotting import my_distpair_plot
-from pfactor_gradients.energy import simulate_natural_dynamics
-from pfactor_gradients.utils import get_bootstrap_indices, mean_confidence_interval
+from src.plotting import my_distpair_plot
+from src.energy import simulate_natural_dynamics
+from src.utils import get_bootstrap_indices, mean_confidence_interval
 
 import scipy as sp
 from tqdm import tqdm
@@ -18,7 +18,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import ListedColormap
-from pfactor_gradients.plotting import set_plotting_params
+from src.plotting import set_plotting_params
 set_plotting_params(format='svg')
 figsize = 1.5
 
