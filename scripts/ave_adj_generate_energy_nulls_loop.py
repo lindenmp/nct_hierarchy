@@ -1,18 +1,12 @@
 # %% import
 import sys, os, platform
-if platform.system() == 'Linux':
-    sge_task_id = int(os.getenv("SGE_TASK_ID"))-1
-    sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
-elif platform.system() == 'Darwin':
-    sge_task_id = 0
-print(sge_task_id)
 
-from pfactor_gradients.imaging_derivs import DataMatrix
-from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
+from src.imaging_derivs import DataMatrix
+from src.pipelines import ComputeMinimumControlEnergy
 
 import scipy as sp
 from bct.algorithms.reference import randmio_und
-from pfactor_gradients.geomsurr import geomsurr
+from src.geomsurr import geomsurr
 from tqdm import tqdm
 
 # %% import workspace
@@ -25,47 +19,82 @@ from setup_workspace import *
 D = sp.spatial.distance.pdist(environment.centroids, 'euclidean')
 D = sp.spatial.distance.squareform(D)
 
-n_perms = 10000
-for sge_task_id in tqdm(np.arange(n_perms)):
-    np.random.seed(sge_task_id)
-    Wwp, Wsp, Wssp = geomsurr(W=A, D=D)
+wwp_file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wwp'.format(load_average_sc.load_sc.df.shape[0],
+                                                                   consist_thresh, which_brain_map)
 
-    # rewire mean adjacency matrix without spatial constraints
-    n_parcels = A.shape[0]
-    n_connections = n_parcels * n_parcels - n_parcels
-    n_edge_swaps = int(5 * 10e4)
-    n_iter = int(n_edge_swaps / n_connections)
-    np.random.seed(sge_task_id)
-    R, eff = randmio_und(A, itr=n_iter)
+wsp_file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wsp'.format(load_average_sc.load_sc.df.shape[0],
+                                                                   consist_thresh, which_brain_map)
 
-    # %% get control energy
-    file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                consist_thresh, which_brain_map)
-    # %% network null
-    A_list = [Wwp, Wsp, Wssp]
-    file_prefixes = ['average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wwp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                                    consist_thresh, which_brain_map,
-                                                                                    sge_task_id),
-                     'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wsp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                                    consist_thresh, which_brain_map,
-                                                                                    sge_task_id),
-                     'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wssp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                                     consist_thresh, which_brain_map,
-                                                                                     sge_task_id)]
+if os.path.exists(os.path.join(environment.pipelinedir, 'minimum_control_energy', wwp_file+'.npy')) \
+    and os.path.exists(os.path.join(environment.pipelinedir, 'minimum_control_energy', wsp_file+'.npy')):
+    print('loading permuted A matrices')
+    Wwp = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', wwp_file+'.npy'))
+    Wsp = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', wsp_file+'.npy'))
+    n_perms = Wwp.shape[2]
+else:
+    print('generating permuted A matrices')
+    n_perms = 10000
+    Wwp = np.zeros((n_parcels, n_parcels, n_perms))
+    Wsp = np.zeros((n_parcels, n_parcels, n_perms))
 
-    B = DataMatrix(data=np.eye(n_parcels), name='identity')
-    c = 1
-    T = 1
+    for i in tqdm(np.arange(n_perms)):
+        np.random.seed(i)
+        Wwp[:, :, i], Wsp[:, :, i], _ = geomsurr(W=A, D=D)
 
-    for A_idx, A_entry in enumerate(A_list):
-        file_prefix = file_prefixes[A_idx]
+    np.save(os.path.join(environment.pipelinedir, 'minimum_control_energy', wwp_file), Wwp)
+    np.save(os.path.join(environment.pipelinedir, 'minimum_control_energy', wsp_file), Wsp)
 
-        nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=A_entry, states=states, B=B,
+
+#%% compute energy
+B = DataMatrix(data=np.eye(n_parcels), name='identity')
+c = 1
+T = 1
+
+wwp_file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wwp-E'.format(load_average_sc.load_sc.df.shape[0],
+                                                                   consist_thresh, which_brain_map)
+
+wsp_file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wsp-E'.format(load_average_sc.load_sc.df.shape[0],
+                                                                   consist_thresh, which_brain_map)
+
+if os.path.exists(os.path.join(environment.pipelinedir, 'minimum_control_energy', wwp_file+'.npy')) \
+    and os.path.exists(os.path.join(environment.pipelinedir, 'minimum_control_energy', wsp_file+'.npy')):
+    print('loading permuted energy')
+    E_wwp = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', wwp_file+'.npy'))
+    E_wsp = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', wsp_file+'.npy'))
+else:
+    print('generating permuted energy')
+    E_wwp = np.zeros((n_states, n_states, n_perms))
+    E_wsp = np.zeros((n_states, n_states, n_perms))
+
+    for i in tqdm(np.arange(n_perms)):
+        # wwp
+        file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wwp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                                        consist_thresh, which_brain_map, i)
+        nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=Wwp[:, :, i], states=states, B=B,
                                                    control='minimum_fast', c=c, T=T,
                                                    file_prefix=file_prefix,
-                                                   force_rerun=False, save_outputs=True, verbose=False)
+                                                   force_rerun=False, save_outputs=False, verbose=False)
         nct_pipeline.run()
+        E_wwp[:, :, i] = nct_pipeline.E
 
         # n = 2
         # ds = 0.1
         # nct_pipeline.run_with_optimized_b(n=n, ds=ds)
+
+        # wsp
+        file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_null-mni-wsp-{3}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                                        consist_thresh, which_brain_map, i)
+        nct_pipeline = ComputeMinimumControlEnergy(environment=environment, A=Wsp[:, :, i], states=states, B=B,
+                                                   control='minimum_fast', c=c, T=T,
+                                                   file_prefix=file_prefix,
+                                                   force_rerun=False, save_outputs=False, verbose=False)
+        nct_pipeline.run()
+        E_wsp[:, :, i] = nct_pipeline.E
+
+        # n = 2
+        # ds = 0.1
+        # nct_pipeline.run_with_optimized_b(n=n, ds=ds)
+
+    # save
+    np.save(os.path.join(environment.pipelinedir, 'minimum_control_energy', wwp_file), E_wwp)
+    np.save(os.path.join(environment.pipelinedir, 'minimum_control_energy', wsp_file), E_wsp)
