@@ -19,8 +19,6 @@ class Environment():
             self.userdir = '/Users/lindenmp'
             # self.projdir = os.path.join(self.userdir, 'Google-Drive-Penn', 'work', 'research_projects', 'nct_hierarchy')
             self.projdir = os.path.join(self.userdir, 'research_projects', 'nct_hierarchy')
-            self.rootdir = '/Volumes'
-            # self.research_data = os.path.join(self.rootdir, 'T7', 'research_data')
             self.research_data = os.path.join(self.userdir, 'research_data')
 
             self.outputdir = os.path.join(self.projdir, 'output_local', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
@@ -31,6 +29,12 @@ class Environment():
 
             self.outputdir = os.path.join(self.projdir, 'output_cluster', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         # self.outputdir = os.path.join(self.projdir, 'output_cluster', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
+        elif self.computer == 'linux':
+            self.userdir = '/home/lindenmp'
+            self.projdir = os.path.join(self.userdir, 'research_projects', 'nct_hierarchy')
+            self.research_data = '/media/lindenmp/data_drive/research_data'
+
+            self.outputdir = os.path.join(self.projdir, 'output_local', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
 
         self.pipelinedir = os.path.join(self.outputdir, 'pipelines')
         self.figdir = os.path.join(self.outputdir, 'figures')
