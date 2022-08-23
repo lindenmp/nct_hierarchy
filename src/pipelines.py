@@ -203,7 +203,8 @@ class ComputeMinimumControlEnergy():
         file_prefix = self._get_file_prefix()
 
         if os.path.exists(self._output_dir()) and \
-                os.path.isfile(os.path.join(self._output_dir(), file_prefix+'gmat.npy')):
+                os.path.isfile(os.path.join(self._output_dir(), file_prefix+'gmat.npy')) and \
+                self.force_rerun == False:
 
             self.gmat = np.load(os.path.join(self._output_dir(), file_prefix+'gmat.npy'))
             print('\tgmat loaded.')
