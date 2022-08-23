@@ -293,5 +293,11 @@ def my_distpair_plot(df, ylabel, ax, test_stat='ttest_1samp', split=False, fonts
         ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=fontsize,
                 horizontalalignment='center', verticalalignment='bottom')
         ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
+    elif test_stat == 'mean_diff':
+        stat = np.mean(df.iloc[:, 0] - df.iloc[:, 1])
+        textstr = 'mean diff = {:.4f}'.format(stat)
+        ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=fontsize,
+                horizontalalignment='center', verticalalignment='bottom')
+        ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
     elif test_stat is None:
         pass
