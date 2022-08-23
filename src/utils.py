@@ -4,6 +4,7 @@ import pandas as pd
 import scipy as sp
 from statsmodels.stats import multitest
 import nibabel as nib
+import wget
 
 def get_pdist_clusters(coords, labels, method='mean'):
     unique, counts = np.unique(labels, return_counts=True)
@@ -367,14 +368,14 @@ def threshold_consistency(A, thr=0.60):
     return Am
 
 
-def get_bootstrap_indices(d_size=5, n_samples=10000):
-    bootstrap_indices = np.zeros((n_samples, d_size))
+def get_bootstrap_indices(d_size=5, frac=1, n_samples=10000):
+    bootstrap_indices = np.zeros((n_samples, int(d_size*frac)))
 
     # for reproducibility
     np.random.seed(0)
 
     for i in np.arange(n_samples):
-        bootstrap_indices[i, :] = np.random.choice(np.arange(d_size), size=d_size, replace=True)
+        bootstrap_indices[i, :] = np.random.choice(np.arange(d_size), size=int(d_size*frac), replace=True)
 
     return bootstrap_indices.astype(int)
 
@@ -406,3 +407,42 @@ def mean_over_states(matrix, states):
                 out[i, j] = matrix[states == i].mean() - matrix[states == j].mean()
 
     return out
+
+
+def load_schaefer_parc(n_parcels=200, order=17, annot='fsaverage', outdir='~/research_data/schaefer_parc'):
+    # output dir
+    outdir = os.path.expanduser(outdir)
+    if os.path.exists(outdir) == False:
+        os.makedirs(outdir)
+
+    # github link
+    remote_path = 'https://github.com/ThomasYeoLab/CBIG/raw/master/stable_projects/brain_parcellation/Schaefer2018_LocalGlobal'
+
+    # roi names and coords in MNI
+    file = 'Schaefer2018_{0}Parcels_{1}Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'.format(n_parcels, order)
+    interim_dir = 'Parcellations/MNI/Centroid_coordinates'
+    if os.path.exists(os.path.join(outdir, file)) == False:
+        wget.download(os.path.join(remote_path, interim_dir, file), outdir)
+
+    centroids = pd.read_csv(os.path.join(outdir, file), index_col=0)
+
+    # annotation files for fsaverage
+    if os.path.exists(os.path.join(outdir, annot)) == False:
+        os.makedirs(os.path.join(outdir, annot))
+    interim_dir = 'Parcellations/FreeSurfer5.3/{0}/label'.format(annot)
+    files = ['lh.Schaefer2018_{0}Parcels_{1}Networks_order.annot'.format(n_parcels, order),
+             'rh.Schaefer2018_{0}Parcels_{1}Networks_order.annot'.format(n_parcels, order)]
+    for file in files:
+        if os.path.exists(os.path.join(outdir, annot, file)) == False:
+            wget.download(os.path.join(remote_path, interim_dir, file), os.path.join(outdir, annot))
+    lh_annot_file = os.path.join(outdir, annot, files[0])
+    rh_annot_file = os.path.join(outdir, annot, files[1])
+
+    # cifti file for HCP space (32k fs_LR)
+    file = 'Schaefer2018_{0}Parcels_{1}Networks_order.dscalar.nii'.format(n_parcels, order)
+    interim_dir = 'Parcellations/HCP/fslr32k/cifti'
+    if os.path.exists(os.path.join(outdir, file)) == False:
+        wget.download(os.path.join(remote_path, interim_dir, file), outdir)
+    hcp_file = os.path.join(outdir, file)
+
+    return centroids, lh_annot_file, rh_annot_file, hcp_file

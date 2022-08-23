@@ -5,6 +5,7 @@ import pandas as pd
 from nilearn import datasets
 
 from src.imaging_derivs import DataMatrix, compute_fc, compute_rlfp
+from src.utils import load_schaefer_parc
 
 class Environment():
     def __init__(self, computer='macbook', parc='schaefer', n_parcels=400, sc_edge_weight='streamlineCount'):
@@ -28,7 +29,6 @@ class Environment():
             self.research_data = os.path.join(self.userdir, 'research_data')
 
             self.outputdir = os.path.join(self.projdir, 'output_cluster', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
-        # self.outputdir = os.path.join(self.projdir, 'output_cluster', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         elif self.computer == 'linux':
             self.userdir = '/home/lindenmp'
             self.projdir = os.path.join(self.userdir, 'research_projects', 'nct_hierarchy')
@@ -131,26 +131,13 @@ class Environment():
 
     def load_parc_data(self):
         if self.parc == 'schaefer':
-            self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'support_files',
-                                                           'schaefer{0}NodeNames.txt'.format(self.n_parcels)),
-                                                   dtype='str'))
             self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
-            self.lh_annot_file = os.path.join(self.research_data, 'parcellations', 'FreeSurfer5.3',
-                                              'fsaverage5', 'label',
-                                              'lh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
-            self.rh_annot_file = os.path.join(self.research_data, 'parcellations', 'FreeSurfer5.3',
-                                              'fsaverage5', 'label',
-                                              'rh.Schaefer2018_{0}Parcels_17Networks_order.annot'.format(self.n_parcels))
-            self.centroids = pd.read_csv(os.path.join(self.research_data, 'parcellations', 'MNI', 'Centroid_coordinates',
-                                                      'Schaefer2018_{0}Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'.format(self.n_parcels)))
-            self.centroids.drop('ROI Index', axis=1, inplace=True)
-            self.centroids.set_index('Label Name', inplace=True)
-            self.centroids.drop('NONE', axis=0, inplace=True)
-            self.spun_indices = np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'spin_test',
-                                                        'rotated_ind_schaefer{0}.csv'.format(self.n_parcels)),
-                                              delimiter=',', dtype=int)
-            self.spun_indices = self.spun_indices - 1
-
+            self.centroids, self.lh_annot_file, self.rh_annot_file, self.hcp_file = load_schaefer_parc(n_parcels=self.n_parcels,
+                                                                                                       order=17,
+                                                                                                       annot='fsaverage5',
+                                                                                                       outdir='~/research_data/schaefer_parc')
+            self.parcel_names = list(self.centroids['ROI Name'])
+            self.centroids.set_index('ROI Name', inplace=True)
         elif self.parc == 'glasser':
             self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'support_files',
                                                            'glasser{0}NodeNames.txt'.format(self.n_parcels)),

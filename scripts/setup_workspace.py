@@ -7,9 +7,9 @@ from src.routines import LoadSC, LoadAverageSC
 from src.pipelines import ComputeGradients
 from src.utils import get_states_from_brain_map
 from src.imaging_derivs import DataVector
+from src.brain_maps import BrainMapLoader
 
 import numpy as np
-import pandas as pd
 
 workspace = os.getenv("MY_PYTHON_WORKSPACE")
 print('Running workspace: {0}'.format(workspace))
@@ -49,6 +49,9 @@ n_subs = environment.df.shape[0]
 compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
 compute_gradients.run()
 
+# %%
+brain_map_loader = BrainMapLoader(computer=computer, n_parcels=n_parcels)
+
 # %% run workspace specific lines
 if workspace == 'ave_adj':
     # get average sc data
@@ -73,12 +76,8 @@ if workspace == 'ave_adj':
 
     # append tau map from Gao et al. 2020 eLife
     if parc == 'schaefer':
-        df_human_tau = pd.read_csv(os.path.join(environment.research_data, 'field-echos',
-                                                'tau_Schaefer2018_{0}Parcels_17Networks.csv'.format(n_parcels)),
-                                   index_col=0)
-        nan_mask = df_human_tau['tau'].isna()
-
-        dv = DataVector(data=df_human_tau['tau'].values, name='tau')
+        brain_map_loader.load_tau(return_log=False)
+        dv = DataVector(data=brain_map_loader.tau, name='tau')
         if intrahemi == True:
             dv.data = dv.data[:int(n_parcels / 2)]
         dv.rankdata()
@@ -88,21 +87,9 @@ elif workspace == 'subj_adj':
     pass
 
 # %% get states
-if which_brain_map == 'hist-g1':
-    bbw_dir = os.path.join(environment.research_data, 'BigBrainWarp', 'spaces', 'fsaverage')
-    if parc == 'schaefer':
-        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G1_Schaefer2018_{0}Parcels_17Networks.txt' \
-                                                  .format(n_parcels)))
-    elif parc == 'glasser':
-        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G1_HCP-MMP1.txt'))
-    state_brain_map = state_brain_map * -1
-elif which_brain_map == 'hist-g2':
-    bbw_dir = os.path.join(environment.research_data, 'BigBrainWarp', 'spaces', 'fsaverage')
-    if parc == 'schaefer':
-        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_Schaefer2018_{0}Parcels_17Networks.txt' \
-                                                  .format(n_parcels)))
-    elif parc == 'glasser':
-        state_brain_map = np.loadtxt(os.path.join(bbw_dir, 'Hist_G2_HCP-MMP1.txt'))
+if which_brain_map == 'hist-g2':
+    brain_map_loader.load_cyto()
+    state_brain_map = brain_map_loader.cyto
     state_brain_map = state_brain_map * -1
 elif which_brain_map == 'func-g1':
     state_brain_map = compute_gradients.gradients[:, 0].copy()
