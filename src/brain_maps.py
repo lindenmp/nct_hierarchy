@@ -22,7 +22,9 @@ class BrainMapLoader:
             self.userdir = '/cbica/home/parkesl'
 
         self.research_data = os.path.join(self.userdir, 'research_data')
-        self.bbw_dir = os.path.join(self.research_data, 'BBW_BigData')
+        self.bbw_dir = os.path.join(self.research_data, 'BigBrainWarp') # original BigBrainData downloaded ~June 2021
+        # self.bbw_dir = os.path.join(self.research_data, 'BBW_BigData') # new BigBrainData downloaded August 2022
+        self.fukutomi_dir = os.path.join(self.research_data, 'fukutomi_2018ni_brain_maps')
         self.outdir = os.path.join(self.research_data, 'brain_maps')
 
         if os.path.exists(self.outdir) == False:
@@ -41,8 +43,12 @@ class BrainMapLoader:
     def load_cyto(self):
         self._get_parc_data(annot='fsaverage')
 
-        lh_gifti_file = os.path.join(self.bbw_dir, 'spaces', 'tpl-fsaverage', 'tpl-fsaverage_hemi-L_den-164k_desc-Hist_G2.shape.gii')
-        rh_gifti_file = os.path.join(self.bbw_dir, 'spaces', 'tpl-fsaverage', 'tpl-fsaverage_hemi-R_den-164k_desc-Hist_G2.shape.gii')
+        lh_gifti_file = os.path.join(self.bbw_dir, 'spaces', 'fsaverage', 'Hist_G2_lh_fsaverage.shape.gii') # original BigBrainData downloaded ~June 2021
+        rh_gifti_file = os.path.join(self.bbw_dir, 'spaces', 'fsaverage', 'Hist_G2_rh_fsaverage.shape.gii') # original BigBrainData downloaded ~June 2021
+        # lh_gifti_file = os.path.join(self.bbw_dir, 'spaces', 'tpl-fsaverage', 'tpl-fsaverage_hemi-L_den-164k_desc-Hist_G2.shape.gii') # new BigBrainData downloaded August 2022
+        # rh_gifti_file = os.path.join(self.bbw_dir, 'spaces', 'tpl-fsaverage', 'tpl-fsaverage_hemi-R_den-164k_desc-Hist_G2.shape.gii') # new BigBrainData downloaded August 2022
+        # note, results from Figure 2A left, and Figure 2B left are consistent between BigBrain versions
+        # All figures in paper use original download from June 2021.
 
         # get average values over parcels
         data_lh = get_parcelwise_average_surface(lh_gifti_file, self.lh_annot_file)
