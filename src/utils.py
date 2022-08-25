@@ -431,7 +431,8 @@ def load_schaefer_parc(n_parcels=200, order=17, annot='fsaverage', outdir='~/res
     rh_annot_file = os.path.join(outdir, annot, files[1])
 
     # cifti file for HCP space (32k fs_LR)
-    file = 'Schaefer2018_{0}Parcels_{1}Networks_order.dscalar.nii'.format(n_parcels, order)
+    # file = 'Schaefer2018_{0}Parcels_{1}Networks_order.dscalar.nii'.format(n_parcels, order)
+    file = 'Schaefer2018_{0}Parcels_{1}Networks_order.dlabel.nii'.format(n_parcels, order)
     interim_dir = 'Parcellations/HCP/fslr32k/cifti'
     if os.path.exists(os.path.join(outdir, file)) == False:
         wget.download(os.path.join(remote_path, interim_dir, file), outdir)
