@@ -18,13 +18,15 @@ class BrainMapLoader:
         # directories
         if self.computer == 'macbook':
             self.userdir = '/Users/lindenmp'
+            self.workbenchdir = '/Applications/workbench/bin_macosx64'
         elif self.computer == 'cbica':
             self.userdir = '/cbica/home/parkesl'
 
         self.research_data = os.path.join(self.userdir, 'research_data')
-        self.bbw_dir = os.path.join(self.research_data, 'BigBrainWarp') # original BigBrainData downloaded ~June 2021
-        # self.bbw_dir = os.path.join(self.research_data, 'BBW_BigData') # new BigBrainData downloaded August 2022
-        self.fukutomi_dir = os.path.join(self.research_data, 'fukutomi_2018ni_brain_maps')
+        self.bbw_dir = os.path.join(self.research_data, 'BigBrainWarp')  # original BigBrainData downloaded ~June 2021
+        # self.bbw_dir = os.path.join(self.research_data, 'BBW_BigData')  # new BigBrainData downloaded August 2022
+        self.glasser_dir = os.path.join(self.research_data, 'Glasser_et_al_2016_HCP_MMP1.0_kN_RVVG')  # data pre-downloaded from https://balsa.wustl.edu/mpwM
+
         self.outdir = os.path.join(self.research_data, 'brain_maps')
 
         if os.path.exists(self.outdir) == False:
@@ -91,3 +93,20 @@ class BrainMapLoader:
         else:
             self.tau = mean_tau['tau'].values
 
+
+    def load_myelin(self):
+        self._get_parc_data()
+
+        # note, data pre-downloaded from https://balsa.wustl.edu/mpwM
+        version = 'Parcellation'  # 'Parcellation' 'Validation'
+        interim_dir = 'HCP_PhaseTwo/Q1-Q6_Related{0}210/MNINonLinear/fsaverage_LR32k'.format(version)
+        file = 'Q1-Q6_Related{0}210.MyelinMap_BC_MSMAll_2_d41_WRN_DeDrift.32k_fs_LR.dscalar.nii'.format(version)
+        out_file = 'MyelinMap_Schaefer_{0}Parcels.pscalar.nii'.format(self.n_parcels)
+
+        if os.path.exists(os.path.join(self.outdir, out_file)) == False:
+            cmd = '{0}/wb_command -cifti-parcellate {1} {2} 2 {3}'.format(self.workbenchdir,
+                                                                         os.path.join(self.glasser_dir, interim_dir, file),
+                                                                         self.hcp_file, os.path.join(self.outdir, out_file))
+            os.system(cmd)
+
+        self.myelin = nib.load(os.path.join(self.outdir, out_file)).get_fdata().flatten()
