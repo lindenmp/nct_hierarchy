@@ -380,14 +380,6 @@ def get_bootstrap_indices(d_size=5, frac=1, n_samples=10000):
     return bootstrap_indices.astype(int)
 
 
-def mean_confidence_interval(data, confidence=0.95):
-    a = 1.0 * np.array(data)
-    n = len(a)
-    m, se = np.mean(a), sp.stats.sem(a)
-    h = se * sp.stats.t.ppf((1 + confidence) / 2., n-1)
-    return m, m - h, m + h
-
-
 def mean_over_states(matrix, states):
     if matrix.ndim == 1:
         is_matrix = False

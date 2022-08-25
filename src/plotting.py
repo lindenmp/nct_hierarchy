@@ -17,24 +17,14 @@ import matplotlib.pyplot as plt
 def set_plotting_params(format='png'):
     if platform.system() == 'Darwin':
         os.system('rm -rf ~/.cache/matplotlib')
+
+    sns.set(style='whitegrid', context='paper', font_scale=1, font='Helvetica')
+
     plt.rcParams['pdf.fonttype'] = 42
     plt.rcParams['ps.fonttype'] = 42
     plt.rcParams['savefig.format'] = format
     plt.rcParams['font.size'] = 8
-
-    # path = pkg_resources.resource_stream('nct_hierarchy', 'PublicSans-Thin.ttf')
-    # prop = mpl.font_manager.FontProperties(fname=path.name)
-    # plt.rcParams['font.sans-serif'] = prop.get_name()
-    # plt.rcParams['font.serif'] = prop.get_name()
-    # plt.rcParams['font.family'] = prop.get_family()
-    # plt.rcParams['mathtext.fontset'] = 'custom'
-    # plt.rcParams['mathtext.it'] = 'Public Sans:italic'
-    # plt.rcParams['mathtext.bf'] = 'Public Sans:bold'
-    # plt.rcParams['mathtext.cal'] = 'Public Sans'
-
     plt.rcParams['svg.fonttype'] = 'none'
-    # sns.set(style='whitegrid', context='paper', font_scale=1, font='Public Sans')
-    sns.set(style='whitegrid', context='paper', font_scale=1, font='Helvetica')
 
 
 def roi_to_vtx(roi_data, parcel_names, parc_file):
@@ -301,3 +291,32 @@ def my_distpair_plot(df, ylabel, ax, test_stat='ttest_1samp', split=False, fonts
         ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
     elif test_stat is None:
         pass
+
+
+def my_bsci_plot(dist, observed, xlabel, ax, fontsize=8):
+    color_blue = sns.color_palette("Set1")[1]
+    color_red = sns.color_palette("Set1")[0]
+    conf_interval = np.percentile(dist, [2.5, 97.5])
+    # observed = np.mean(dist)
+
+    sns.histplot(x=dist, ax=ax, color='gray')
+    ax.axvline(conf_interval[0], ymax=1, clip_on=False, linewidth=1, color=color_red)
+    ax.axvline(observed, ymax=1, clip_on=False, linewidth=1, color=color_blue)
+    ax.axvline(conf_interval[1], ymax=1, clip_on=False, linewidth=1, color=color_red)
+    ax.grid(False)
+    sns.despine(right=True, top=True, ax=ax)
+    ax.tick_params(pad=-2.5)
+    ax.set_xlabel(xlabel, labelpad=-0.5)
+    ax.set_ylabel('counts', labelpad=-0.5)
+
+    textstr = 'lower = {:.4f}'.format(conf_interval[0])
+    ax.text(conf_interval[0], ax.get_ylim()[1], textstr, fontsize=fontsize,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
+
+    textstr = 'observed = {:.4f}'.format(observed)
+    ax.text(observed, ax.get_ylim()[1], textstr, fontsize=fontsize,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
+
+    textstr = 'upper = {:.4f}'.format(conf_interval[1])
+    ax.text(conf_interval[1], ax.get_ylim()[1], textstr, fontsize=fontsize,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
