@@ -13,6 +13,7 @@ from tqdm import tqdm
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
 os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
 # os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
+# os.environ["WHICH_BRAIN_MAP"] = 'myelin'
 from setup_workspace import *
 
 # %% rewire mean adjacency matrix with spatial constraints
