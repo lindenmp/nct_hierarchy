@@ -275,13 +275,17 @@ def get_parcelwise_average_surface(data_file, annot_file):
     labels, ctab, surf_names = nib.freesurfer.read_annot(annot_file)
     unique_labels = np.unique(labels)
 
-    # load gifti file
-    data = nib.load(data_file)
     file_name, file_extension = os.path.splitext(data_file)
+
+    # load gifti file
     if file_extension == '.gii':
+        data = nib.load(data_file)
         data = data.darrays[0].data
     elif file_extension == '.mgh':
+        data = nib.load(data_file)
         data = data.get_fdata().squeeze()
+    elif file_extension == '.txt':
+        data = np.loadtxt(data_file)
 
     # mean over labels
     data_mean = []
