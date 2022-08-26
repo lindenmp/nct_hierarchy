@@ -85,25 +85,28 @@ L[np.isinf(L)] = 0
 D, hops, Pmat = distance_wei_floyd(L, transform=None)
 states_hops = mean_over_states(hops, states)
 
-m = matching_index(A)
-ptcd = cumulative_transitivity_differences(m, hops, Pmat)
-ptcd_states = mean_over_states(ptcd, states)
+# get diffuision efficiency
+_, de = octave.diffusion_efficiency(A, nout=2)
+ded = de - de.transpose()
+ded_states = mean_over_states(ded, states)
 
+# get search info
 si = octave.search_information(A, L, has_memory=False)
 sid = si - si.transpose()
 sid_states = mean_over_states(sid, states)
 
-_, de = octave.diffusion_efficiency(A, nout=2)
-ded = de - de.transpose()
-ded_states = mean_over_states(ded, states)
+# get path transitivity
+m = matching_index(A)
+ptcd = cumulative_transitivity_differences(m, hops, Pmat)
+ptcd_states = mean_over_states(ptcd, states)
 
 # %% plots
 
 # heat maps
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-sns.heatmap(ptcd_states, square=True, ax=ax, cbar_kws={"shrink": 0.80})
+sns.heatmap(ded_states, square=True, ax=ax, cbar_kws={"shrink": 0.80})
 ax.tick_params(pad=-2.5)
-f.savefig(os.path.join(environment.figdir, 'ptcd_states'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+f.savefig(os.path.join(environment.figdir, 'ded_states'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
@@ -113,29 +116,32 @@ f.savefig(os.path.join(environment.figdir, 'sid_states'), dpi=600, bbox_inches='
 plt.close()
 
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-sns.heatmap(ded_states, square=True, ax=ax, cbar_kws={"shrink": 0.80})
+sns.heatmap(ptcd_states, square=True, ax=ax, cbar_kws={"shrink": 0.80})
 ax.tick_params(pad=-2.5)
-f.savefig(os.path.join(environment.figdir, 'ded_states'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+f.savefig(os.path.join(environment.figdir, 'ptcd_states'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
 # energy correlations
-f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(ptcd_states[indices_upper], ed[indices_upper],
-                        'path transitivity asymmetry', 'energy asymmetry', ax, annotate='pearson', bonferroni=3)
-f.savefig(os.path.join(environment.figdir, 'corr(ptcd_states,e_asym_{0})'.format(B)), dpi=600, bbox_inches='tight',
-          pad_inches=0.01)
-plt.close()
-
-f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(sid_states[indices_upper], ed[indices_upper],
-                        'search information asymmetry', 'energy asymmetry', ax, annotate='pearson', bonferroni=3)
-f.savefig(os.path.join(environment.figdir, 'corr(sid_states,e_asym_{0})'.format(B)), dpi=600, bbox_inches='tight',
-          pad_inches=0.01)
-plt.close()
-
+# panel D
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 my_reg_plot(ded_states[indices_upper], ed[indices_upper],
                         'diffusion efficiency asymmetry', 'energy asymmetry', ax, annotate='pearson', bonferroni=3)
-f.savefig(os.path.join(environment.figdir, 'corr(ded_states,e_asym_{0})'.format(B)), dpi=600, bbox_inches='tight',
+f.savefig(os.path.join(environment.figdir, 'corr(ded_states,e_asym)'), dpi=600, bbox_inches='tight',
+          pad_inches=0.01)
+plt.close()
+
+# panel E
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+my_reg_plot(sid_states[indices_upper], ed[indices_upper],
+                        'search information asymmetry', 'energy asymmetry', ax, annotate='pearson', bonferroni=3)
+f.savefig(os.path.join(environment.figdir, 'corr(sid_states,e_asym)'), dpi=600, bbox_inches='tight',
+          pad_inches=0.01)
+plt.close()
+
+# panel F
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+my_reg_plot(ptcd_states[indices_upper], ed[indices_upper],
+                        'path transitivity asymmetry', 'energy asymmetry', ax, annotate='pearson', bonferroni=3)
+f.savefig(os.path.join(environment.figdir, 'corr(ptcd_states,e_asym)'), dpi=600, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
