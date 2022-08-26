@@ -63,6 +63,23 @@ class BrainMapLoader:
         self.cyto = np.hstack((data_lh, data_rh)).astype(float)
 
 
+    def load_micro(self):
+        self._get_parc_data(annot='fsaverage5')
+
+        lh_txt_file = os.path.join(self.bbw_dir, 'spaces', 'fsaverage5', 'Micro-G1_lh.txt') # original BigBrainData downloaded ~June 2021
+        rh_txt_file = os.path.join(self.bbw_dir, 'spaces', 'fsaverage5', 'Micro-G1_rh.txt') # original BigBrainData downloaded ~June 2021
+
+        # get average values over parcels
+        data_lh = get_parcelwise_average_surface(lh_txt_file, self.lh_annot_file)
+        data_rh = get_parcelwise_average_surface(rh_txt_file, self.rh_annot_file)
+
+        # drop first entry (corresponds to 0)
+        data_lh = data_lh[1:]
+        data_rh = data_rh[1:]
+
+        self.micro = np.hstack((data_lh, data_rh)).astype(float)
+
+
     def load_tau(self, return_log=False):
         self._get_parc_data()
 
