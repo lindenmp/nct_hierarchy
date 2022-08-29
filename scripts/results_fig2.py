@@ -12,6 +12,7 @@ from tqdm import tqdm
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
 os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
+# os.environ["WHICH_BRAIN_MAP"] = 'micro-g1'
 # os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
 # os.environ["WHICH_BRAIN_MAP"] = 'myelin'
 os.environ["INTRAHEMI"] = "False"
@@ -196,7 +197,7 @@ try:
 
     # plot distance asymm null
     observed = np.mean(ed[indices_upper])
-    p_val = get_null_p(observed, t_null, version='reverse', abs=False)
+    p_val = get_null_p(observed, t_null, version='standard', abs=True)
     f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
     my_null_plot(observed=observed, null=t_null, p_val=p_val, xlabel='mean asymmetry', ax=ax)
     f.savefig(os.path.join(environment.figdir, 'e_asym_null'), dpi=600,
@@ -246,7 +247,7 @@ try:
 
     # plot distance asymm null
     observed = sp.stats.spearmanr(states_distance[indices_upper], ed[indices_upper])[0]
-    p_val = get_null_p(observed, r_null, version='reverse', abs=False)
+    p_val = get_null_p(observed, r_null, version='standard', abs=True)
     f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
     my_null_plot(observed=observed, null=r_null, p_val=p_val, xlabel='hierarchy distance \ncorrelation (Rho)', ax=ax)
     f.savefig(os.path.join(environment.figdir, 'corr(distance,e_asym)_null'), dpi=600,
