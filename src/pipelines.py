@@ -465,7 +465,7 @@ class DCM():
         unique = np.unique(self.states)
         n_states = len(unique)
 
-        return 'rsts_states_{0}_ns-{1}.npy'.format(self.file_prefi, n_states)
+        return 'rsts_states_{0}_ns-{1}.npy'.format(self.file_prefix, n_states)
 
     def _check_outputs(self):
         if os.path.exists(self._output_dir()) and os.path.isfile(os.path.join(self._output_dir(), self._output_file())):
