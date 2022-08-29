@@ -1,5 +1,5 @@
 import sys, os, platform
-from src.utils import get_p_val_string, get_exact_p, mean_confidence_interval
+from src.utils import get_p_val_string, get_exact_p
 
 import numpy as np
 import pandas as pd
@@ -233,33 +233,8 @@ def my_null_plot(observed, null, p_val, xlabel, ax, fontsize=8):
             horizontalalignment='right', verticalalignment='top', rotation=270, c=color_red)
 
 
-def my_distpair_plot(df, ylabel, ax, test_stat='ttest_1samp', split=False, fontsize=8):
-    if split == True:
-        mean_x1, lower_x1, upper_x1 = mean_confidence_interval(data=np.abs(df.iloc[:, 0]))
-        mean_x2, lower_x2, upper_x2 = mean_confidence_interval(data=np.abs(df.iloc[:, 1]))
-
-        df_tmp = pd.melt(df)
-        df_tmp["x"] = ""
-        sns.violinplot(data=df_tmp, ax=ax, x="x", y="value", hue="variable", inner=None, palette="pastel",
-                       cut=2, linewidth=1.5, linecolor="k", split=split)
-        ax.set_xlabel('')
-        # ax.legend(title='', bbox_to_anchor=(1, 1.15), loc='upper right')
-        ax.legend_.remove()
-
-        # add point estimate with 95% CI
-        ax.axhline(y=mean_x1, xmin=0.49, xmax=0.25, color="white", linewidth=1)
-        ax.axhline(y=upper_x1, xmin=0.49, xmax=0.25, color="white", linewidth=0.5, linestyle=':')
-        ax.axhline(y=lower_x1, xmin=0.49, xmax=0.25, color="white", linewidth=0.5, linestyle=':')
-        ax.text(-0.15, upper_x1, '95% CI', fontsize=int(fontsize/2),
-                horizontalalignment='center', verticalalignment='bottom', rotation=0, c="white")
-
-        ax.axhline(y=mean_x2, xmin=0.51, xmax=0.75, color="white", linewidth=1)
-        ax.axhline(y=upper_x2, xmin=0.51, xmax=0.75, color="white", linewidth=0.5, linestyle=':')
-        ax.axhline(y=lower_x2, xmin=0.51, xmax=0.75, color="white", linewidth=0.5, linestyle=':')
-        ax.text(0.15, upper_x2, '95% CI', fontsize=int(fontsize/2),
-                horizontalalignment='center', verticalalignment='bottom', rotation=0, c="white")
-    else:
-        sns.violinplot(data=df, ax=ax, inner="box", palette="pastel", cut=2, linewidth=1.5)
+def my_distpair_plot(df, ylabel, ax, test_stat='ttest_1samp', fontsize=8):
+    sns.violinplot(data=df, ax=ax, inner="box", palette="pastel", cut=2, linewidth=1.5)
 
     sns.despine(left=True, bottom=True)
     ax.set_ylabel(ylabel, labelpad=-0.5)
