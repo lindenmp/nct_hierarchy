@@ -10,7 +10,6 @@ import scipy as sp
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
 os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
-# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
 from setup_workspace import *
 
 # %% plotting
@@ -69,10 +68,13 @@ print(np.all(np.round(np.abs(ed.flatten()), 4) == np.round(np.abs(ed.transpose()
 
 # %% Panel B: timescales delta
 timescales_delta = np.zeros((n_states, n_states))
+tau_map = DataVector(data=brain_map_loader.tau, name='tau')
+# tau_map.rankdata()
+# tau_map.rescale_unit_interval()
 for i in np.arange(n_states):
     for j in np.arange(n_states):
-        timescales_delta[i, j] = np.nanmean(brain_maps['tau'].data[states == i]) - \
-                                 np.nanmean(brain_maps['tau'].data[states == j])
+        timescales_delta[i, j] = np.nanmean(tau_map.data[states == i]) - \
+                                 np.nanmean(tau_map.data[states == j])
 # sign of this timescales_delta matrix is currently unintuitive.
 #   if state_i = 0.3 and state_j = 0.5, then 0.3-0.5=-0.2.
 #   likewise, if state_i = 0.5 and state_j = 0.3, then 0.5-0.3=0.2.
