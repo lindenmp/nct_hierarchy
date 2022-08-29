@@ -14,6 +14,9 @@ octave.addpath('/Users/lindenmp/Google-Drive-Penn/work/matlab_tools/BCT/2019_03_
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
 os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
+# os.environ["WHICH_BRAIN_MAP"] = 'micro-g1'
+# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
+# os.environ["WHICH_BRAIN_MAP"] = 'myelin'
 os.environ["INTRAHEMI"] = "False"
 from setup_workspace import *
 
