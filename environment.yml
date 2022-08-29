@@ -49,6 +49,7 @@ dependencies:
     - bctpy==0.5.2
     - beautifulsoup4==4.11.1
     - bleach==3.3.0
+    - brainsmash==0.11.0
     - brainspace==0.1.1
     - cffi==1.14.5
     - chardet==4.0.0
@@ -142,6 +143,7 @@ dependencies:
     - wcwidth==0.2.5
     - webencodings==0.5.1
     - websocket-client==1.3.3
+    - wget==3.2
     - widgetsnbextension==3.5.1
     - xarray==0.17.0
     - zipp==3.4.1
