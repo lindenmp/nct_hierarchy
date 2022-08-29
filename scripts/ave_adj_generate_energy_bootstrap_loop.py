@@ -10,6 +10,9 @@ from tqdm import tqdm
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
 os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
+# os.environ["WHICH_BRAIN_MAP"] = 'micro-g1'
+# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
+# os.environ["WHICH_BRAIN_MAP"] = 'myelin'
 from setup_workspace import *
 
 # %% generate bootstrapped energy
