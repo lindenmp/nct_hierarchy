@@ -6,10 +6,11 @@ from src.pnc import Environment, Subject
 from src.routines import LoadSC, LoadAverageSC
 from src.pipelines import ComputeGradients
 from src.utils import get_states_from_brain_map
-from src.imaging_derivs import DataVector
+from src.imaging_derivs import DataVector, DataMatrix
 from src.brain_maps import BrainMapLoader
 
 import numpy as np
+import scipy as sp
 
 workspace = os.getenv("MY_PYTHON_WORKSPACE")
 print('Running workspace: {0}'.format(workspace))
@@ -37,6 +38,10 @@ filters = {'healthExcludev2': 0, 'psychoactiveMedPsychv2': 0,
            'restProtocolValidationStatus': 1, 'restExclude': 0} # need to add these filters in if doing func-g1 below
 environment.load_metadata(filters)
 
+# 20 year old participants
+# idx = environment.df['ageAtScan1'] >= 240
+# environment.df = environment.df[idx]
+
 # %% Load sc data
 # note, this performs more subject exclusion
 load_sc = LoadSC(environment=environment, Subject=Subject)
@@ -51,6 +56,15 @@ compute_gradients.run()
 
 # %%
 brain_map_loader = BrainMapLoader(computer=computer, n_parcels=n_parcels)
+if parc == 'schaefer':
+    # load cyto
+    brain_map_loader.load_cyto()
+    # load micro
+    brain_map_loader.load_micro()
+    # load t1/t2
+    brain_map_loader.load_myelin()
+    # tau map from Gao et al. 2020 eLife
+    brain_map_loader.load_tau(return_log=False)
 
 # %% run workspace specific lines
 if workspace == 'ave_adj':
@@ -62,37 +76,21 @@ if workspace == 'ave_adj':
     A = load_average_sc.A.copy()
     if intrahemi == True:
         A = A[:int(n_parcels / 2), :int(n_parcels / 2)]
-
-    # brain_maps = load_average_bms.brain_maps.copy()
-    brain_maps = dict()
-
-    # append fc gradient to brain maps
-    dv = DataVector(data=compute_gradients.gradients[:, 0], name='func-g1')
-    if intrahemi == True:
-        dv.data = dv.data[:int(n_parcels / 2)]
-    dv.rankdata()
-    dv.rescale_unit_interval()
-    brain_maps[dv.name] = dv
-
-    # append tau map from Gao et al. 2020 eLife
-    if parc == 'schaefer':
-        brain_map_loader.load_tau(return_log=False)
-        dv = DataVector(data=brain_map_loader.tau, name='tau')
-        if intrahemi == True:
-            dv.data = dv.data[:int(n_parcels / 2)]
-        dv.rankdata()
-        dv.rescale_unit_interval()
-        brain_maps[dv.name] = dv
 elif workspace == 'subj_adj':
     pass
 
 # %% get states
 if which_brain_map == 'hist-g2':
-    brain_map_loader.load_cyto()
     state_brain_map = brain_map_loader.cyto
     state_brain_map = state_brain_map * -1
 elif which_brain_map == 'func-g1':
     state_brain_map = compute_gradients.gradients[:, 0].copy()
+elif which_brain_map == 'micro-g1':
+    state_brain_map = brain_map_loader.micro
+    state_brain_map = state_brain_map * -1
+elif which_brain_map == 'myelin':
+    state_brain_map = brain_map_loader.myelin
+    state_brain_map = state_brain_map * -1
 
 # bin_size = 9
 bin_size = 10
@@ -110,5 +108,18 @@ indices = np.where(mask)
 indices_upper = np.triu_indices(n_states, k=1)
 indices_lower = np.tril_indices(n_states, k=-1)
 
+# %% print some useful info
 print('dti64QAManualScore', np.sum(environment.df['dti64QAManualScore'] == 2))
 print('averageManualRating', np.sum(environment.df['averageManualRating'] == 2))
+
+if intrahemi == False:
+    print('state_brain_map vs. func-g1', sp.stats.pearsonr(state_brain_map, compute_gradients.gradients[:, 0]))
+    print('state_brain_map vs. t1/t2', sp.stats.pearsonr(state_brain_map, brain_map_loader.myelin))
+    print('state_brain_map vs. micro-g1', sp.stats.pearsonr(state_brain_map, brain_map_loader.micro))
+
+    if workspace == 'ave_adj':
+        A_tmp = DataMatrix(data=A)
+        A_tmp.get_strength()
+        print('strength vs. func-g1', sp.stats.pearsonr(A_tmp.S, compute_gradients.gradients[:, 0]))
+        print('strength vs. t1/t2', sp.stats.pearsonr(A_tmp.S, brain_map_loader.myelin))
+        print('strength vs. micro-g1', sp.stats.pearsonr(A_tmp.S, brain_map_loader.micro))
