@@ -1,7 +1,6 @@
 # %% import
 import sys, os, platform
 
-from src.imaging_derivs import DataMatrix
 from src.pipelines import ComputeMinimumControlEnergy
 from src.utils import get_bootstrap_indices
 

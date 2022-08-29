@@ -1,11 +1,8 @@
 # %% import
 import sys, os, platform
 
-from src.imaging_derivs import DataMatrix
 from src.pipelines import ComputeMinimumControlEnergy
 
-import scipy as sp
-from bct.algorithms.reference import randmio_und
 from src.geomsurr import geomsurr
 from tqdm import tqdm
 
