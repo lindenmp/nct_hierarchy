@@ -1,24 +1,21 @@
 # %% import
 import sys, os, platform
-from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
-from pfactor_gradients.imaging_derivs import DataMatrix
-from pfactor_gradients.plotting import my_reg_plot, my_null_plot
-from pfactor_gradients.utils import rank_int, get_fdr_p, get_exact_p, get_null_p, get_p_val_string
+from src.pipelines import ComputeMinimumControlEnergy
+from src.plotting import my_reg_plot
+from src.utils import get_fdr_p
 
-import scipy as sp
 from sklearn.linear_model import LinearRegression
 from tqdm import tqdm
 
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'subj_adj'
 os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
-# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
 from setup_workspace import *
 
 # %% plotting
 import seaborn as sns
 import matplotlib.pyplot as plt
-from pfactor_gradients.plotting import set_plotting_params
+from src.plotting import set_plotting_params
 set_plotting_params(format='svg')
 figsize = 1.5
 
@@ -30,6 +27,9 @@ E = np.zeros((n_states, n_states, n_subs))
 # energy_version = 'identity'
 energy_version = 'E_opt'
 ed_mean = np.load(os.path.join(environment.pipelinedir, 'ed_{0}_{1}.npy'.format(which_brain_map, energy_version)))
+
+# set pipelinedir to cluster outputs
+environment.pipelinedir = environment.pipelinedir.replace('output_local', 'output_cluster')
 
 for i in tqdm(np.arange(n_subs)):
     file_prefix = '{0}_{1}_'.format(environment.df.index[i], which_brain_map)
@@ -47,11 +47,8 @@ for i in tqdm(np.arange(n_subs)):
         nct_pipeline.run_with_optimized_b(n=n, ds=ds)
         E[:, :, i] = nct_pipeline.E_opt[:, 1].reshape(n_states, n_states)
 
-
-# %% normalize energy over subjects
-for i in tqdm(np.arange(n_states)):
-    for j in np.arange(n_states):
-        E[i, j, :] = rank_int(E[i, j, :])
+# reset pipelinedir to local outputs
+environment.pipelinedir = environment.pipelinedir.replace('output_cluster', 'output_local')
 
 # %% correlations
 dv = 'ageAtScan1'
@@ -67,8 +64,6 @@ if np.any(np.isnan(y)):
 # nuisance regression
 covs = environment.df.loc[:, ['sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']]
 covs['sex'] = covs['sex'] - 1
-covs['mprage_antsCT_vol_TBV'] = rank_int(covs['mprage_antsCT_vol_TBV'])
-covs['dti64MeanRelRMS'] = rank_int(covs['dti64MeanRelRMS'])
 covs = covs.values
 
 for i in tqdm(np.arange(n_states)):
@@ -76,7 +71,9 @@ for i in tqdm(np.arange(n_states)):
         nuis_reg = LinearRegression()
         nuis_reg.fit(covs, E[i, j, :])
         y_pred = nuis_reg.predict(covs)
+        Em = np.mean(E[i, j, :])
         E[i, j, :] = E[i, j, :] - y_pred
+        E[i, j, :] += Em
 
 # mean bottom-up and top-down separately
 e_bu_mean = np.zeros(n_subs)
@@ -100,47 +97,42 @@ sig_mask[np.isnan(e_corr_p)] = True
 print(np.sum(sig_mask == False))
 
 # %% plots
-figsize = 1.5
-
-if dv == 'ageAtScan1':
-    y = y/12
+y = y/12
 
 # Panel A
 f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
 cmap = sns.diverging_palette(150, 275, as_cmap=True)
 sns.heatmap(e_corr, mask=sig_mask, center=0, square=True, cmap=cmap, ax=ax,
             cbar_kws={"shrink": 0.80, "label": "age effects\n(Pearson's r)"})
-            # cbar_kws={"shrink": 0.80})
-# ax.set_title("age effects\n(Pearson's $\mathit{r}$)")
 ax.set_ylabel("initial states", labelpad=-1)
 ax.set_xlabel("target states", labelpad=-1)
 ax.set_yticklabels('')
 ax.set_xticklabels('')
 ax.tick_params(pad=-2.5)
-f.savefig(os.path.join(environment.figdir, 'corr(age,e_{0})'.format(energy_version)), dpi=600, bbox_inches='tight',
-          pad_inches=0.01)
+f.savefig(os.path.join(environment.figdir, 'corr(age,e)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
-# Panel B
+# New panel B
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(x=y, y=e_bu_mean,
-           xlabel='age (years)', ylabel='bottom-up energy\n(mean)', ax=ax, annotate='pearson')
-f.savefig(os.path.join(environment.figdir, 'corr(age,e_{0}_bu)'.format(energy_version)), dpi=600, bbox_inches='tight',
-          pad_inches=0.01)
+my_reg_plot(x=y, y=e_bu_mean - e_td_mean, xlabel='age (years)', ylabel='energy asymmetry\n(mean)', ax=ax, annotate='pearson')
+f.savefig(os.path.join(environment.figdir, 'corr(age,e_asym_mean)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
 # Panel C
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(x=y, y=e_td_mean,
-           xlabel='age (years)', ylabel='top-down energy\n(mean)', ax=ax, annotate='pearson')
-f.savefig(os.path.join(environment.figdir, 'corr(age,e_{0}_td)'.format(energy_version)), dpi=600, bbox_inches='tight',
-          pad_inches=0.01)
+my_reg_plot(x=e_corr[indices], y=ed_mean[indices], xlabel='age effects', ylabel='energy asymmetry', ax=ax, annotate='both')
+f.savefig(os.path.join(environment.figdir, 'corr(age_effects,ed)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
-# Panel D
+# supp figure
+# Panel A
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(x=e_corr[indices], y=ed_mean[indices],
-           xlabel='age effects\n', ylabel='energy asymmetry', ax=ax, annotate='both')
-f.savefig(os.path.join(environment.figdir, 'corr(corr(e_{0},ed))'.format(energy_version)), dpi=600, bbox_inches='tight',
-          pad_inches=0.01)
+my_reg_plot(x=y, y=e_bu_mean, xlabel='age (years)', ylabel='bottom-up energy\n(mean)', ax=ax, annotate='pearson')
+f.savefig(os.path.join(environment.figdir, 'corr(age,e_bu_mean)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
+plt.close()
+
+# Panel B
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+my_reg_plot(x=y, y=e_td_mean, xlabel='age (years)', ylabel='top-down energy\n(mean)', ax=ax, annotate='pearson')
+f.savefig(os.path.join(environment.figdir, 'corr(age,e_td_mean)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
