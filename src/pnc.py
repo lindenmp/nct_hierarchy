@@ -16,25 +16,13 @@ class Environment():
         self.sc_edge_weight = sc_edge_weight
 
         # directories
+        self.userdir = os.path.expanduser('~')
+        self.projdir = os.path.join(self.userdir, 'research_projects', 'nct_hierarchy')
+        self.research_data = os.path.join(self.userdir, 'research_data')
         if self.computer == 'macbook':
-            self.userdir = '/Users/lindenmp'
-            # self.projdir = os.path.join(self.userdir, 'Google-Drive-Penn', 'work', 'research_projects', 'nct_hierarchy')
-            self.projdir = os.path.join(self.userdir, 'research_projects', 'nct_hierarchy')
-            self.research_data = os.path.join(self.userdir, 'research_data')
-
             self.outputdir = os.path.join(self.projdir, 'output_local', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
         elif self.computer == 'cbica':
-            self.userdir = '/cbica/home/parkesl'
-            self.projdir = os.path.join(self.userdir, 'research_projects', 'nct_hierarchy')
-            self.research_data = os.path.join(self.userdir, 'research_data')
-
             self.outputdir = os.path.join(self.projdir, 'output_cluster', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
-        elif self.computer == 'linux':
-            self.userdir = '/home/lindenmp'
-            self.projdir = os.path.join(self.userdir, 'research_projects', 'nct_hierarchy')
-            self.research_data = '/media/lindenmp/data_drive/research_data'
-
-            self.outputdir = os.path.join(self.projdir, 'output_local', 'pnc', '{0}_{1}_{2}'.format(self.parc, self.n_parcels, self.sc_edge_weight))
 
         self.pipelinedir = os.path.join(self.outputdir, 'pipelines')
         self.figdir = os.path.join(self.outputdir, 'figures')

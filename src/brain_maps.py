@@ -16,11 +16,11 @@ class BrainMapLoader:
         self.n_parcels = n_parcels
 
         # directories
+        self.userdir = os.path.expanduser('~')
         if self.computer == 'macbook':
-            self.userdir = '/Users/lindenmp'
             self.workbenchdir = '/Applications/workbench/bin_macosx64'
         elif self.computer == 'cbica':
-            self.userdir = '/cbica/home/parkesl'
+            self.workbenchdir = os.path.join(self.userdir, 'workbench', 'bin_rh_linux64')
 
         self.research_data = os.path.join(self.userdir, 'research_data')
         self.bbw_dir = os.path.join(self.research_data, 'BigBrainWarp')  # original BigBrainData downloaded ~June 2021
