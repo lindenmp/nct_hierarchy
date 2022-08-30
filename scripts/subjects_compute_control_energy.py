@@ -1,9 +1,9 @@
 # %%
 import sys, os, platform
 if platform.system() == 'Linux':
-    sys.path.extend(['/cbica/home/parkesl/research_projects/pfactor_gradients'])
-from pfactor_gradients.pipelines import ComputeMinimumControlEnergy
-from pfactor_gradients.imaging_derivs import DataMatrix
+    sys.path.extend(['/cbica/home/parkesl/research_projects/nct_hierarchy'])
+from src.pipelines import ComputeMinimumControlEnergy
+from src.imaging_derivs import DataMatrix
 
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'subj_adj'
