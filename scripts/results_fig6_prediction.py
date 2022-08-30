@@ -1,24 +1,23 @@
 # %% import
 import sys, os, platform
-from pfactor_gradients.pipelines import ComputeMinimumControlEnergy, Regression
-from pfactor_gradients.utils import rank_int, get_exact_p, get_null_p, get_p_val_string
-from pfactor_gradients.imaging_derivs import DataMatrix
-from pfactor_gradients.plotting import my_null_plot
+from src.pipelines import ComputeMinimumControlEnergy, Regression
+from src.utils import rank_int, get_exact_p, get_null_p, get_p_val_string
+from src.imaging_derivs import DataMatrix
+from src.plotting import my_null_plot
 
 from tqdm import tqdm
 
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'subj_adj'
 os.environ["WHICH_BRAIN_MAP"] = 'hist-g2'
-# os.environ["WHICH_BRAIN_MAP"] = 'func-g1'
 from setup_workspace import *
 
 # %% plotting
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from pfactor_gradients.plotting import set_plotting_params, my_reg_plot
-set_plotting_params(format='svg')
+from src.plotting import set_plotting_params, my_reg_plot
+set_plotting_params(format='png')
 figsize = 1.5
 
 # %% prediction params
@@ -26,7 +25,7 @@ X_name = 'identity'
 y_name = 'ageAtScan1'
 c_name = 'svm'
 alg = 'rr'
-score = 'corr' # 'rmse' 'corr'
+score = 'corr' # 'rmse' 'corr' 'mae'
 runpca = '80%'
 
 if type(runpca) == str and '%' not in runpca:
@@ -34,7 +33,8 @@ if type(runpca) == str and '%' not in runpca:
 
 n_splits = 10
 n_rand_splits = 100
-n_perm = int(5e3)
+n_perm = int(1e4)
+# n_perm = int(1e1)
 
 # %% setup y and c
 y = environment.df.loc[:, y_name].values
@@ -75,6 +75,9 @@ E = np.zeros((n_states, n_states, n_subs))
 if X_name == 'identity':
     E_opt = np.zeros((n_states, n_states, n_subs))
 
+# set pipelinedir to cluster outputs
+environment.pipelinedir = environment.pipelinedir.replace('output_local', 'output_cluster')
+
 for i in tqdm(np.arange(n_subs)):
     file_prefix = '{0}_{1}_'.format(environment.df.index[i], which_brain_map)
 
@@ -93,6 +96,9 @@ for i in tqdm(np.arange(n_subs)):
     else:
         nct_pipeline.run()
         E[:, :, i] = nct_pipeline.E
+
+# reset pipelinedir to local outputs
+environment.pipelinedir = environment.pipelinedir.replace('output_cluster', 'output_local')
 
 # %% prediction from energy
 n_transitions = len(indices_upper[0])
@@ -123,28 +129,25 @@ regression.run_perm(n_perm=n_perm)
 
 # %% prediction from energy optimized
 if X_name == 'identity':
-    # setup X
-    X = np.zeros((n_subs, n_transitions))
+    # setup X_opt
+    X_opt = np.zeros((n_subs, n_transitions))
     for i in np.arange(n_subs):
-        # e = E_opt[:, :, i][indices]
-        # X[i, :] = e
-
         e = E_opt[:, :, i]
         e = rank_int(e)
         ed = e - e.transpose()
-        X[i, :] = ed[indices_upper]
+        X_opt[i, :] = ed[indices_upper]
 
     # filter missing data
     try:
-        X = X[~missing_data, :]
+        X_opt = X_opt[~missing_data, :]
     except:
         pass
 
     # normalize energy
-    for i in np.arange(X.shape[1]):
-        X[:, i] = rank_int(X[:, i])
+    for i in np.arange(X_opt.shape[1]):
+        X_opt[:, i] = rank_int(X_opt[:, i])
 
-    regression = Regression(environment=environment, X=X, y=y, c=c, X_name='smap-{0}_X-energy-optimized'.format(which_brain_map),
+    regression = Regression(environment=environment, X=X_opt, y=y, c=c, X_name='smap-{0}_X-energy-optimized'.format(which_brain_map),
                             y_name=y_name, c_name=c_name, alg=alg, score=score, n_splits=n_splits, runpca=runpca,
                             n_rand_splits=n_rand_splits, force_rerun=False)
     regression.run()
@@ -153,12 +156,13 @@ if X_name == 'identity':
 # %% run with stratified y
 from sklearn.metrics import make_scorer
 from sklearn.linear_model import Ridge
-from pfactor_gradients.prediction import run_reg_scv, root_mean_squared_error
+from src.prediction import run_reg_scv, root_mean_squared_error
 
 reg = Ridge()
 scorer = make_scorer(root_mean_squared_error, greater_is_better=False)
 
-_, y_pred = run_reg_scv(X=X, y=y, c=c, reg=reg, scorer=scorer, n_splits=n_splits, runpca=runpca)
+# _, y_pred = run_reg_scv(X=X, y=y, c=c, reg=reg, scorer=scorer, n_splits=n_splits, runpca=runpca)
+_, y_pred = run_reg_scv(X=X_opt, y=y, c=c, reg=reg, scorer=scorer, n_splits=n_splits, runpca=runpca)
 
 # %% plotting
 
@@ -178,7 +182,6 @@ def helper_func(x_pos, y_pos, p_val, side):
     elif side == 'right':
         rotation = 270
         offset = 0.1
-
 
     ax.text(x_pos + offset, y_pos, textstr, rotation=rotation, fontweight=fontweight, fontsize=8,
             horizontalalignment='center', verticalalignment='bottom')
@@ -235,10 +238,14 @@ def my_prediction_performance_plot(x1, x1_null, x2, x2_null, ax):
         ylabel = 'correlation(y_true,y_pred) (higher = better)'
     elif score == 'r2':
         ylabel = 'R^2 (higher = better)'
+    elif score == 'mae':
+        ylabel = 'negative[MAE] (higher = better)'
+
     ax.set_xlabel('')
     # ax.set_ylabel('')
     ax.set_ylabel(ylabel)
 
+# %%
 # Panel F
 # repeated cross val against nulls
 x1 = np.loadtxt(os.path.join(environment.pipelinedir, 'prediction',
@@ -257,6 +264,7 @@ x2_null = np.loadtxt(os.path.join(environment.pipelinedir, 'prediction',
                             'smap-{0}_X-energy-optimized_y-{1}_c-{2}_alg-{3}_score-{4}_pca-{5}_accuracy_perm.txt' \
                             .format(which_brain_map, y_name, c_name, alg, score, runpca)))
 
+# standard vs optimized
 if y_name == 'ageAtScan1' and score == 'corr':
     f, ax = plt.subplots(1, 1, figsize=(figsize*0.35, figsize*3))
 else:
@@ -281,10 +289,12 @@ f.savefig(os.path.join(environment.figdir, 'prediction_y_pred_{0}'.format(y_name
           pad_inches=0.1)
 plt.close()
 
-# plot standard null plot for optimized energy
+# empirical null
+# observed = np.mean(x1)
+# p_val = get_null_p(observed, x1_null, abs=False)
 observed = np.mean(x2)
 p_val = get_null_p(observed, x2_null, abs=False)
-f, ax = plt.subplots(1, 1, figsize=(figsize, figsize/2))
+f, ax = plt.subplots(1, 1, figsize=(figsize, figsize/3))
 
 if score == 'rmse':
     xlabel = 'RMSE'
@@ -292,6 +302,9 @@ if score == 'rmse':
 elif score == 'corr':
     xlabel = 'corr'
     my_null_plot(observed=observed, null=x2_null, p_val=p_val, xlabel=xlabel, ax=ax)
+elif score == 'mae':
+    xlabel = 'mae'
+    my_null_plot(observed=observed/12, null=x2_null/12, p_val=p_val, xlabel=xlabel, ax=ax)
 
 f.savefig(os.path.join(environment.figdir, 'prediction_null_{0}'.format(y_name)), dpi=600,
           bbox_inches='tight', pad_inches=0.01)
