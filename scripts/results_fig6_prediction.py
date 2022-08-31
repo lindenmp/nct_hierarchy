@@ -17,7 +17,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from src.plotting import set_plotting_params, my_reg_plot
-set_plotting_params(format='png')
+set_plotting_params(format='svg')
 figsize = 1.5
 
 # %% prediction params
@@ -25,7 +25,7 @@ X_name = 'identity'
 y_name = 'ageAtScan1'
 c_name = 'svm'
 alg = 'rr'
-score = 'corr' # 'rmse' 'corr' 'mae'
+score = 'corr'  # 'corr' 'rmse' 'mae'
 runpca = '80%'
 
 if type(runpca) == str and '%' not in runpca:
@@ -34,7 +34,6 @@ if type(runpca) == str and '%' not in runpca:
 n_splits = 10
 n_rand_splits = 100
 n_perm = int(1e4)
-# n_perm = int(1e1)
 
 # %% setup y and c
 y = environment.df.loc[:, y_name].values
