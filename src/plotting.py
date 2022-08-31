@@ -288,10 +288,59 @@ def my_bsci_plot(dist, observed, xlabel, ax, fontsize=8):
     ax.text(conf_interval[0], ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
 
-    textstr = 'observed = {:.4f}'.format(observed)
+    textstr = 'obs. = {:.4f}'.format(observed)
     ax.text(observed, ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
 
     textstr = 'upper = {:.4f}'.format(conf_interval[1])
     ax.text(conf_interval[1], ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
+
+
+def my_bsci_pair_plot(dist1, observed1, dist2, observed2, xlabel, ax, fontsize=8):
+    color_blue = sns.color_palette("Set1")[1]
+    color_red = sns.color_palette("Set1")[0]
+
+    # dist 1
+    sns.histplot(x=dist1, ax=ax, color='black', kde=False, alpha=0.2)
+    conf_interval = np.percentile(dist1, [2.5, 97.5])
+    ax.axvline(conf_interval[0], ymax=1, clip_on=False, linewidth=1, color=color_red)
+    ax.axvline(observed1, ymax=1, clip_on=False, linewidth=1, color=color_blue)
+    ax.axvline(conf_interval[1], ymax=1, clip_on=False, linewidth=1, color=color_red)
+
+    textstr = 'lower = {:.4f}'.format(conf_interval[0])
+    ax.text(conf_interval[0], ax.get_ylim()[1], textstr, fontsize=fontsize,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
+
+    textstr = 'obs. = {:.4f}'.format(observed1)
+    ax.text(observed1, ax.get_ylim()[1], textstr, fontsize=fontsize,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
+
+    textstr = 'upper = {:.4f}'.format(conf_interval[1])
+    ax.text(conf_interval[1], ax.get_ylim()[1], textstr, fontsize=fontsize,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
+
+    # dist 2
+    sns.histplot(x=dist2, ax=ax, color='gray', kde=False)
+    conf_interval = np.percentile(dist2, [2.5, 97.5])
+    ax.axvline(conf_interval[0], ymax=1, clip_on=False, linewidth=1, color=color_red)
+    ax.axvline(observed2, ymax=1, clip_on=False, linewidth=1, color=color_blue)
+    ax.axvline(conf_interval[1], ymax=1, clip_on=False, linewidth=1, color=color_red)
+
+    textstr = 'lower = {:.4f}'.format(conf_interval[0])
+    ax.text(conf_interval[0], ax.get_ylim()[1], textstr, fontsize=fontsize,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
+
+    textstr = 'obs. = {:.4f}'.format(observed2)
+    ax.text(observed2, ax.get_ylim()[1], textstr, fontsize=fontsize,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
+
+    textstr = 'upper = {:.4f}'.format(conf_interval[1])
+    ax.text(conf_interval[1], ax.get_ylim()[1], textstr, fontsize=fontsize,
+            horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
+
+    ax.grid(False)
+    sns.despine(right=True, top=True, ax=ax)
+    ax.tick_params(pad=-2.5)
+    ax.set_xlabel(xlabel, labelpad=-0.5)
+    ax.set_ylabel('counts', labelpad=-0.5)
