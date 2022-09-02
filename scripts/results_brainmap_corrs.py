@@ -18,6 +18,18 @@ from src.plotting import set_plotting_params
 set_plotting_params(format='svg')
 figsize = 1.5
 
+dv = DataVector(data=state_brain_map, name=which_brain_map)
+dv.rankdata()
+dv.brain_surface_plot(environment)
+
+dv = DataVector(data=brain_map_loader.micro, name='micro')
+dv.rankdata()
+dv.brain_surface_plot(environment)
+
+dv = DataVector(data=compute_gradients.gradients[:, 0], name='func')
+dv.rankdata()
+dv.brain_surface_plot(environment)
+
 # %% generate surrogates using brainsmash
 n_surrogates = 10000
 file = 'brainsmash_surrogates_{0}_n{1}.npy'.format(which_brain_map, n_surrogates)
@@ -64,3 +76,6 @@ my_null_plot(observed=observed, null=null, p_val=p_val, xlabel=' ', ax=ax)
 f.savefig(os.path.join(environment.figdir, 'spat_corr(cyto,func).png'), dpi=600,
           bbox_inches='tight', pad_inches=0.01)
 plt.close()
+
+# %% correlation(micro,func)
+print(sp.stats.pearsonr(brain_map_loader.micro, compute_gradients.gradients[:, 0]))
