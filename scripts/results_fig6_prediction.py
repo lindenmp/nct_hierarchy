@@ -269,7 +269,10 @@ if y_name == 'ageAtScan1' and score == 'corr':
 else:
     f, ax = plt.subplots(1, 1, figsize=(figsize*0.35, figsize*2))
 
-my_prediction_performance_plot(x1=x1, x1_null=x1_null, x2=x2, x2_null=x2_null, ax=ax)
+if score == 'rmse' or score == 'mae':
+    my_prediction_performance_plot(x1=x1/12, x1_null=x1_null/12, x2=x2/12, x2_null=x2_null/12, ax=ax)
+else:
+    my_prediction_performance_plot(x1=x1, x1_null=x1_null, x2=x2, x2_null=x2_null, ax=ax)
 
 f.savefig(os.path.join(environment.figdir, 'prediction_{0}'.format(y_name)), dpi=600, bbox_inches='tight',
           pad_inches=0.1)
