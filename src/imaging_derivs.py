@@ -244,15 +244,22 @@ class DataVector():
         self.data_mean = x_out
 
 
-    def brain_surface_plot(self, environment, cmap='viridis'):
+    def brain_surface_plot(self, environment, cmap='viridis', order='lr'):
         f, ax = plt.subplots(1, 4, subplot_kw={'projection': '3d'})
         data = self.data.copy()
 
         if np.min(data) == 0:
             data = data + 1e-5
 
-        vtx_data, plot_min, plot_max = roi_to_vtx(data, environment.parcel_names,
-                                                  environment.lh_annot_file)
+        n = int(data.shape[0] / 2)
+        if order == 'lr':
+            roi_data_lh = data[:n]
+            roi_data_rh = data[n:]
+        elif order == 'rl':
+            roi_data_rh = data[:n]
+            roi_data_lh = data[n:]
+
+        vtx_data, plot_min, plot_max = roi_to_vtx(roi_data_lh, environment.lh_annot_file)
         vtx_data = vtx_data.astype(float)
         plotting.plot_surf_roi(environment.fsaverage['infl_left'], roi_map=vtx_data,
                                hemi='left', view='lateral', vmin=plot_min, vmax=plot_max,
@@ -264,8 +271,7 @@ class DataVector():
                                bg_map=environment.fsaverage['sulc_left'], bg_on_data=True, axes=ax[1],
                                darkness=.5, cmap=cmap, colorbar=False)
 
-        vtx_data, plot_min, plot_max = roi_to_vtx(data, environment.parcel_names,
-                                                  environment.rh_annot_file)
+        vtx_data, plot_min, plot_max = roi_to_vtx(roi_data_rh, environment.rh_annot_file)
         vtx_data = vtx_data.astype(float)
         plotting.plot_surf_roi(environment.fsaverage['infl_right'], roi_map=vtx_data,
                                hemi='right', view='lateral', vmin=plot_min, vmax=plot_max,

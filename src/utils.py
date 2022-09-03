@@ -443,3 +443,37 @@ def load_schaefer_parc(n_parcels=200, order=17, annot='fsaverage', outdir='~/res
     hcp_file = os.path.join(outdir, file)
 
     return centroids, lh_annot_file, rh_annot_file, hcp_file
+
+
+def load_glasser_parc(glasser_dir='~/research_data/Glasser_et_al_2016_HCP_MMP1.0_kN_RVVG',
+                      annot='fsaverage5', outdir='~/research_data/glasser_parc'):
+    glasser_dir = os.path.expanduser(glasser_dir)
+
+    # output dir
+    outdir = os.path.expanduser(outdir)
+    if os.path.exists(outdir) == False:
+        os.makedirs(outdir)
+
+    # github link
+    remote_path = 'https://github.com/PennLINC/xcpEngine/raw/master/atlas/glasser360'
+
+    # roi names and coords in MNI
+    file = 'glasser360NodeNames.txt'
+    if os.path.exists(os.path.join(outdir, file)) == False:
+        wget.download(os.path.join(remote_path, file), outdir)
+
+    parcel_names = list(np.genfromtxt(os.path.join(outdir, 'glasser360NodeNames.txt'), dtype='str'))
+
+    lh_annot_file = os.path.join(glasser_dir, 'prepare_glasser', 'HCP-MMP1.{0}.L.annot'.format(annot))
+    rh_annot_file = os.path.join(glasser_dir, 'prepare_glasser', 'HCP-MMP1.{0}.R.annot'.format(annot))
+
+    centroids = pd.read_csv(os.path.join(glasser_dir, 'HCP-MMP1_UniqueRegionList.csv'))
+    centroids = pd.concat((centroids.iloc[180:, :], centroids.iloc[0:180, :]), axis=0)
+    centroids.reset_index(inplace=True, drop=True)
+    centroids = centroids.loc[:, ['x-cog', 'y-cog', 'z-cog']]
+    centroids['regionName'] = parcel_names
+
+    hcp_file = os.path.join(glasser_dir, 'HCP_PhaseTwo', 'Q1-Q6_RelatedParcellation210', 'MNINonLinear', 'fsaverage_LR32k',
+                            'Q1-Q6_RelatedParcellation210.CorticalAreas_dil_Colors.32k_fs_LR.dlabel.nii')
+
+    return centroids, lh_annot_file, rh_annot_file, hcp_file

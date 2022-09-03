@@ -24,8 +24,14 @@ if platform.system() == 'Linux':
     computer = 'cbica'
 elif platform.system() == 'Darwin':
     computer = 'macbook'
-parc = 'schaefer'
-n_parcels = 200
+parc = 'glasser'
+if parc == 'schaefer':
+    n_parcels = 200
+    # n_parcels = 400
+    order = 'lr'  # for schaefer
+elif parc == 'glasser':
+    n_parcels = 360
+    order = 'rl'  # for glasser
 sc_edge_weight = 'streamlineCount'
 environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_edge_weight=sc_edge_weight)
 environment.make_output_dirs()
@@ -55,16 +61,15 @@ compute_gradients = ComputeGradients(environment=environment, Subject=Subject)
 compute_gradients.run()
 
 # %%
-brain_map_loader = BrainMapLoader(computer=computer, n_parcels=n_parcels)
-if parc == 'schaefer':
-    # load cyto
-    brain_map_loader.load_cyto()
-    # load micro
-    brain_map_loader.load_micro()
-    # load t1/t2
-    brain_map_loader.load_myelin()
-    # tau map from Gao et al. 2020 eLife
-    brain_map_loader.load_tau(return_log=False)
+brain_map_loader = BrainMapLoader(computer=computer, parc=parc, n_parcels=n_parcels)
+# load cyto
+brain_map_loader.load_cyto()
+# load micro
+brain_map_loader.load_micro()
+# load t1/t2
+brain_map_loader.load_myelin()
+# tau map from Gao et al. 2020 eLife
+brain_map_loader.load_tau(return_log=False)
 
 # %% run workspace specific lines
 if workspace == 'ave_adj':

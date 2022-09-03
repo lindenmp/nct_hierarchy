@@ -5,7 +5,7 @@ import pandas as pd
 from nilearn import datasets
 
 from src.imaging_derivs import DataMatrix, compute_fc, compute_rlfp
-from src.utils import load_schaefer_parc
+from src.utils import load_schaefer_parc, load_glasser_parc
 
 class Environment():
     def __init__(self, computer='macbook', parc='schaefer', n_parcels=400, sc_edge_weight='streamlineCount'):
@@ -127,24 +127,13 @@ class Environment():
             self.parcel_names = list(self.centroids['ROI Name'])
             self.centroids.set_index('ROI Name', inplace=True)
         elif self.parc == 'glasser':
-            self.parcel_names = list(np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'support_files',
-                                                           'glasser{0}NodeNames.txt'.format(self.n_parcels)),
-                                                   dtype='str'))
             self.fsaverage = datasets.fetch_surf_fsaverage(mesh='fsaverage5')
-            self.lh_annot_file = os.path.join(self.research_data, 'parcellations',
-                                              'Glasser_et_al_2016_HCP_MMP1.0_qN_RVVG', 'HCP-MMP1.fsaverage5.L.annot')
-            self.rh_annot_file = os.path.join(self.research_data, 'parcellations',
-                                              'Glasser_et_al_2016_HCP_MMP1.0_qN_RVVG', 'HCP-MMP1.fsaverage5.R.annot')
+            self.centroids, self.lh_annot_file, self.rh_annot_file, self.hcp_file = load_glasser_parc(
+                glasser_dir=os.path.join(self.research_data, 'Glasser_et_al_2016_HCP_MMP1.0_kN_RVVG'),
+                annot='fsaverage5')
+            self.parcel_names = list(self.centroids['regionName'])
+            self.centroids.set_index('regionName', inplace=True)
 
-            self.centroids = pd.read_csv(os.path.join(self.research_data, 'parcellations', 'support_files',
-                                                    'HCP-MMP1_UniqueRegionList.csv'))
-            self.centroids = pd.concat((self.centroids.iloc[180:, :], self.centroids.iloc[0:180, :]), axis=0)
-            self.centroids.reset_index(inplace=True, drop=True)
-            self.centroids = self.centroids.loc[:, ['x-cog', 'y-cog', 'z-cog']]
-            self.spun_indices = np.genfromtxt(os.path.join(self.research_data, 'parcellations', 'spin_test',
-                                                        'rotated_ind_glasser{0}.csv'.format(self.n_parcels)),
-                                              delimiter=',', dtype=int)
-            self.spun_indices = self.spun_indices - 1
 
 class Subject():
     def __init__(self, environment=Environment(), subjid='81287_2738'):

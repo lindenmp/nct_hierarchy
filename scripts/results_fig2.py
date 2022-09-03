@@ -25,12 +25,6 @@ from src.plotting import set_plotting_params
 set_plotting_params(format='svg')
 figsize = 1.5
 
-# %%
-if intrahemi == False:
-    dv = DataVector(data=state_brain_map, name=which_brain_map)
-    dv.rankdata()
-    dv.brain_surface_plot(environment)
-
 # %% plot mean adjacency matrix
 f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
 sns.heatmap(A, square=True, ax=ax, cbar_kws={"shrink": 0.80})

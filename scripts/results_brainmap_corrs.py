@@ -20,15 +20,15 @@ figsize = 1.5
 
 dv = DataVector(data=state_brain_map, name=which_brain_map)
 dv.rankdata()
-dv.brain_surface_plot(environment)
+dv.brain_surface_plot(environment, order=order)
 
 dv = DataVector(data=brain_map_loader.micro, name='micro')
 dv.rankdata()
-dv.brain_surface_plot(environment)
+dv.brain_surface_plot(environment, order=order)
 
 dv = DataVector(data=compute_gradients.gradients[:, 0], name='func')
 dv.rankdata()
-dv.brain_surface_plot(environment)
+dv.brain_surface_plot(environment, order=order)
 
 # %% generate surrogates using brainsmash
 n_surrogates = 10000

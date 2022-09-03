@@ -4,15 +4,14 @@ import pandas as pd
 from src.utils import get_parcelwise_average_surface
 import wget
 import nibabel as nib
-from src.utils import load_schaefer_parc
+from src.utils import load_schaefer_parc, load_glasser_parc
 from sklearn.metrics import pairwise_distances
 
-# note, this code only works with Schaefer. Glasser not implemented
-
 class BrainMapLoader:
-    def __init__(self, computer='macbook', n_parcels=200):
+    def __init__(self, computer='macbook', parc='schaefer', n_parcels=200):
         # analysis parameters
         self.computer = computer
+        self.parc = parc
         self.n_parcels = n_parcels
 
         # directories
@@ -33,17 +32,24 @@ class BrainMapLoader:
             os.makedirs(self.outdir)
 
 
-    def _get_parc_data(self, annot='fsaverage'):
-        self.centroids, self.lh_annot_file, self.rh_annot_file, self.hcp_file = load_schaefer_parc(
-            n_parcels=self.n_parcels,
-            order=17,
-            annot=annot,
-            outdir='~/research_data/schaefer_parc')
-        self.centroids.set_index('ROI Name', inplace=True)
+    def _get_parc_data(self, parc='schaefer', annot='fsaverage'):
+        if parc == 'schaefer':
+            self.centroids, self.lh_annot_file, self.rh_annot_file, self.hcp_file = load_schaefer_parc(
+                n_parcels=self.n_parcels,
+                order=17,
+                annot=annot,
+                outdir='~/research_data/schaefer_parc')
+            self.centroids.set_index('ROI Name', inplace=True)
+        elif parc == 'glasser':
+            self.centroids, self.lh_annot_file, self.rh_annot_file, self.hcp_file = load_glasser_parc(
+                glasser_dir=self.glasser_dir,
+                annot=annot,
+                outdir='~/research_data/glasser_parc')
+            self.centroids.set_index('regionName', inplace=True)
 
 
     def load_cyto(self):
-        self._get_parc_data(annot='fsaverage')
+        self._get_parc_data(parc=self.parc, annot='fsaverage')
 
         lh_gifti_file = os.path.join(self.bbw_dir, 'spaces', 'fsaverage', 'Hist_G2_lh_fsaverage.shape.gii') # original BigBrainData downloaded ~June 2021
         rh_gifti_file = os.path.join(self.bbw_dir, 'spaces', 'fsaverage', 'Hist_G2_rh_fsaverage.shape.gii') # original BigBrainData downloaded ~June 2021
@@ -60,11 +66,13 @@ class BrainMapLoader:
         data_lh = data_lh[1:]
         data_rh = data_rh[1:]
 
-        self.cyto = np.hstack((data_lh, data_rh)).astype(float)
-
+        if self.parc == 'schaefer':
+            self.cyto = np.hstack((data_lh, data_rh)).astype(float)
+        elif self.parc == 'glasser':
+            self.cyto = np.hstack((data_rh, data_lh)).astype(float)
 
     def load_micro(self):
-        self._get_parc_data(annot='fsaverage5')
+        self._get_parc_data(parc=self.parc, annot='fsaverage5')
 
         lh_txt_file = os.path.join(self.bbw_dir, 'spaces', 'fsaverage5', 'Micro-G1_lh.txt') # original BigBrainData downloaded ~June 2021
         rh_txt_file = os.path.join(self.bbw_dir, 'spaces', 'fsaverage5', 'Micro-G1_rh.txt') # original BigBrainData downloaded ~June 2021
@@ -77,11 +85,14 @@ class BrainMapLoader:
         data_lh = data_lh[1:]
         data_rh = data_rh[1:]
 
-        self.micro = np.hstack((data_lh, data_rh)).astype(float)
+        if self.parc == 'schaefer':
+            self.micro = np.hstack((data_lh, data_rh)).astype(float)
+        elif self.parc == 'glasser':
+            self.micro = np.hstack((data_rh, data_lh)).astype(float)
 
 
     def load_tau(self, return_log=False):
-        self._get_parc_data()
+        self._get_parc_data(parc=self.parc)
 
         # download data
         remote_path = 'https://github.com/rdgao/field-echos/raw/master/data'
@@ -112,7 +123,7 @@ class BrainMapLoader:
 
 
     def load_myelin(self):
-        self._get_parc_data()
+        self._get_parc_data(parc=self.parc)
 
         # note, data pre-downloaded from https://balsa.wustl.edu/mpwM
         version = 'Parcellation'  # 'Parcellation' 'Validation'
@@ -126,4 +137,10 @@ class BrainMapLoader:
                                                                          self.hcp_file, os.path.join(self.outdir, out_file))
             os.system(cmd)
 
-        self.myelin = nib.load(os.path.join(self.outdir, out_file)).get_fdata().flatten()
+        if self.parc == 'schaefer':
+            self.myelin = nib.load(os.path.join(self.outdir, out_file)).get_fdata().flatten()
+        elif self.parc == 'glasser':
+            myelin = nib.load(os.path.join(self.outdir, out_file)).get_fdata().flatten()
+            data_lh = myelin[:int(self.n_parcels/2)]
+            data_rh = myelin[int(self.n_parcels/2):]
+            self.myelin = np.hstack((data_rh, data_lh)).astype(float)
