@@ -24,7 +24,7 @@ if platform.system() == 'Linux':
     computer = 'cbica'
 elif platform.system() == 'Darwin':
     computer = 'macbook'
-parc = 'glasser'
+parc = 'schaefer'
 if parc == 'schaefer':
     n_parcels = 200
     # n_parcels = 400
@@ -64,10 +64,8 @@ compute_gradients.run()
 brain_map_loader = BrainMapLoader(computer=computer, parc=parc, n_parcels=n_parcels)
 # load cyto
 brain_map_loader.load_cyto()
-# load micro
+# load micro (t1/t2)
 brain_map_loader.load_micro()
-# load t1/t2
-brain_map_loader.load_myelin()
 # tau map from Gao et al. 2020 eLife
 brain_map_loader.load_tau(return_log=False)
 
@@ -116,15 +114,3 @@ indices_lower = np.tril_indices(n_states, k=-1)
 # %% print some useful info
 print('dti64QAManualScore', np.sum(environment.df['dti64QAManualScore'] == 2))
 print('averageManualRating', np.sum(environment.df['averageManualRating'] == 2))
-
-if intrahemi == False:
-    print('state_brain_map vs. func-g1', sp.stats.pearsonr(state_brain_map, compute_gradients.gradients[:, 0]))
-    print('state_brain_map vs. t1/t2', sp.stats.pearsonr(state_brain_map, brain_map_loader.myelin))
-    print('state_brain_map vs. micro-g1', sp.stats.pearsonr(state_brain_map, brain_map_loader.micro))
-
-    if workspace == 'ave_adj':
-        A_tmp = DataMatrix(data=A)
-        A_tmp.get_strength()
-        print('strength vs. func-g1', sp.stats.pearsonr(A_tmp.S, compute_gradients.gradients[:, 0]))
-        print('strength vs. t1/t2', sp.stats.pearsonr(A_tmp.S, brain_map_loader.myelin))
-        print('strength vs. micro-g1', sp.stats.pearsonr(A_tmp.S, brain_map_loader.micro))

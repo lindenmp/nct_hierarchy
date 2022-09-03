@@ -18,6 +18,7 @@ from src.plotting import set_plotting_params
 set_plotting_params(format='svg')
 figsize = 1.5
 
+# %% plot brain maps
 dv = DataVector(data=state_brain_map, name=which_brain_map)
 dv.rankdata()
 dv.brain_surface_plot(environment, order=order)
@@ -29,6 +30,13 @@ dv.brain_surface_plot(environment, order=order)
 dv = DataVector(data=compute_gradients.gradients[:, 0], name='func')
 dv.rankdata()
 dv.brain_surface_plot(environment, order=order)
+
+# %% correlate with strength
+A_tmp = DataMatrix(data=A)
+A_tmp.get_strength()
+print('strength vs. state_brain_map', sp.stats.pearsonr(A_tmp.S, state_brain_map))
+print('strength vs. micro-g1', sp.stats.pearsonr(A_tmp.S, brain_map_loader.micro))
+print('strength vs. func-g1', sp.stats.pearsonr(A_tmp.S, compute_gradients.gradients[:, 0]))
 
 # %% generate surrogates using brainsmash
 n_surrogates = 10000
@@ -47,6 +55,7 @@ else:
 
 # %% correlation(cyto,micro)
 observed, _ = sp.stats.pearsonr(state_brain_map, brain_map_loader.micro)
+print('correlation(cyto,micro) = {0}'.format(observed))
 null = np.zeros(n_surrogates)
 
 for i in tqdm(np.arange(n_surrogates)):
@@ -63,6 +72,7 @@ plt.close()
 
 # %% correlation(cyto,func)
 observed, _ = sp.stats.pearsonr(state_brain_map, compute_gradients.gradients[:, 0])
+print('correlation(cyto,func) = {0}'.format(observed))
 null = np.zeros(n_surrogates)
 
 for i in tqdm(np.arange(n_surrogates)):
@@ -78,4 +88,5 @@ f.savefig(os.path.join(environment.figdir, 'spat_corr(cyto,func).png'), dpi=600,
 plt.close()
 
 # %% correlation(micro,func)
-print(sp.stats.pearsonr(brain_map_loader.micro, compute_gradients.gradients[:, 0]))
+observed, _ = sp.stats.pearsonr(brain_map_loader.micro, compute_gradients.gradients[:, 0])
+print('correlation(micro,func) = {0}'.format(observed))

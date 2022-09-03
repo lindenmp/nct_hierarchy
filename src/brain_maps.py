@@ -121,26 +121,3 @@ class BrainMapLoader:
         else:
             self.tau = mean_tau['tau'].values
 
-
-    def load_myelin(self):
-        self._get_parc_data(parc=self.parc)
-
-        # note, data pre-downloaded from https://balsa.wustl.edu/mpwM
-        version = 'Parcellation'  # 'Parcellation' 'Validation'
-        interim_dir = 'HCP_PhaseTwo/Q1-Q6_Related{0}210/MNINonLinear/fsaverage_LR32k'.format(version)
-        file = 'Q1-Q6_Related{0}210.MyelinMap_BC_MSMAll_2_d41_WRN_DeDrift.32k_fs_LR.dscalar.nii'.format(version)
-        out_file = 'MyelinMap_Schaefer_{0}Parcels.pscalar.nii'.format(self.n_parcels)
-
-        if os.path.exists(os.path.join(self.outdir, out_file)) == False:
-            cmd = '{0}/wb_command -cifti-parcellate {1} {2} 2 {3}'.format(self.workbenchdir,
-                                                                         os.path.join(self.glasser_dir, interim_dir, file),
-                                                                         self.hcp_file, os.path.join(self.outdir, out_file))
-            os.system(cmd)
-
-        if self.parc == 'schaefer':
-            self.myelin = nib.load(os.path.join(self.outdir, out_file)).get_fdata().flatten()
-        elif self.parc == 'glasser':
-            myelin = nib.load(os.path.join(self.outdir, out_file)).get_fdata().flatten()
-            data_lh = myelin[:int(self.n_parcels/2)]
-            data_rh = myelin[int(self.n_parcels/2):]
-            self.myelin = np.hstack((data_rh, data_lh)).astype(float)
