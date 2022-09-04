@@ -8,6 +8,7 @@ from src.utils import rank_int, get_null_p, mean_over_states
 import pandas as pd
 import scipy as sp
 from tqdm import tqdm
+from scipy.stats.mstats import winsorize
 
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
@@ -33,13 +34,36 @@ f.savefig(os.path.join(environment.figdir, 'A.png'), dpi=600, bbox_inches='tight
 plt.close()
 
 # %% get control energy
+run_winsorize = False
+if run_winsorize:
+    w = 0.01
+    print('winsorizing A matrix at {0}'.format((1 - w) * 100))
+    A_wins = winsorize(A, limits=[None, w]).data
+
+    idxup = np.triu_indices(n_parcels, k=1)
+    f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+    my_reg_plot(A[idxup], A_wins[idxup], 'A', 'A_plot', ax, annotate='both')
+    f.savefig(os.path.join(environment.figdir, 'corr(A,A_plot).png'), dpi=600, bbox_inches='tight',
+              pad_inches=0.01)
+    plt.close()
+
+    A = A_wins.copy()
+
 if intrahemi == True:
-    file_prefix = 'average_adj_n-{0}_intrahemi_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                    consist_thresh, which_brain_map)
+    if run_winsorize:
+        file_prefix = 'average_adj_n-{0}_intrahemi_cthr-{1}_smap-{2}_winsorized_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                                         consist_thresh, which_brain_map)
+    else:
+        file_prefix = 'average_adj_n-{0}_intrahemi_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                              consist_thresh, which_brain_map)
     n_parcels = int(n_parcels / 2)
 else:
-    file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
-                                                                consist_thresh, which_brain_map)
+    if run_winsorize == True:
+        file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_winsorized_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                               consist_thresh, which_brain_map)
+    else:
+        file_prefix = 'average_adj_n-{0}_cthr-{1}_smap-{2}_'.format(load_average_sc.load_sc.df.shape[0],
+                                                                    consist_thresh, which_brain_map)
 
 B_dict = dict()
 B = DataMatrix(data=np.eye(n_parcels), name='identity')
