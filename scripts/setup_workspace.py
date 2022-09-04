@@ -72,7 +72,7 @@ brain_map_loader.load_tau(return_log=False)
 # %% run workspace specific lines
 if workspace == 'ave_adj':
     # get average sc data
-    consist_thresh = 0.6
+    consist_thresh = 0.6  # 0.4 0.5 0.6 0.7 0.8
 
     load_average_sc = LoadAverageSC(load_sc=load_sc, consist_thresh=consist_thresh)
     load_average_sc.run()
