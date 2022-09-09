@@ -32,6 +32,7 @@ if parc == 'schaefer':
 elif parc == 'glasser':
     n_parcels = 360
     order = 'rl'  # for glasser
+print('Parcellation: {0} {1}'.format(parc, n_parcels))
 sc_edge_weight = 'streamlineCount'
 environment = Environment(computer=computer, parc=parc, n_parcels=n_parcels, sc_edge_weight=sc_edge_weight)
 environment.make_output_dirs()
