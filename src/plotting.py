@@ -51,8 +51,7 @@ def roi_to_vtx(roi_data, annot_file):
     return vtx_data, vtx_data_min, vtx_data_max
 
 
-def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson', bonferroni=False, regr_line=True, kde=True,
-                fontsize=8):
+def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson', regr_line=True, kde=True, fontsize=8):
     if len(x.shape) > 1 and len(y.shape) > 1:
         if x.shape[0] == x.shape[1] and y.shape[0] == y.shape[1]:
             mask_x = ~np.eye(x.shape[0], dtype=bool) * ~np.isnan(x)
@@ -111,9 +110,6 @@ def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson', bonferro
     # annotation
     r, r_p = sp.stats.pearsonr(x, y)
     rho, rho_p = sp.stats.spearmanr(x, y)
-    if bonferroni != False:
-        r_p = r_p / bonferroni
-        rho_p = rho_p / bonferroni
     if annotate == 'pearson':
         textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{r}', r, get_p_val_string(r_p))
         ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
