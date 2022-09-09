@@ -9,7 +9,7 @@ from bct.algorithms.distance import distance_wei_floyd
 from src.communicability import matching_index, cumulative_transitivity_differences, path_transitivity
 from oct2py import octave
 sys.path.append('usr/local/bin/octave')  # octave install path
-octave.addpath('/Users/lindenmp/Google-Drive-Penn/work/matlab_tools/BCT/2019_03_03_BCT')  # path to BCT matlab functions
+octave.addpath('/Users/lindenmp/Google-Drive-Penn/work/research_projects/nct_hierarchy/matlab_functions/bct')  # path to BCT matlab functions
 
 # %% import workspace
 os.environ["MY_PYTHON_WORKSPACE"] = 'ave_adj'
@@ -94,11 +94,12 @@ ded = de - de.transpose()
 ded_states = mean_over_states(ded, states)
 
 # get search info
-si = octave.search_information(A, L, has_memory=False)
+si = octave.search_information(A, L)
 sid = si - si.transpose()
 sid_states = mean_over_states(sid, states)
 
 # get path transitivity
+pt = path_transitivity(A)
 m = matching_index(A)
 ptcd = cumulative_transitivity_differences(m, hops, Pmat)
 ptcd_states = mean_over_states(ptcd, states)
@@ -128,7 +129,7 @@ plt.close()
 # panel D
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 my_reg_plot(ded_states[indices_upper], ed[indices_upper],
-                        'diffusion efficiency asymmetry', 'energy asymmetry', ax, annotate='pearson', bonferroni=3)
+                        'diffusion efficiency asymmetry', 'energy asymmetry', ax, annotate='pearson')
 f.savefig(os.path.join(environment.figdir, 'corr(ded_states,e_asym)'), dpi=600, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
@@ -136,7 +137,7 @@ plt.close()
 # panel E
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 my_reg_plot(sid_states[indices_upper], ed[indices_upper],
-                        'search information asymmetry', 'energy asymmetry', ax, annotate='pearson', bonferroni=3)
+                        'search information asymmetry', 'energy asymmetry', ax, annotate='pearson')
 f.savefig(os.path.join(environment.figdir, 'corr(sid_states,e_asym)'), dpi=600, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
@@ -144,7 +145,33 @@ plt.close()
 # panel F
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
 my_reg_plot(ptcd_states[indices_upper], ed[indices_upper],
-                        'path transitivity asymmetry', 'energy asymmetry', ax, annotate='pearson', bonferroni=3)
+                        'path transitivity asymmetry', 'energy asymmetry', ax, annotate='pearson')
 f.savefig(os.path.join(environment.figdir, 'corr(ptcd_states,e_asym)'), dpi=600, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
+
+# %% correlation with brain map
+x = [state_brain_map, ]
+x_name = ['S-F axis', ]
+
+y = [de, si, pt]
+y_name = ['diffusion efficiency\n(mean)', 'search information\n(mean)', 'path transitivity\n(mean)']
+
+for i in np.arange(len(x)):
+    for j in np.arange(len(y)):
+        f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+        my_reg_plot(x[i], np.nanmean(y[j], axis=0), x_name[i], y_name[j], ax, annotate='pearson')
+        f.savefig(os.path.join(environment.figdir, 'corr({0},{1})'.format(x_name[i][:3], y_name[j][:1])), dpi=600, bbox_inches='tight',
+                  pad_inches=0.01)
+        plt.close()
+
+y = [ded, sid, ptcd]
+y_name = ['diffusion efficiency delta\n(mean)', 'search information delta\n(mean)', 'path transitivity delta\n(mean)']
+
+for i in np.arange(len(x)):
+    for j in np.arange(len(y)):
+        f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+        my_reg_plot(x[i], np.nanmean(y[j], axis=0), x_name[i], y_name[j], ax, annotate='pearson')
+        f.savefig(os.path.join(environment.figdir, 'corr({0},{1}d)'.format(x_name[i][:3], y_name[j][:1])), dpi=600, bbox_inches='tight',
+                  pad_inches=0.01)
+        plt.close()
