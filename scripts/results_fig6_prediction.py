@@ -4,6 +4,7 @@ from src.pipelines import ComputeMinimumControlEnergy, Regression
 from src.utils import rank_int, get_exact_p, get_null_p, get_p_val_string
 from src.imaging_derivs import DataMatrix
 from src.plotting import my_null_plot
+from bct.algorithms.physical_connectivity import density_und
 
 from tqdm import tqdm
 
@@ -20,10 +21,17 @@ from src.plotting import set_plotting_params, my_reg_plot
 set_plotting_params(format='svg')
 figsize = 1.5
 
+# %% get subject edge density
+A_d = np.zeros(n_subs)
+for i in range(n_subs):
+    A_d[i], _, _ = density_und(load_sc.A[:, :, i])
+
+environment.df['edge_density'] = A_d
+
 # %% prediction params
 X_name = 'identity'
 y_name = 'ageAtScan1'
-c_name = 'svm'
+c_name = 'svme'
 alg = 'rr'
 score = 'corr'  # 'corr' 'rmse' 'mae'
 runpca = '80%'
@@ -52,6 +60,8 @@ if c_name != None:
         covs = ['sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
     elif c_name == 'vm':
         covs = ['mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']
+    elif c_name == 'svme':
+        covs = ['sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS', 'edge_density']
 
     c = environment.df.loc[:, covs]
     if 'sex' in covs:

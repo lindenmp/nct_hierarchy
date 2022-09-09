@@ -3,6 +3,7 @@ import sys, os, platform
 from src.pipelines import ComputeMinimumControlEnergy
 from src.plotting import my_reg_plot
 from src.utils import get_fdr_p
+from bct.algorithms.physical_connectivity import density_und
 
 from sklearn.linear_model import LinearRegression
 from tqdm import tqdm
@@ -18,6 +19,13 @@ import matplotlib.pyplot as plt
 from src.plotting import set_plotting_params
 set_plotting_params(format='svg')
 figsize = 1.5
+
+# %% get subject edge density
+A_d = np.zeros(n_subs)
+for i in range(n_subs):
+    A_d[i], _, _ = density_und(load_sc.A[:, :, i])
+
+environment.df['edge_density'] = A_d
 
 # %% get control energy
 c = 1
@@ -62,7 +70,7 @@ if np.any(np.isnan(y)):
     y[np.isnan(y)] = np.nanmedian(y)
 
 # nuisance regression
-covs = environment.df.loc[:, ['sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS']]
+covs = environment.df.loc[:, ['sex', 'mprage_antsCT_vol_TBV', 'dti64MeanRelRMS', 'edge_density']]
 covs['sex'] = covs['sex'] - 1
 covs = covs.values
 
@@ -102,7 +110,7 @@ y = y/12
 # Panel A
 f, ax = plt.subplots(1, 1, figsize=(figsize*1.2, figsize*1.2))
 cmap = sns.diverging_palette(150, 275, as_cmap=True)
-sns.heatmap(e_corr, mask=sig_mask, center=0, square=True, cmap=cmap, ax=ax,
+sns.heatmap(e_corr, mask=sig_mask, center=0, square=True, cmap=cmap, ax=ax, vmin=-0.2, vmax=0.2,
             cbar_kws={"shrink": 0.80, "label": "age effects\n(Pearson's r)"})
 ax.set_ylabel("initial states", labelpad=-1)
 ax.set_xlabel("target states", labelpad=-1)
