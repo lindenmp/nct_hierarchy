@@ -79,7 +79,10 @@ class LoadAverageSC():
             print('\tmean sample sparsity = {:.2f}'.format(np.mean(A_d)))
 
         # Get group average adj. matrix
-        A = threshold_consistency(A, thr=self.consist_thresh)
+        if self.consist_thresh != False:
+            A = threshold_consistency(A, thr=self.consist_thresh)
+        else:
+            A = np.mean(A, axis=2)
 
         if self.verbose:
             print('\tactual matrix sparsity = {:.2f}'.format(
