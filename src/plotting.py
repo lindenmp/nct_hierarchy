@@ -212,7 +212,7 @@ def my_distpair_plot(df, ylabel, ax, test_stat='ttest_1samp', fontsize=8):
         ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
     elif test_stat == 'mean_diff':
         stat = np.mean(df.iloc[:, 0] - df.iloc[:, 1])
-        textstr = 'mean diff = {:.4f}'.format(stat)
+        textstr = 'mean diff = {:.2f}'.format(stat)
         ax.text(0.5, ax.get_ylim()[1], textstr, fontsize=fontsize,
                 horizontalalignment='center', verticalalignment='bottom')
         ax.axhline(y=ax.get_ylim()[1], xmin=0.25, xmax=0.75, color='k', linewidth=1)
@@ -236,15 +236,15 @@ def my_bsci_plot(dist, observed, xlabel, ax, fontsize=8):
     ax.set_xlabel(xlabel, labelpad=-0.5)
     ax.set_ylabel('counts', labelpad=-0.5)
 
-    textstr = 'lower = {:.4f}'.format(conf_interval[0])
+    textstr = 'lower = {:.2f}'.format(conf_interval[0])
     ax.text(conf_interval[0], ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
 
-    textstr = 'obs. = {:.4f}'.format(observed)
+    textstr = 'obs. = {:.2f}'.format(observed)
     ax.text(observed, ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
 
-    textstr = 'upper = {:.4f}'.format(conf_interval[1])
+    textstr = 'upper = {:.2f}'.format(conf_interval[1])
     ax.text(conf_interval[1], ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
 
@@ -260,15 +260,15 @@ def my_bsci_pair_plot(dist1, observed1, dist2, observed2, xlabel, ax, fontsize=8
     ax.axvline(observed1, ymax=1, clip_on=False, linewidth=1, color=color_blue)
     ax.axvline(conf_interval[1], ymax=1, clip_on=False, linewidth=1, color=color_red)
 
-    textstr = 'lower = {:.4f}'.format(conf_interval[0])
+    textstr = 'lower = {:.2f}'.format(conf_interval[0])
     ax.text(conf_interval[0], ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
 
-    textstr = 'obs. = {:.4f}'.format(observed1)
+    textstr = 'obs. = {:.2f}'.format(observed1)
     ax.text(observed1, ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
 
-    textstr = 'upper = {:.4f}'.format(conf_interval[1])
+    textstr = 'upper = {:.2f}'.format(conf_interval[1])
     ax.text(conf_interval[1], ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
 
@@ -279,15 +279,15 @@ def my_bsci_pair_plot(dist1, observed1, dist2, observed2, xlabel, ax, fontsize=8
     ax.axvline(observed2, ymax=1, clip_on=False, linewidth=1, color=color_blue)
     ax.axvline(conf_interval[1], ymax=1, clip_on=False, linewidth=1, color=color_red)
 
-    textstr = 'lower = {:.4f}'.format(conf_interval[0])
+    textstr = 'lower = {:.2f}'.format(conf_interval[0])
     ax.text(conf_interval[0], ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
 
-    textstr = 'obs. = {:.4f}'.format(observed2)
+    textstr = 'obs. = {:.2f}'.format(observed2)
     ax.text(observed2, ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_blue)
 
-    textstr = 'upper = {:.4f}'.format(conf_interval[1])
+    textstr = 'upper = {:.2f}'.format(conf_interval[1])
     ax.text(conf_interval[1], ax.get_ylim()[1], textstr, fontsize=fontsize,
             horizontalalignment='left', verticalalignment='top', rotation=270, c=color_red)
 
