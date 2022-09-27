@@ -132,8 +132,8 @@ except FileNotFoundError:
 
 # load bootstrapped data
 try:
-    file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_bootstrapped_E'.format(load_average_sc.load_sc.df.shape[0],
-                                                                       consist_thresh, which_brain_map)
+    file = 'average_adj_n-{0}_cthr-{1}_smap-{2}_bootstrapped_frac05_E'.format(load_average_sc.load_sc.df.shape[0],
+                                                                              consist_thresh, which_brain_map)
 
     e_bs = np.load(os.path.join(environment.pipelinedir, 'minimum_control_energy', file + '.npy'))
 
