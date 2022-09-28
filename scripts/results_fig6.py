@@ -120,27 +120,37 @@ ax.tick_params(pad=-2.5)
 f.savefig(os.path.join(environment.figdir, 'corr(age,e)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
+r = np.zeros(4,)
+p = np.zeros(4,)
+r[0], p[0] = sp.stats.pearsonr(y, e_bu_mean - e_td_mean)
+r[1], p[1] = sp.stats.pearsonr(e_corr[indices], ed_mean[indices])
+r[2], p[2] = sp.stats.pearsonr(y, e_bu_mean)
+r[3], p[3] = sp.stats.pearsonr(y, e_td_mean)
+print(p, p < (.05/3))
+p = get_fdr_p(p)
+print(p, p < .05)
+
 # New panel B
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(x=y, y=e_bu_mean - e_td_mean, xlabel='age (years)', ylabel='energy asymmetry\n(mean)', ax=ax, annotate='pearson')
+my_reg_plot(x=y, y=e_bu_mean - e_td_mean, xlabel='age (years)', ylabel='energy asymmetry\n(mean)', ax=ax, annotate=(r[0], p[0]))
 f.savefig(os.path.join(environment.figdir, 'corr(age,e_asym_mean)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
 # Panel C
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(x=e_corr[indices], y=ed_mean[indices], xlabel='age effects', ylabel='energy asymmetry', ax=ax, annotate='both')
+my_reg_plot(x=e_corr[indices], y=ed_mean[indices], xlabel='age effects', ylabel='energy asymmetry', ax=ax, annotate=(r[1], p[1]))
 f.savefig(os.path.join(environment.figdir, 'corr(age_effects,ed)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
 # supp figure
 # Panel A
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(x=y, y=e_bu_mean, xlabel='age (years)', ylabel='bottom-up energy\n(mean)', ax=ax, annotate='pearson')
+my_reg_plot(x=y, y=e_bu_mean, xlabel='age (years)', ylabel='bottom-up energy\n(mean)', ax=ax, annotate=(r[2], p[2]))
 f.savefig(os.path.join(environment.figdir, 'corr(age,e_bu_mean)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()
 
 # Panel B
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(x=y, y=e_td_mean, xlabel='age (years)', ylabel='top-down energy\n(mean)', ax=ax, annotate='pearson')
+my_reg_plot(x=y, y=e_td_mean, xlabel='age (years)', ylabel='top-down energy\n(mean)', ax=ax, annotate=(r[3], p[3]))
 f.savefig(os.path.join(environment.figdir, 'corr(age,e_td_mean)'), dpi=600, bbox_inches='tight', pad_inches=0.01)
 plt.close()

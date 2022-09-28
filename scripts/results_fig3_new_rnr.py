@@ -3,7 +3,7 @@ import sys, os, platform
 from src.imaging_derivs import DataMatrix
 from src.pipelines import ComputeMinimumControlEnergy
 from src.plotting import my_reg_plot, my_distpair_plot, my_null_plot
-from src.utils import rank_int, get_null_p, mean_over_states
+from src.utils import rank_int, get_null_p, mean_over_states, get_fdr_p
 
 from bct.algorithms.distance import distance_wei_floyd
 from src.communicability import matching_index, cumulative_transitivity_differences, path_transitivity
@@ -126,52 +126,56 @@ f.savefig(os.path.join(environment.figdir, 'ptcd_states'), dpi=600, bbox_inches=
 plt.close()
 
 # energy correlations
+r = np.zeros(3,)
+p = np.zeros(3,)
+r[0], p[0] = sp.stats.pearsonr(ded_states[indices_upper], ed[indices_upper])
+r[1], p[1] = sp.stats.pearsonr(sid_states[indices_upper], ed[indices_upper])
+r[2], p[2] = sp.stats.pearsonr(ptcd_states[indices_upper], ed[indices_upper])
+print(p, p < (.05/3))
+p = get_fdr_p(p)
+print(p, p < .05)
+
 # panel D
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(ded_states[indices_upper], ed[indices_upper],
-                        'diffusion efficiency asymmetry', 'energy asymmetry', ax, annotate='pearson')
+my_reg_plot(ded_states[indices_upper], ed[indices_upper], 'diffusion efficiency asymmetry', 'energy asymmetry', ax,
+            annotate=(r[0], p[0]))
 f.savefig(os.path.join(environment.figdir, 'corr(ded_states,e_asym)'), dpi=600, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
 
 # panel E
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(sid_states[indices_upper], ed[indices_upper],
-                        'search information asymmetry', 'energy asymmetry', ax, annotate='pearson')
+my_reg_plot(sid_states[indices_upper], ed[indices_upper], 'search information asymmetry', 'energy asymmetry', ax,
+            annotate=(r[1], p[1]))
 f.savefig(os.path.join(environment.figdir, 'corr(sid_states,e_asym)'), dpi=600, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
 
 # panel F
 f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-my_reg_plot(ptcd_states[indices_upper], ed[indices_upper],
-                        'path transitivity asymmetry', 'energy asymmetry', ax, annotate='pearson')
+my_reg_plot(ptcd_states[indices_upper], ed[indices_upper], 'path transitivity asymmetry', 'energy asymmetry', ax,
+            annotate=(r[2], p[2]))
 f.savefig(os.path.join(environment.figdir, 'corr(ptcd_states,e_asym)'), dpi=600, bbox_inches='tight',
           pad_inches=0.01)
 plt.close()
 
 # %% correlation with brain map
-x = [state_brain_map, ]
-x_name = ['S-F axis', ]
+y = [de, si, pt, ded, sid, ptcd]
+y_name = ['diffusion efficiency\n(mean)', 'search information\n(mean)', 'path transitivity\n(mean)',
+          'diffusion efficiency delta\n(mean)', 'search information delta\n(mean)', 'path transitivity delta\n(mean)']
 
-y = [de, si, pt]
-y_name = ['diffusion efficiency\n(mean)', 'search information\n(mean)', 'path transitivity\n(mean)']
+r = np.zeros(len(y))
+p = np.zeros(len(y))
+for i in np.arange(len(y)):
+    r[i], p[i] = sp.stats.pearsonr(state_brain_map, np.nanmean(y[i], axis=0))
+print(p, p < (.05/3))
+p = get_fdr_p(p)
+print(p, p < .05)
 
-for i in np.arange(len(x)):
-    for j in np.arange(len(y)):
-        f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-        my_reg_plot(x[i], np.nanmean(y[j], axis=0), x_name[i], y_name[j], ax, annotate='pearson')
-        f.savefig(os.path.join(environment.figdir, 'corr({0},{1})'.format(x_name[i][:3], y_name[j][:1])), dpi=600, bbox_inches='tight',
-                  pad_inches=0.01)
-        plt.close()
-
-y = [ded, sid, ptcd]
-y_name = ['diffusion efficiency delta\n(mean)', 'search information delta\n(mean)', 'path transitivity delta\n(mean)']
-
-for i in np.arange(len(x)):
-    for j in np.arange(len(y)):
-        f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
-        my_reg_plot(x[i], np.nanmean(y[j], axis=0), x_name[i], y_name[j], ax, annotate='pearson')
-        f.savefig(os.path.join(environment.figdir, 'corr({0},{1}d)'.format(x_name[i][:3], y_name[j][:1])), dpi=600, bbox_inches='tight',
-                  pad_inches=0.01)
-        plt.close()
+for i in np.arange(len(y)):
+    f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
+    my_reg_plot(state_brain_map, np.nanmean(y[i], axis=0), 'S-F axis', y_name[i], ax,
+                annotate=(r[i], p[i]))
+    f.savefig(os.path.join(environment.figdir, 'corr({0},{1})'.format('S-F axis', y_name[i][:-7])), dpi=600, bbox_inches='tight',
+              pad_inches=0.01)
+    plt.close()

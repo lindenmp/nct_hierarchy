@@ -110,19 +110,25 @@ def my_reg_plot(x, y, xlabel, ylabel, ax, c='gray', annotate='pearson', regr_lin
     # annotation
     r, r_p = sp.stats.pearsonr(x, y)
     rho, rho_p = sp.stats.spearmanr(x, y)
-    if annotate == 'pearson':
-        textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{r}', r, get_p_val_string(r_p))
-        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
-                verticalalignment='top')
-    elif annotate == 'spearman':
-        textstr = '$\\rho$ = {:.2f}, {:}'.format(rho, get_p_val_string(rho_p))
-        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
-                verticalalignment='top')
-    elif annotate == 'both':
-        textstr = '$\mathit{:}$ = {:.2f}, {:}\n$\\rho$ = {:.2f}, {:}'.format('{r}', r, get_p_val_string(r_p),
-                                                                             rho, get_p_val_string(rho_p))
-        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
-                verticalalignment='top')
+    if type(annotate) == str:
+        if annotate == 'pearson':
+            textstr = '$\mathit{:}$ = {:.2f}, {:}'.format('{r}', r, get_p_val_string(r_p))
+            ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
+                    verticalalignment='top')
+        elif annotate == 'spearman':
+            textstr = '$\\rho$ = {:.2f}, {:}'.format(rho, get_p_val_string(rho_p))
+            ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
+                    verticalalignment='top')
+        elif annotate == 'both':
+            textstr = '$\mathit{:}$ = {:.2f}, {:}\n$\\rho$ = {:.2f}, {:}'.format('{r}', r, get_p_val_string(r_p),
+                                                                                 rho, get_p_val_string(rho_p))
+            ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize,
+                    verticalalignment='top')
+    elif type(annotate) == tuple:
+        coef = annotate[0]
+        p = annotate[1]
+        textstr = 'coef = {:.2f}, {:}'.format(coef, get_p_val_string(p))
+        ax.text(0.05, 0.975, textstr, transform=ax.transAxes, fontsize=fontsize, verticalalignment='top')
     else:
         pass
 
