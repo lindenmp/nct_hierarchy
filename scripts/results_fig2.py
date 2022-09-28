@@ -213,7 +213,7 @@ try:
         ed_null = e_network_null[:, :, i] - e_network_null[:, :, i].transpose()
         t_null[i] = np.mean(ed_null[indices_upper])
 
-    # plot distance asymm null
+    # plot asymm null
     observed = np.mean(ed[indices_upper])
     p_val = get_null_p(observed, t_null, version='standard', abs=True)
     f, ax = plt.subplots(1, 1, figsize=(figsize, figsize))
