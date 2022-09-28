@@ -132,11 +132,11 @@ for i in tqdm(np.arange(n_states)):
         p_vals[i, j] = get_null_p(observed[i, j], null[i, j, :], version='standard', abs=True)
 
 # %% get bootstrapped energy asymmetries for both uniform and optimized control weights
-n_samples = 10000
+n_samples = 1000
 ed_bs = np.zeros(n_samples)
 ed_opt_bs = np.zeros(n_samples)
 
-bootstrap_indices = get_bootstrap_indices(d_size=n_subs, frac=1, n_samples=n_samples)
+bootstrap_indices = get_bootstrap_indices(d_size=n_subs, frac=0.5, n_samples=n_samples)
 
 # set pipelinedir to cluster outputs
 environment.pipelinedir = environment.pipelinedir.replace('output_local', 'output_cluster')
