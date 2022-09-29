@@ -19,3 +19,6 @@ Python scripts that produce the figures from the above manuscript can be found i
 scripts are supported by additional scripts that run on our cluster at Penn. Those scripts are stored here for documentation 
 purposes. However, the main `results_figX.py` scripts were designed to run with or without the outputs 
 from these cluster scripts. Of course, some of them will have much longer run times without the cluster outputs.
+
+We also include `results_demo.ipynb` that walks through the main set of findings from the paper and links the equations 
+in the text to the functions in this repository. 
