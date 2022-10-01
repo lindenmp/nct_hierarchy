@@ -1,4 +1,5 @@
 # nct_hierarchy
+[![DOI](https://zenodo.org/badge/333524327.svg)](https://zenodo.org/badge/latestdoi/333524327)
 
 The goal of this project was to examine whether the topology of the structural connectome—which we index using an
 undirected description of connectivty—confers asymmetries in signal propagation across the cortical hierarchy of 
